@@ -1,0 +1,243 @@
+:root {
+  --bg: #f3efe6;
+  --card: #fffdf8;
+  --ink: #1c1915;
+  --muted: #4e483f;
+  --line: #e0d6c8;
+  --green: #1e4a38;
+  --green-hover: #16382b;
+  --link: #143a66;
+  --warn-bg: #f7f1df;
+  --focus: #1e4a38;
+  color: var(--ink);
+  background: var(--bg);
+  font-family: "Segoe UI", "Helvetica Neue", system-ui, sans-serif;
+  font-size: 1.0625rem;
+  line-height: 1.55;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+.skip {
+  position: absolute;
+  left: 0.75rem;
+  top: 0.75rem;
+  transform: translateY(-150%);
+  background: #fff;
+  color: var(--ink);
+  padding: 0.5rem 0.75rem;
+  z-index: 2;
+}
+
+.skip:focus {
+  transform: none;
+}
+
+.site-header,
+main,
+.site-footer {
+  width: min(42rem, calc(100% - 2rem));
+  margin-inline: auto;
+}
+
+.site-header {
+  padding: 1.75rem 0 0.25rem;
+}
+
+.brand {
+  margin: 0;
+  font-family: Georgia, "Iowan Old Style", "Palatino Linotype", Palatino, serif;
+  font-size: 1.35rem;
+  letter-spacing: 0.01em;
+}
+
+.brand-note,
+.meta,
+.quiet,
+.facts-quiet {
+  color: var(--muted);
+}
+
+.brand-note {
+  margin: 0.15rem 0 0;
+  font-size: 0.95rem;
+}
+
+h1,
+h2 {
+  font-family: Georgia, "Iowan Old Style", "Palatino Linotype", Palatino, serif;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+h1 {
+  font-size: clamp(1.8rem, 4vw, 2.45rem);
+  margin: 0 0 0.75rem;
+}
+
+h2 {
+  font-size: 1.45rem;
+  margin: 2rem 0 0.6rem;
+}
+
+.lede {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.download-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 1.15rem 1.15rem 0.9rem;
+  margin-top: 0.8rem;
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.75rem;
+  padding: 0.85rem 1.25rem;
+  background: var(--green);
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1.2rem;
+  border-radius: 10px;
+  width: 100%;
+  text-align: center;
+}
+
+.btn:hover {
+  background: var(--green-hover);
+}
+
+.pending {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  background: var(--warn-bg);
+  border-radius: 10px;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: 7.5rem 1fr;
+  gap: 0.35rem 0.75rem;
+  margin: 0.9rem 0 0;
+}
+
+.facts div {
+  display: contents;
+}
+
+.facts dt {
+  margin: 0;
+  color: var(--muted);
+}
+
+.facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.facts code {
+  font-family: ui-monospace, "Cascadia Mono", "Segoe UI Mono", Consolas, monospace;
+  font-size: 0.82rem;
+}
+
+.url-line {
+  display: block;
+  margin: 0.55rem 0 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+  overflow-wrap: anywhere;
+}
+
+.secondary-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+  margin: 1rem 0 0.25rem;
+}
+
+.secondary-row a {
+  color: var(--link);
+  font-weight: 600;
+}
+
+.hash-help {
+  margin-top: 1rem;
+}
+
+.hash-help pre {
+  overflow-x: auto;
+  background: #efeae1;
+  padding: 0.7rem 0.8rem;
+  border-radius: 8px;
+}
+
+.notice {
+  background: var(--warn-bg);
+  border-radius: 14px;
+  padding: 0.2rem 1.1rem 0.9rem;
+  margin-top: 2rem;
+}
+
+.notice h2 {
+  margin-top: 0.9rem;
+}
+
+.bible-list {
+  padding-left: 1.15rem;
+}
+
+.bible-list li {
+  margin: 0 0 0.85rem;
+}
+
+.bible-list a {
+  color: var(--link);
+}
+
+kbd {
+  font-family: inherit;
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  padding: 0 0.3rem;
+  background: #fff;
+}
+
+.error {
+  color: #7a1f1f;
+  font-weight: 600;
+}
+
+.site-footer {
+  padding: 0.5rem 0 2.5rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+@media (max-width: 560px) {
+  .facts {
+    grid-template-columns: 1fr;
+  }
+
+  .facts dd {
+    margin-bottom: 0.45rem;
+  }
+}

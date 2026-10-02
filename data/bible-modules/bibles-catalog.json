@@ -1,0 +1,85 @@
+{
+  "format": "proyector-bible-json-v1",
+  "baseUrl": "https://downloads.7lineas.com/bibles",
+  "extensionNote": "Otra versión libre se añade después solo con su archivo y una entrada en bibles-catalog.json, sin cambiar el código. Esas ediciones con copyright se sumarán igual cuando haya permiso.",
+  "versions": [
+    {
+      "id": "bes",
+      "name": "Biblia en Español Sencillo",
+      "language": "Español",
+      "file": "bes.json",
+      "bytes": 10047026,
+      "sha256": "8657ea879ed2afffeed380b0e877e9c63f83cc54dfbdd1ca6be820f40839f6a0",
+      "license": "CC BY 4.0",
+      "attribution": "La Biblia en Español Sencillo, de AudioBiblia.org e Irma Flores (2018–2019), publicada por eBible.org bajo CC BY 4.0.",
+      "copyright": "La Biblia en Español Sencillo © AudioBiblia.org e Irma Flores, 2018–2019. Licencia CC BY 4.0.",
+      "abbr": "BES",
+      "draft": false
+    },
+    {
+      "id": "onbv",
+      "name": "Biblica® Open Nueva Biblia Viva™ 2008",
+      "language": "Español",
+      "file": "onbv.json",
+      "bytes": 10135419,
+      "sha256": "f7397ae64ea3579df7499944f178172eb10b327e3e12ab2b6eeba5ed0cf87e24",
+      "license": "CC BY-SA 4.0",
+      "attribution": "Biblica® Open Nueva Biblia Viva™ © 2006, 2008 Biblica, Inc. Se redistribuye bajo CC BY-SA 4.0 sin cambiar el texto. Hay que conservar el título y el copyright de Biblica.",
+      "copyright": "Biblica® Open Nueva Biblia Viva™ © 2006, 2008 Biblica, Inc. Licencia CC BY-SA 4.0. Conserve este título y este aviso de copyright.",
+      "abbr": "ONBV",
+      "draft": false
+    },
+    {
+      "id": "pddpt",
+      "name": "Palabra de Dios para ti",
+      "language": "Español",
+      "file": "pddpt.json",
+      "bytes": 9840961,
+      "sha256": "d63f9f214c4dfbada063e28417e065b76909b8c0581023a75a9704d95af2c788",
+      "license": "CC BY 4.0",
+      "attribution": "Palabra de Dios para ti © 2020 Asociación Bíblica Latinoamericana. Texto publicado por eBible.org bajo CC BY 4.0.",
+      "copyright": "Palabra de Dios para ti © 2020 Asociación Bíblica Latinoamericana. Licencia CC BY 4.0.",
+      "abbr": "PDDPT",
+      "draft": false
+    },
+    {
+      "id": "bll",
+      "name": "Santa Biblia libre Latinoamericano",
+      "language": "Español",
+      "file": "bll.json",
+      "bytes": 10378966,
+      "sha256": "0eb05c3baddfc5be49f8357cec7d5930c20d40a7592d854a300b49d7fbfadc1b",
+      "license": "Dominio público",
+      "attribution": "Santa Biblia libre Latinoamericano, dominio público, publicada por eBible.org. Es un borrador. Esta aplicación incluye solo el canon protestante de 66 libros.",
+      "copyright": "Santa Biblia libre Latinoamericano. Dominio público. Edición marcada como borrador.",
+      "abbr": "BLL",
+      "draft": true
+    },
+    {
+      "id": "blm",
+      "name": "Santa Biblia libre para el mundo",
+      "language": "Español",
+      "file": "blm.json",
+      "bytes": 10220902,
+      "sha256": "9ef7d72c332bb2d4154f77899eb4f47b42ff5d77cdbeee41f12f9ac4027c21ba",
+      "license": "Dominio público",
+      "attribution": "Santa Biblia libre para el mundo, dominio público, de David Williams y Michael Paul Johnson, publicada por eBible.org. Es un borrador en español de España. Esta aplicación incluye solo el canon protestante de 66 libros.",
+      "copyright": "Santa Biblia libre para el mundo. Dominio público. Edición marcada como borrador. David Williams y Michael Paul Johnson.",
+      "abbr": "BLM",
+      "draft": true
+    },
+    {
+      "id": "asv",
+      "name": "American Standard Version",
+      "language": "Inglés",
+      "file": "asv.json",
+      "bytes": 10546484,
+      "sha256": "08d8ed083c1b490e45e4abf51ff41fb25c01531ed5f9c1eb1218b5fb71b483ef",
+      "license": "Dominio público",
+      "attribution": "American Standard Version (1901). Texto de dominio público en formato VPL, publicado por eBible.org.",
+      "copyright": "American Standard Version, 1901. Dominio público.",
+      "abbr": "ASV",
+      "draft": false
+    }
+  ]
+}

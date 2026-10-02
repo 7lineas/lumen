@@ -1,0 +1,23 @@
+{
+  "version": "1.0.0",
+  "releasedAt": null,
+  "downloadBaseUrl": "https://downloads.7lineas.com",
+  "files": [
+    {
+      "id": "setup",
+      "role": "primary",
+      "label": "Instalador para Windows",
+      "filename": "proyectorbiblico-1.0.0-setup.exe",
+      "bytes": null,
+      "sha256": "a7cb931aadeedf4e1b62ec7e6150b29e0ddd92ce849573b1c4813550ea693ca8"
+    },
+    {
+      "id": "portable",
+      "role": "secondary",
+      "label": "Versión portable",
+      "filename": "proyectorbiblico-1.0.0-portable.exe",
+      "bytes": null,
+      "sha256": "4e0bc23091319152603930425f2ec6020772f4068d6a1d8cdd4bfc32b0e8743f"
+    }
+  ]
+}

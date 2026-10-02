@@ -1,0 +1,14 @@
+node_modules/
+dist/
+dist-electron/
+release/
+landing-dist/
+tmp-bible/
+data/bible-modules/*.json
+!data/bible-modules/bibles-catalog.json
+*.log
+.DS_Store
+.env
+.env.*
+*.exe
+landing-dist/
