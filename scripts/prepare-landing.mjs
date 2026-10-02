@@ -15,6 +15,12 @@ for (const name of files) {
 
 await cp(path.join(root, "shared", "bible-licenses.json"), path.join(outDir, "licenses.json"));
 
+const assetDir = path.join(outDir, "assets");
+await mkdir(assetDir, { recursive: true });
+for (const name of ["logo-light.png", "logo-light.avif", "logo-dark.png", "logo-dark.avif"]) {
+  await cp(path.join(root, "landing", "assets", name), path.join(assetDir, name));
+}
+
 const override = process.env.DOWNLOAD_BASE_URL;
 if (override && override.trim()) {
   const configPath = path.join(outDir, "config.json");

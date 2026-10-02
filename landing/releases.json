@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "releasedAt": null,
+  "releasedAt": "2026-10-02",
   "downloadBaseUrl": "https://downloads.7lineas.com",
   "files": [
     {
@@ -8,16 +8,16 @@
       "role": "primary",
       "label": "Instalador para Windows",
       "filename": "proyectorbiblico-1.0.0-setup.exe",
-      "bytes": null,
-      "sha256": "a7cb931aadeedf4e1b62ec7e6150b29e0ddd92ce849573b1c4813550ea693ca8"
+      "bytes": 89762416,
+      "sha256": "53d2fdf0330300605532bdc3a02b5d68a979609db9c8b31eaf76fe8e8cafa736"
     },
     {
       "id": "portable",
       "role": "secondary",
       "label": "Versión portable",
       "filename": "proyectorbiblico-1.0.0-portable.exe",
-      "bytes": null,
-      "sha256": "4e0bc23091319152603930425f2ec6020772f4068d6a1d8cdd4bfc32b0e8743f"
+      "bytes": 89610007,
+      "sha256": "fd15892bb64de67774dc9216446a3a470a0ce582ea6d74c5b55e3b1a31707c83"
     }
   ]
 }

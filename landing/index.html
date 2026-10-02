@@ -3,134 +3,91 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta
-      name="description"
-      content="Descargue Proyector Bíblico para Windows. Proyecte versículos en el videobeam sin internet. Gratis para iglesias."
-    />
-    <meta name="theme-color" content="#1e4a38" />
+    <meta name="description" content="Descargue Proyector Bíblico para Windows. Proyecte versículos en el videobeam sin internet. Gratis para iglesias." />
+    <meta name="theme-color" content="#2b1a12" />
     <title>Proyector Bíblico — Descargar para Windows</title>
+    <link rel="icon" type="image/png" sizes="1254x1254" href="./assets/logo-light.png" />
+    <link rel="apple-touch-icon" href="./assets/logo-light.png" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <a class="skip" href="#contenido">Saltar al contenido</a>
     <header class="site-header">
-      <p class="brand">Proyector Bíblico</p>
-      <p class="brand-note">Para el culto, en el computador de la iglesia</p>
+      <a class="brand" href="#inicio" aria-label="Proyector Bíblico, inicio">
+        <span class="brand-mark"><img src="./assets/logo-light.png" alt="" /></span>
+        <span><b>Proyector Bíblico</b><small>Una herramienta para la iglesia</small></span>
+      </a>
+      <nav aria-label="Navegación principal"><a href="#descargar">Descargar</a><a href="#instalar">Cómo instalar</a><a href="#biblias">Biblias y créditos</a></nav>
     </header>
 
     <main id="contenido">
-      <section class="hero" aria-labelledby="titulo">
-        <h1 id="titulo">Versículos en el videobeam, sin internet</h1>
-        <p class="lede">
-          Proyector Bíblico es un programa gratuito para Windows. Quien dirige el culto
-          busca el pasaje en su computador y lo envía al videobeam. Durante el servicio
-          no hace falta conexión: las Biblias van dentro del programa.
-        </p>
+      <section class="hero" id="inicio" aria-labelledby="titulo">
+        <div class="hero-copy">
+          <p class="kicker">Hecho para el culto</p>
+          <h1 id="titulo">La Palabra, <em>lista para proyectar.</em></h1>
+          <p class="lede">Encuentre el pasaje y envíelo al videobeam en segundos. Proyector Bíblico funciona sin internet durante el servicio: sus Biblias ya están en el computador.</p>
+          <div class="hero-notes"><span>Gratis para Windows</span><span>Funciona sin conexión</span></div>
+        </div>
+        <div class="hero-art" aria-hidden="true">
+          <div class="sun-disc"></div><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div>
+          <svg class="bible-art" viewBox="0 0 520 430">
+            <ellipse cx="265" cy="363" rx="185" ry="26" fill="#2b1a12" opacity=".13"/>
+            <path d="M91 176c58-25 111-17 169 18v168c-58-35-111-43-169-18z" fill="#b87333"/>
+            <path d="M429 176c-58-25-111-17-169 18v168c58-35 111-43 169-18z" fill="#5c3a21"/>
+            <path d="M100 183c52-20 101-12 153 19v146c-52-31-101-39-153-19z" fill="#fff8ee"/>
+            <path d="M420 183c-52-20-101-12-153 19v146c52-31 101-39 153-19z" fill="#efe5d6"/>
+            <path d="M253 202v146" stroke="#c8a27a" stroke-width="4"/>
+            <path d="M126 221c34-9 65-6 95 8M126 242c34-9 65-6 95 8M126 263c34-9 65-6 95 8M394 221c-34-9-65-6-95 8M394 242c-34-9-65-6-95 8M394 263c-34-9-65-6-95 8" fill="none" stroke="#b87333" stroke-width="4" stroke-linecap="round" opacity=".65"/>
+            <path d="M248 71v53M221 98h54M229 79l38 38M267 79l-38 38" stroke="#b87333" stroke-width="5" stroke-linecap="round" opacity=".8"/>
+            <circle cx="248" cy="98" r="40" fill="none" stroke="#b87333" stroke-width="2" opacity=".3"/>
+          </svg>
+          <p class="art-caption">La Palabra siempre a la mano</p>
+        </div>
       </section>
 
-      <section class="download" aria-labelledby="descarga-titulo">
-        <h2 id="descarga-titulo">Descargar</h2>
-        <p id="release-meta" class="meta">Cargando datos de la versión…</p>
-
-        <div class="download-card">
-          <a id="download-setup" class="btn" hidden>Descargar instalador para Windows (.exe)</a>
-          <p id="setup-url" class="url-line"></p>
-          <p id="download-setup-pending" class="pending" hidden></p>
-          <dl id="setup-facts" class="facts"></dl>
+      <section class="download-section" id="descargar" aria-labelledby="descarga-titulo">
+        <div class="section-heading"><p class="kicker">Versión para Windows</p><h2 id="descarga-titulo">Descargar Proyector Bíblico</h2><p id="release-meta" class="meta">Cargando datos de la versión…</p></div>
+        <div class="download-grid">
+          <article class="download-card">
+            <div class="download-card-top"><span class="download-icon" aria-hidden="true">↓</span><div><p class="card-eyebrow">Recomendado</p><h3>Instalador</h3></div></div>
+            <p class="card-copy">Instale el programa en este computador y ábralo desde el menú Inicio.</p>
+            <a id="download-setup" class="btn" hidden>Descargar instalador <span aria-hidden="true">↗</span></a>
+            <p id="setup-url" class="url-line"></p><p id="download-setup-pending" class="pending" hidden></p>
+            <dl id="setup-facts" class="facts"></dl>
+          </article>
+          <article class="download-card portable-card">
+            <div class="download-card-top"><span class="download-icon outline" aria-hidden="true">↗</span><div><p class="card-eyebrow">Sin instalación</p><h3>Versión portable</h3></div></div>
+            <p class="card-copy">Guarde el archivo y ejecútelo cuando lo necesite. Útil si no puede instalar programas.</p>
+            <a id="download-portable" class="btn ghost" hidden>Descargar portable <span aria-hidden="true">↗</span></a>
+            <p id="portable-url" class="url-line"></p><span id="download-portable-pending" class="pending" hidden></span>
+            <dl id="portable-facts" class="facts facts-quiet"></dl>
+          </article>
         </div>
-
-        <p class="secondary-row">
-          <a id="download-portable" hidden>Versión portable (no instala nada)</a>
-          <span id="portable-url" class="url-line"></span>
-          <span id="download-portable-pending" hidden></span>
-        </p>
-        <dl id="portable-facts" class="facts facts-quiet"></dl>
-
-        <details class="hash-help">
-          <summary>Comprobar que el archivo no cambió</summary>
-          <p>
-            Después de descargar, en PowerShell puede comparar el SHA-256. El resultado
-            debe ser idéntico al de esta página.
-          </p>
-          <pre><code>Get-FileHash .\archivo.exe -Algorithm SHA256</code></pre>
-        </details>
+        <details class="hash-help"><summary>Comprobar que el archivo no cambió</summary><p>Después de descargar, en PowerShell puede comparar el SHA-256. El resultado debe ser idéntico al de esta página.</p><pre><code>Get-FileHash .\archivo.exe -Algorithm SHA256</code></pre></details>
         <p id="download-error" class="error" hidden role="alert"></p>
       </section>
 
-      <section aria-labelledby="requisitos-titulo">
-        <h2 id="requisitos-titulo">Qué necesita</h2>
-        <ul>
-          <li>Windows 10 o Windows 11, de 64 bits.</li>
-          <li>Un videobeam o un segundo monitor, conectado por HDMI si va a proyectar.</li>
-          <li>Internet solo para descargar el programa. El culto puede seguir sin red.</li>
-        </ul>
-        <p>
-          Con un solo monitor también abre: la ventana del versículo queda junto al
-          panel, útil para ensayar.
-        </p>
+      <section class="feature-band" aria-label="Características"><div><span class="feature-number">01</span><h3>Sin internet</h3><p>Las Biblias incluidas funcionan sin conexión durante el culto.</p></div><div><span class="feature-number">02</span><h3>Fácil de usar</h3><p>Busque un pasaje y envíelo a una pantalla o videobeam.</p></div><div><span class="feature-number">03</span><h3>Gratis y abierto</h3><p>Una herramienta gratuita con código abierto bajo licencia MIT.</p></div></section>
+
+      <section class="content-section" aria-labelledby="requisitos-titulo">
+        <div class="section-heading"><p class="kicker">Antes de empezar</p><h2 id="requisitos-titulo">Qué necesita</h2></div>
+        <ul class="check-list"><li>Windows 10 o Windows 11, de 64 bits.</li><li>Un videobeam o segundo monitor, conectado por HDMI si va a proyectar.</li><li>Internet solo para descargar el programa; el culto puede seguir sin red.</li></ul>
+        <p>Con un solo monitor también abre: la ventana del versículo queda junto al panel, útil para ensayar.</p>
       </section>
 
-      <section aria-labelledby="instalar-titulo">
-        <h2 id="instalar-titulo">Cómo instalarlo</h2>
-        <ol>
-          <li>Descargue el instalador.</li>
-          <li>Ábralo con doble clic.</li>
-          <li>
-            Si Windows muestra el aviso de abajo, siga esos tres clics. No desactive el
-            antivirus.
-          </li>
-          <li>Elija la carpeta de instalación y termine el asistente.</li>
-          <li>Abra <strong>Proyector Bíblico</strong> desde el menú Inicio.</li>
-          <li>
-            Conecte el videobeam, pulse <kbd>Windows</kbd> + <kbd>P</kbd> y elija
-            <strong>Extender</strong>. En Ajustes, seleccione la pantalla del proyector.
-          </li>
-        </ol>
-        <p>
-          La versión portable no se instala: se guarda el archivo y se abre cuando haga
-          falta. Sirve en un computador donde no se pueden instalar programas.
-        </p>
+      <section class="content-section install-section" id="instalar" aria-labelledby="instalar-titulo">
+        <div class="section-heading"><p class="kicker">En pocos pasos</p><h2 id="instalar-titulo">Cómo instalarlo</h2></div>
+        <ol class="steps"><li>Descargue el instalador.</li><li>Ábralo con doble clic.</li><li>Si Windows muestra el aviso de abajo, siga esos tres clics. No desactive el antivirus.</li><li>Elija la carpeta de instalación y termine el asistente.</li><li>Abra <strong>Proyector Bíblico</strong> desde el menú Inicio.</li><li>Conecte el videobeam, pulse <kbd>Windows</kbd> + <kbd>P</kbd> y elija <strong>Extender</strong>. En Ajustes, seleccione la pantalla del proyector.</li></ol>
+        <p>La versión portable no se instala: se guarda el archivo y se abre cuando haga falta. Sirve en un computador donde no se pueden instalar programas.</p>
       </section>
 
-      <section class="notice" aria-labelledby="smartscreen-titulo">
-        <h2 id="smartscreen-titulo">Windows protegió su PC</h2>
-        <p>
-          El programa todavía no tiene firma digital, así que Windows lo trata como de un
-          editor desconocido. El aviso es esperable. Para continuar:
-        </p>
-        <ol>
-          <li>En la ventana azul, pulse <strong>Más información</strong>.</li>
-          <li>Pulse <strong>Ejecutar de todas formas</strong>.</li>
-          <li>Siga el instalador con normalidad.</li>
-        </ol>
-        <p>
-          Si no aparece «Más información», pida a quien administra el computador que
-          permita abrir este archivo. No hace falta desactivar SmartScreen para todo
-          Windows.
-        </p>
-      </section>
+      <section class="notice" aria-labelledby="smartscreen-titulo"><div class="notice-mark" aria-hidden="true">i</div><div><p class="kicker">Un aviso de Windows</p><h2 id="smartscreen-titulo">Windows protegió su PC</h2><p>El programa todavía no tiene firma digital, así que Windows lo trata como de un editor desconocido. El aviso es esperable. Para continuar:</p><ol><li>En la ventana azul, pulse <strong>Más información</strong>.</li><li>Pulse <strong>Ejecutar de todas formas</strong>.</li><li>Siga el instalador con normalidad.</li></ol><p>Si no aparece «Más información», pida a quien administra el computador que permita abrir este archivo. No hace falta desactivar SmartScreen para todo Windows.</p></div></section>
 
-      <section aria-labelledby="biblias-titulo">
-        <h2 id="biblias-titulo">Versiones bíblicas y créditos</h2>
-        <p id="distribution-note"></p>
-        <ul id="bible-list" class="bible-list"></ul>
-        <p id="excluded-note" class="quiet"></p>
-        <p id="bible-error" class="error" hidden role="alert"></p>
-      </section>
+      <section class="content-section bible-section" id="biblias" aria-labelledby="biblias-titulo"><div class="section-heading"><p class="kicker">Transparencia y licencias</p><h2 id="biblias-titulo">Versiones bíblicas y créditos</h2></div><p id="distribution-note"></p><ul id="bible-list" class="bible-list"></ul><p id="excluded-note" class="quiet"></p><p id="bible-error" class="error" hidden role="alert"></p></section>
 
-      <section aria-labelledby="soporte-titulo">
-        <h2 id="soporte-titulo">Soporte</h2>
-        <p id="support-copy">
-          Si la descarga no abre o el videobeam queda en negro, revise los pasos de
-          instalación o pida ayuda a quien preparó el computador del culto.
-        </p>
-      </section>
+      <section class="support"><p class="kicker">¿Necesita ayuda?</p><h2>Estamos para servirle.</h2><p id="support-copy">Si la descarga no abre o el videobeam queda en negro, revise los pasos de instalación o pida ayuda a quien preparó el computador del culto.</p></section>
     </main>
-
-    <footer class="site-footer">
-      <p>Programa gratuito. El código es MIT. Los textos bíblicos conservan la licencia de cada versión.</p>
-    </footer>
-
+    <footer class="site-footer"><span>Proyector Bíblico</span><p>Programa gratuito. El código es MIT. Los textos bíblicos conservan la licencia de cada versión.</p><a href="#inicio">Volver arriba ↑</a></footer>
     <script type="module" src="./app.js"></script>
   </body>
 </html>
