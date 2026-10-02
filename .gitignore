@@ -12,3 +12,5 @@ data/bible-modules/*.json
 .env.*
 *.exe
 landing-dist/
+.vercel
+.env*
