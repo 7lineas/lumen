@@ -17,11 +17,20 @@
       "sharp"
     ]
   },
+  "portless": {
+    "name": "lumen",
+    "script": "dev:app"
+  },
   "scripts": {
     "postinstall": "node node_modules/electron/install.js",
     "convert:bibles": "node scripts/convert-vpl.mjs",
     "build:bible-modules": "node scripts/build-bible-modules.mjs",
-    "dev": "vite",
+    "dev": "portless run --force",
+    "dev:app": "vite",
+    "dev:plain": "PORTLESS=0 vite",
+    "dev:landing": "portless run --name landing.lumen --force node scripts/serve-landing.mjs",
+    "dev:landing:app": "node scripts/serve-landing.mjs",
+    "dev:landing:plain": "PORTLESS=0 node scripts/serve-landing.mjs",
     "build": "vite build",
     "lint": "eslint .",
     "test": "vitest run",
@@ -68,6 +77,7 @@
     "eslint": "^9.21.0",
     "eslint-plugin-react-hooks": "^5.1.0",
     "globals": "^16.0.0",
+    "portless": "^0.13.1",
     "sharp": "^0.35.5",
     "typescript": "^5.8.2",
     "typescript-eslint": "^8.26.0",

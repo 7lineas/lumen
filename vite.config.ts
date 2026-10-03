@@ -37,7 +37,7 @@ export default defineConfig({
     },
   },
   server: {
-    port: 43123,
+    port: Number(process.env.PORT) || 43123,
     strictPort: true,
   },
   base: "./",

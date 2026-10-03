@@ -99,6 +99,9 @@ importers:
       globals:
         specifier: ^16.0.0
         version: 16.5.0
+      portless:
+        specifier: ^0.13.1
+        version: 0.13.1
       sharp:
         specifier: ^0.35.5
         version: 0.35.5(@types/node@22.20.4)
@@ -3409,6 +3412,12 @@ packages:
   plist@3.1.1:
     resolution: {integrity: sha512-ZIfcLJC+7E7FBFnDxm9MPmt7D+DidyQ26lewieO75AdhA2ayMtsJSES0iWzqJQbcVRSrTufQoy0DR94xHue0oA==}
     engines: {node: '>=10.4.0'}
+
+  portless@0.13.1:
+    resolution: {integrity: sha512-1B+8Xd4tB1gOIkRHOUEi/LCOp8PIxUsL3ACBX5G2UkKw25TSRNUqAlQcBGxweJgdXb9DPQFX5utKLRUzPFhMnA==}
+    engines: {node: '>=24'}
+    os: [darwin, linux, win32]
+    hasBin: true
 
   postcss-selector-parser@7.1.6:
     resolution: {integrity: sha512-7qASPzhKF2l2KLboRZux8CCTRMdGiV08vWmyKzPz22qZ7ZjQBOeY7rNzNoCLSUiftJ7HUq0GERHmxw/t0dCdMw==}
@@ -7594,6 +7603,8 @@ snapshots:
       '@xmldom/xmldom': 0.9.12
       base64-js: 1.5.1
       xmlbuilder: 15.1.1
+
+  portless@0.13.1: {}
 
   postcss-selector-parser@7.1.6:
     dependencies:
