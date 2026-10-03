@@ -1,3 +1,5 @@
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import type { AppSettings, BibleVersionMeta } from "@shared/types";
 import type { DisplayInfo } from "../vite-env.d";
@@ -26,7 +28,7 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
 
       <label className="field">
         <span>Nombre en la pantalla de logo</span>
-        <input
+        <Input
           value={local.churchName}
           onChange={(e) => setLocal({ ...local, churchName: e.target.value })}
         />
@@ -53,7 +55,7 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
       </label>
 
       <label className="field checkbox">
-        <input
+        <Input
           type="checkbox"
           checked={local.showCopyright}
           onChange={(e) => setLocal({ ...local, showCopyright: e.target.checked })}
@@ -62,7 +64,7 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
       </label>
 
       <label className="field checkbox">
-        <input
+        <Input
           type="checkbox"
           checked={local.dualView}
           onChange={(e) => setLocal({ ...local, dualView: e.target.checked })}
@@ -104,7 +106,7 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
 
       <label className="field">
         <span>Tamaño de fuente ({local.fontSize}px)</span>
-        <input
+        <Input
           type="range"
           min={40}
           max={120}
@@ -115,7 +117,7 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
 
       <label className="field">
         <span>Color de fondo</span>
-        <input
+        <Input
           type="color"
           value={local.backgroundColor}
           onChange={(e) => setLocal({ ...local, backgroundColor: e.target.value })}
@@ -123,7 +125,7 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
       </label>
 
       <div className="field row">
-        <button
+        <Button
           type="button"
           onClick={async () => {
             const path = await window.proyector?.pickBackgroundImage();
@@ -131,20 +133,20 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
           }}
         >
           Imagen de fondo…
-        </button>
+        </Button>
         {local.backgroundImagePath && (
-          <button
+          <Button
             type="button"
             onClick={() => setLocal({ ...local, backgroundImagePath: null })}
           >
             Quitar imagen
-          </button>
+          </Button>
         )}
       </div>
 
       <label className="field">
         <span>Transición (ms)</span>
-        <input
+        <Input
           type="number"
           min={0}
           max={2000}
@@ -153,9 +155,9 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
         />
       </label>
 
-      <button type="button" className="primary" onClick={() => void onSave(local)}>
+      <Button type="button" className="primary" onClick={() => void onSave(local)}>
         Guardar ajustes
-      </button>
+      </Button>
     </main>
   );
 }

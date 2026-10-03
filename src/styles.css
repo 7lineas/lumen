@@ -1,3 +1,31 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted-surface);
+  --color-muted-foreground: var(--muted);
+  --color-accent: var(--accent-surface);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-destructive: var(--danger);
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+}
+
 :root {
   --bg: #0f1419;
   --surface: #1a222d;
@@ -8,6 +36,22 @@
   --accent-dim: #2d6fbf;
   --danger: #f07178;
   --radius: 10px;
+  --background: #090a0c;
+  --foreground: #f2f3f5;
+  --card: #0f1114;
+  --card-foreground: #f2f3f5;
+  --popover: #171a1f;
+  --popover-foreground: #f2f3f5;
+  --primary: #f6a623;
+  --primary-foreground: #1a1204;
+  --secondary: #171a1f;
+  --secondary-foreground: #f2f3f5;
+  --muted-surface: #171a1f;
+  --accent-surface: #29251b;
+  --accent-foreground: #ffe2aa;
+  --border: #30353e;
+  --input: #30353e;
+  --ring: #f6a623;
   font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
 }
 
@@ -659,4 +703,147 @@ button.primary {
     height: auto;
     overflow: auto;
   }
+}
+
+/* Lumen visual system: dense, near-black surfaces with quiet dividers. */
+:root {
+  --bg: #090a0c;
+  --surface: #0f1114;
+  --surface2: #171a1f;
+  --text: #f2f3f5;
+  --muted: #8b929d;
+  --accent: #f6a623;
+  --accent-dim: #b87312;
+  --danger: #ff717a;
+  --radius: 0px;
+}
+
+body {
+  background: var(--bg);
+}
+
+.top-bar {
+  gap: 0.85rem;
+  padding: 0.65rem 1rem;
+  background: var(--surface);
+  border-bottom-color: #292d34;
+}
+
+.brand {
+  gap: 0.6rem;
+  min-width: 11rem;
+}
+
+.brand-logo {
+  width: 1.8rem;
+  height: 1.8rem;
+  object-fit: contain;
+}
+
+.brand h1 {
+  letter-spacing: -0.02em;
+}
+
+.tabs {
+  gap: 0;
+}
+
+.tabs button {
+  border-radius: 0;
+  border-bottom: 2px solid transparent;
+  padding-inline: 0.7rem;
+}
+
+.tabs button.active {
+  background: transparent;
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+button,
+input,
+select {
+  border-radius: 0;
+  border-color: #30353e;
+}
+
+button:hover {
+  border-color: var(--accent-dim);
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.workspace {
+  gap: 0;
+  padding: 0;
+}
+
+.reader,
+.stage-col,
+.rundown {
+  border-radius: 0;
+  border-top: 0;
+  border-bottom: 0;
+  padding: 0.9rem;
+}
+
+.reader,
+.stage-col {
+  border-right-color: #292d34;
+}
+
+.rundown {
+  border-left-color: #292d34;
+}
+
+.panel,
+.monitor,
+.preview-box,
+.bible-row,
+.bible-banner,
+.queue-list li.is-current {
+  border-radius: 0;
+}
+
+.panel {
+  border-color: #292d34;
+}
+
+.monitor {
+  border: 1px solid #292d34;
+}
+
+.book-btn.selected,
+.verse-row.in-range,
+.queue-list li.is-current {
+  background: #29251b;
+  color: #ffe2aa;
+}
+
+.verse-row.is-live {
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.bible-list {
+  gap: 0;
+}
+
+.bible-row {
+  border: 0;
+  border-bottom: 1px solid #292d34;
+  background: transparent;
+  padding-inline: 0;
+}
+
+.overlay {
+  background: rgba(0, 0, 0, 0.72);
+}
+
+.overlay .panel {
+  border-left-color: #3a404a;
 }
