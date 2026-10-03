@@ -330,6 +330,8 @@ button.primary {
   justify-content: center;
   padding: 4vh 5vw;
   transition: opacity 0.35s ease;
+  position: relative;
+  overflow: hidden;
 }
 
 .projector.dark {
@@ -356,11 +358,16 @@ button.primary {
 }
 
 .projector-ref {
+  position: absolute;
+  top: 2.5vh;
+  left: 5vw;
+  right: 5vw;
   text-align: center;
-  font-size: 0.45em;
-  opacity: 0.85;
-  margin-bottom: 0.75em;
-  font-weight: 600;
+  font-size: 0.6em;
+  opacity: 0.95;
+  margin: 0;
+  font-weight: 700;
+  pointer-events: none;
 }
 
 .projector-body {
@@ -825,14 +832,27 @@ button.primary {
   vertical-align: middle;
 }
 
-.monitor-copyright,
-.projector-copyright {
+.monitor-copyright {
   margin: 0.8rem 0 0;
   text-align: center;
-  font-size: 18px;
+  font-size: 0.85em;
   line-height: 1.35;
   font-weight: 400;
   opacity: 0.75;
+}
+
+.projector-copyright {
+  position: absolute;
+  bottom: 2.5vh;
+  right: 3vw;
+  left: 5vw;
+  margin: 0;
+  text-align: right;
+  font-size: clamp(20px, 0.32em, 42px);
+  line-height: 1.35;
+  font-weight: 400;
+  opacity: 0.85;
+  pointer-events: none;
 }
 
 .error {
@@ -924,6 +944,11 @@ body {
 .modes {
   display: flex;
   gap: 0;
+  align-items: stretch;
+}
+
+.modes .top-sep {
+  margin-inline: 0.6rem;
 }
 
 .modes button {
@@ -941,6 +966,12 @@ body {
   background: var(--accent);
   border-color: var(--accent);
   color: #061018;
+}
+
+.update-error-wrap {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: stretch;
 }
 
 .version-select {
@@ -1006,7 +1037,7 @@ select:focus-visible {
 }
 
 .songs-side-panels { display: contents; }
-.songs-left { grid-column: 1; grid-row: 1; min-height: 0; overflow: auto; border-right: 1px solid #292d34; }
+.songs-left { grid-column: 1; grid-row: 1; min-height: 0; overflow: auto; border-right: 1px solid #292d34; background: var(--surface); padding: 1rem; }
 .songs-mode .stage-col { grid-column: 2; grid-row: 1; }
 
 .songs-library,
@@ -1026,12 +1057,23 @@ select:focus-visible {
 .song-item { align-items: flex-start; display: flex; flex-direction: column; gap: 0.15rem; margin-bottom: 0.25rem; text-align: left; width: 100%; }
 .song-item.selected { background: #1e3a5f; border-color: var(--accent-dim); }
 .song-item small { color: var(--muted); font-size: 0.72rem; }
+.song-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem; padding: 0.5rem 0.5rem 0.5rem 0.65rem; border: 1px solid transparent; border-radius: 0.5rem; }
+.song-row.selected { background: #1e3a5f; border-color: var(--accent-dim); }
+.song-row-main { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; flex: 1; }
+button.song-row-main { background: transparent; border: 0; padding: 0; text-align: left; cursor: pointer; color: inherit; align-items: flex-start; height: auto; }
+button.song-row-main:hover { border: 0; }
+.song-row-main > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.song-row-main small { color: var(--muted); font-size: 0.72rem; }
+.song-row-actions { display: flex; gap: 0.25rem; flex: none; }
+.song-icon-btn.pinned { color: var(--accent); }
 .song-parts-list { list-style: none; margin: 0.85rem 0; padding: 0; }
 .song-part { align-items: flex-start; display: flex; gap: 0.65rem; line-height: 1.35; text-align: left; width: 100%; }
 .song-part-number { color: var(--accent); flex: none; font-variant-numeric: tabular-nums; }
 .song-part.selected { background: #1e3a5f; border-color: var(--accent-dim); }
 .song-edit-box { margin-top: 0; padding-top: 0; }
-.song-edit-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-bottom: 1rem; }
+.song-edit-actions { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+.song-edit-actions > * { flex: 1 1 0; min-width: 0; }
+.song-edit-actions button { width: 100%; }
 .song-hint-centered { text-align: center; }
 .song-tabs { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid #292d34; margin: -1rem -1rem 1rem; }
 .song-tab { border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: transparent; color: var(--muted); }
@@ -1041,10 +1083,8 @@ select:focus-visible {
 .song-lyrics { min-height: 320px; resize: vertical; width: 100%; }
 .song-empty { align-items: center; display: flex; flex-direction: column; justify-content: center; min-height: 70%; text-align: center; }
 .song-empty-icon { color: var(--accent); font-size: 3rem; line-height: 1; }
-.song-preview { background: #0a0e12; border: 1px solid #303b49; min-height: 270px; padding: 1.2rem; white-space: pre-wrap; }
-.song-preview-title { color: var(--accent); font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; }
 .song-slides { display: flex; flex-wrap: wrap; gap: 0.3rem; margin: 0.65rem 0; }
-.project-song { width: 100%; }
+.song-project-toggle { display: flex; align-items: center; gap: 0.5rem; color: var(--muted); font-size: 0.8rem; margin-top: 0.6rem; cursor: pointer; }
 
 @media (max-width: 900px) {
   .songs-left, .songs-mode .stage-col, .song-presenter { grid-column: 1; grid-row: auto; }

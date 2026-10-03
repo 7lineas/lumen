@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Pin, Pencil } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,18 +15,28 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import type { AppSettings, ProjectorPayload } from "@shared/types";
 
 export interface Song {
   id: string;
   title: string;
   lyrics: string;
   updatedAt: number;
+  pinned: boolean;
+}
+
+export interface SongStage {
+  title: string;
+  slides: string[];
+  index: number;
 }
 
 interface Props {
-  settings: AppSettings;
-  onProject: (payload: ProjectorPayload) => void;
+  staged: SongStage | null;
+  selectedId: string | null;
+  projectOnClick: boolean;
+  onToggleProjectOnClick: (value: boolean) => void;
+  onSelectSong: (songId: string, title: string, slides: string[]) => void;
+  onSelectPart: (index: number) => void;
 }
 
 const STORAGE_KEY = "lumen.canciones";
@@ -33,43 +45,57 @@ function id() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function slidesFor(song: Song | null) {
+export function slidesFor(song: Song | null) {
   return song?.lyrics.split(/\n\s*\n/).map((slide) => slide.trim()).filter(Boolean) ?? [];
 }
 
-export function SongsWorkspace({ settings, onProject }: Props) {
+export function slidesForLyrics(lyrics: string) {
+  return lyrics.split(/\n\s*\n/).map((slide) => slide.trim()).filter(Boolean);
+}
+
+export function SongsWorkspace({ staged, selectedId, projectOnClick, onToggleProjectOnClick, onSelectSong, onSelectPart }: Props) {
   const [songs, setSongs] = useState<Song[]>(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]") as Song[];
-      return Array.isArray(saved) ? saved : [];
+      if (!Array.isArray(saved)) return [];
+      return saved.map((song) => ({ ...song, pinned: song.pinned ?? false }));
     } catch {
       return [];
     }
   });
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [draft, setDraft] = useState<Song | null>(null);
   const [rightTab, setRightTab] = useState<"library" | "creation">("library");
-  const [slide, setSlide] = useState(0);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(songs));
   }, [songs]);
 
-  const selected = songs.find((song) => song.id === selectedId) ?? null;
-  const slides = useMemo(() => slidesFor(selected), [selected]);
-  const visibleSongs = songs.filter((song) => song.title.toLowerCase().includes(query.toLowerCase()));
+  const visibleSongs = useMemo(
+    () =>
+      songs
+        .filter((song) => song.title.toLowerCase().includes(query.toLowerCase()))
+        .sort((a, b) => Number(b.pinned) - Number(a.pinned)),
+    [songs, query],
+  );
 
-  const choose = (song: Song) => {
-    setSelectedId(song.id);
+  const selectSong = (song: Song) => {
+    onSelectSong(song.id, song.title, slidesFor(song));
+  };
+
+  const editSong = (song: Song) => {
     setDraft({ ...song });
-    setSlide(0);
+    setRightTab("creation");
+  };
+
+  const togglePin = (songId: string) => {
+    setSongs((current) => current.map((song) => (song.id === songId ? { ...song, pinned: !song.pinned } : song)));
   };
 
   const create = () => {
-    const song = { id: id(), title: "Nueva canción", lyrics: "Escribe la letra aquí", updatedAt: Date.now() };
+    const song = { id: id(), title: "Nueva canción", lyrics: "Escribe la letra aquí", updatedAt: Date.now(), pinned: false };
     setSongs((current) => [song, ...current]);
-    choose(song);
+    setDraft({ ...song });
     setRightTab("creation");
   };
 
@@ -78,60 +104,60 @@ export function SongsWorkspace({ settings, onProject }: Props) {
     const next = { ...draft, title: draft.title.trim(), updatedAt: Date.now() };
     setSongs((current) => current.map((song) => (song.id === next.id ? next : song)));
     setDraft(next);
+    if (next.id === selectedId) {
+      onSelectSong(next.id, next.title, slidesFor(next));
+    }
   };
 
   const remove = () => {
     if (!draft) return;
-    setSongs((current) => current.filter((song) => song.id !== draft.id));
+    const deletedId = draft.id;
+    setSongs((current) => current.filter((song) => song.id !== deletedId));
     setDraft(null);
-    setSelectedId(null);
   };
 
-  const project = () => {
-    if (!selected || slides.length === 0) return;
-    onProject({
-      mode: "verse",
-      referenceLabel: selected.title,
-      blocks: [{ text: slides[slide] ?? slides[0] }],
-      churchName: settings.churchName,
-      fontSize: settings.fontSize,
-      brightness: settings.brightness,
-      theme: settings.theme,
-      backgroundColor: settings.backgroundColor,
-      copyright: "",
-    });
-  };
+  const slides = staged?.slides ?? [];
+  const slide = staged?.index ?? 0;
 
   return (
     <div className="songs-side-panels">
       <aside className="songs-left songs-parts">
         <p className="eyebrow">Partes</p>
-        <h2>{selected?.title || "Canción seleccionada"}</h2>
-        {selected && slides.length > 0 ? <>
+        <h2>{staged?.title || "Canción seleccionada"}</h2>
+        <label className="song-project-toggle">
+          <Switch checked={projectOnClick} onCheckedChange={onToggleProjectOnClick} aria-label="Proyectar al hacer clic" />
+          <span>Proyectar al hacer clic</span>
+        </label>
+        {staged && slides.length > 0 ? (
           <ol className="song-parts-list">
             {slides.map((text, index) => (
               <li key={`${index}-${text}`}>
-                <Button type="button" className={index === slide ? "song-part selected" : "song-part"} onClick={() => setSlide(index)}>
+                <Button type="button" className={index === slide ? "song-part selected" : "song-part"} onClick={() => onSelectPart(index)}>
                   <span className="song-part-number">{index + 1}</span><span>{text}</span>
                 </Button>
               </li>
             ))}
           </ol>
-          <div className="song-preview"><p className="song-preview-title">Parte {slide + 1}</p><p>{slides[slide] ?? slides[0]}</p></div>
-          <Button type="button" className="primary project-song" onClick={project}>Proyectar parte {slide + 1}</Button>
-        </> : <p className="muted">Selecciona o crea una canción en el panel derecho.</p>}
+        ) : <p className="muted">Selecciona o crea una canción en el panel derecho.</p>}
       </aside>
 
       <aside className="song-presenter songs-library-panel">
         <div className="song-tabs" role="tablist" aria-label="Gestión de canciones">
           <Button type="button" role="tab" aria-selected={rightTab === "library"} className={rightTab === "library" ? "song-tab active" : "song-tab"} onClick={() => setRightTab("library")}>Biblioteca</Button>
-          <Button type="button" role="tab" aria-selected={rightTab === "creation"} className={rightTab === "creation" ? "song-tab active" : "song-tab"} onClick={() => setRightTab("creation")}>Creación</Button>
+          <Button type="button" role="tab" aria-selected={rightTab === "creation"} className={rightTab === "creation" ? "song-tab active" : "song-tab"} onClick={() => setRightTab("creation")}>{draft ? "Edición" : "Creación"}</Button>
         </div>
         {rightTab === "library" ? <>
-          <div className="songs-panel-head"><div><p className="eyebrow">Biblioteca</p><h2>Canciones</h2></div><Button type="button" className="primary" onClick={create}>Nueva</Button></div>
           <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar canción" aria-label="Buscar canción" />
           {visibleSongs.length === 0 ? <p className="muted">Crea tu primera canción para comenzar.</p> : (
-            <ul className="song-list">{visibleSongs.map((song) => <li key={song.id}><Button type="button" className={song.id === selectedId ? "song-item selected" : "song-item"} onClick={() => choose(song)}><span>{song.title}</span><small>{slidesFor(song).length} partes</small></Button></li>)}</ul>
+            <ul className="song-list">{visibleSongs.map((song) => <li key={song.id} className={song.id === selectedId ? "song-row selected" : "song-row"}>
+              <Button type="button" variant="ghost" aria-label={`Seleccionar ${song.title}`} className="song-row-main" onClick={() => selectSong(song)}>
+                <span>{song.title}</span><small>{slidesFor(song).length} partes</small>
+              </Button>
+              <div className="song-row-actions">
+                <Button type="button" size="icon-sm" variant="ghost" aria-label={song.pinned ? "Desfijar canción" : "Fijar canción"} aria-pressed={song.pinned} data-testid={`btn-pin-song-${song.id}`} className={song.pinned ? "song-icon-btn pinned" : "song-icon-btn"} onClick={() => togglePin(song.id)}><Pin /></Button>
+                <Button type="button" size="icon-sm" variant="ghost" aria-label={`Editar ${song.title}`} data-testid={`btn-edit-song-${song.id}`} className="song-icon-btn" onClick={() => editSong(song)}><Pencil /></Button>
+              </div>
+            </li>)}</ul>
           )}
         </> : <div className="song-edit-box">
           {!draft && <div className="song-empty"><span className="song-empty-icon">♫</span><h2>Crear canción</h2><p className="muted">Escribe el título y la letra.</p><Button type="button" className="primary" onClick={create}>Nueva canción</Button></div>}

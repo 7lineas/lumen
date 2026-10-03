@@ -67,4 +67,24 @@ contextBridge.exposeInMainWorld("proyector", {
     ipcRenderer.on("operator:shortcut", handler);
     return () => ipcRenderer.removeListener("operator:shortcut", handler);
   },
+  getAppUpdateStatus: (): Promise<{
+    version: string;
+    platform: NodeJS.Platform;
+    packaged: boolean;
+    portable: boolean;
+    supported: boolean;
+    feedUrl: string;
+  }> => ipcRenderer.invoke("updater:status"),
+  checkForAppUpdate: (): Promise<{ version: string | null; updateAvailable: boolean }> =>
+    ipcRenderer.invoke("updater:check"),
+  downloadAppUpdate: (): Promise<boolean> => ipcRenderer.invoke("updater:download"),
+  installAppUpdate: (): Promise<boolean> => ipcRenderer.invoke("updater:install"),
+  openAppDownload: (url: string): Promise<boolean> => ipcRenderer.invoke("updater:openDownload", url),
+  onAppUpdateEvent: (
+    cb: (event: { type: string; version?: string; percent?: number; message?: string }) => void,
+  ): (() => void) => {
+    const handler = (_: Electron.IpcRendererEvent, event: { type: string }) => cb(event);
+    ipcRenderer.on("updater:event", handler);
+    return () => ipcRenderer.removeListener("updater:event", handler);
+  },
 });

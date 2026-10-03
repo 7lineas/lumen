@@ -89,7 +89,7 @@ export function ProjectorView() {
   return (
     <div className={themeClass} style={style}>
       <div className={`projector-inner fade ${visible ? "show" : ""}`}>
-        <header className="projector-ref">{payload.referenceLabel}</header>
+        {payload.referenceLabel && <header className="projector-ref">{payload.referenceLabel}</header>}
         <div ref={textRef} className={`projector-body ${payload.blocks.length > 1 ? "dual" : ""}`}>
           {payload.blocks.map((block, i) => (
             <section key={i} className="projector-column">

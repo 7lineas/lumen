@@ -33,7 +33,7 @@ export function StageMonitor({ title, payload, empty, testId, isLive }: Props) {
         {isLogo && <p className="monitor-logo" style={{ fontSize: `${fontScale}em` }}>{payload?.churchName}</p>}
         {payload?.mode === "verse" && (
           <div className="monitor-verse" style={{ fontSize: `${fontScale}em` }}>
-            <p className="monitor-ref">{payload.referenceLabel}</p>
+            {payload.referenceLabel && <p className="monitor-ref">{payload.referenceLabel}</p>}
             {payload.blocks.map((block, i) => (
               <p key={i}>{block.text}</p>
             ))}

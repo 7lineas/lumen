@@ -180,7 +180,21 @@ function requireEnv(name) {
   return value.trim();
 }
 
-export async function uploadToR2({ manifest, setupPath, portablePath }) {
+export async function findUpdaterMetadata(dir, setupFullPath) {
+  const entries = await readdir(dir);
+  const latestName = entries.find((name) => name.toLowerCase() === "latest.yml") ?? null;
+  const setupBase = path.basename(setupFullPath);
+  const blockmapName = entries.find((name) => name === `${setupBase}.blockmap`) ?? null;
+  return {
+    latestPath: latestName ? path.join(dir, latestName) : null,
+    latestKey: latestName,
+    blockmapPath: blockmapName ? path.join(dir, blockmapName) : null,
+    blockmapKey: blockmapName,
+    setupBase,
+  };
+}
+
+export async function uploadToR2({ manifest, setupPath, portablePath, dir }) {
   const accountId = requireEnv("R2_ACCOUNT_ID");
   const accessKeyId = requireEnv("R2_ACCESS_KEY_ID");
   const secretAccessKey = requireEnv("R2_SECRET_ACCESS_KEY");
@@ -195,6 +209,38 @@ export async function uploadToR2({ manifest, setupPath, portablePath }) {
     { key: manifest.files[1].filename, filePath: portablePath, contentType: "application/octet-stream", cacheControl: "public, max-age=31536000, immutable" },
     { key: "releases.json", body: releasesBody, contentType: "application/json; charset=utf-8", cacheControl: "public, max-age=60" },
   ];
+
+  // electron-updater reads https://downloads.7lineas.com/latest.yml, which points
+  // at the builder artifact name (Lumen-<version>-win-x64.exe). Upload that name
+  // plus its blockmap so the in-app Actualizar button can download and install.
+  if (dir) {
+    const meta = await findUpdaterMetadata(dir, setupPath);
+    if (!meta.latestPath) {
+      throw new Error(`En ${dir} falta latest.yml para la actualización automática`);
+    }
+    if (meta.setupBase !== manifest.files[0].filename) {
+      uploads.push({
+        key: meta.setupBase,
+        filePath: setupPath,
+        contentType: "application/octet-stream",
+        cacheControl: "public, max-age=31536000, immutable",
+      });
+    }
+    if (meta.blockmapPath && meta.blockmapKey) {
+      uploads.push({
+        key: meta.blockmapKey,
+        filePath: meta.blockmapPath,
+        contentType: "application/octet-stream",
+        cacheControl: "public, max-age=31536000, immutable",
+      });
+    }
+    uploads.push({
+      key: "latest.yml",
+      filePath: meta.latestPath,
+      contentType: "text/yaml; charset=utf-8",
+      cacheControl: "public, max-age=60",
+    });
+  }
 
   for (const item of uploads) {
     const key = safeObjectKey(item.key);
@@ -281,7 +327,7 @@ export async function publishRelease(options) {
   }
   if (options.dryRun) return manifest;
 
-  await uploadToR2({ manifest, setupPath: artifacts.setup, portablePath: artifacts.portable });
+  await uploadToR2({ manifest, setupPath: artifacts.setup, portablePath: artifacts.portable, dir: options.dir });
   const configPath = path.join(repoRoot, "landing", "config.json");
   const config = JSON.parse(await readFile(configPath, "utf8"));
   config.DOWNLOAD_BASE_URL = downloadBaseUrl;
