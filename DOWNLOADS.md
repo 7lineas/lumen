@@ -1,4 +1,4 @@
-# Descargas Windows — Proyector Bíblico
+# Descargas Windows — Lumen
 
 La página pública está en `landing/`. Los archivos, tamaños y SHA-256 viven en `landing/releases.json`.
 
