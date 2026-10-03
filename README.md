@@ -1,4 +1,4 @@
-# Proyector Bíblico
+# Lumen
 
 Aplicación de escritorio **offline** para proyectar versículos de la Biblia en el culto (pantalla del videobeam / segundo monitor). Pensada para voluntarios de una iglesia en Colombia.
 
@@ -9,11 +9,11 @@ Aplicación de escritorio **offline** para proyectar versículos de la Biblia en
 
 ## Instalación (voluntarios)
 
-1. Descargue el instalador `Proyector Bíblico-1.0.0-win-x64.exe` o el ejecutable portable `Proyector Bíblico-1.0.0-portable.exe` desde la carpeta de entrega de su iglesia.
+1. Descargue el instalador `Lumen-1.0.0-win-x64.exe` o el ejecutable portable `Lumen-1.0.0-portable.exe` desde la carpeta de entrega de su iglesia.
 2. Ejecute el archivo. Windows puede mostrar **“Windows protegió su PC”** porque la aplicación no está firmada digitalmente.
 3. Haga clic en **“Más información”** y luego en **“Ejecutar de todas formas”**.
 4. En el instalador NSIS, elija la carpeta de instalación y finalice.
-5. Abra **Proyector Bíblico** desde el menú Inicio.
+5. Abra **Lumen** desde el menú Inicio.
 
 ### Conectar el videobeam
 
@@ -89,8 +89,8 @@ pnpm publish:release   # hashes + subida a R2 (ver variables abajo)
 
 Tras `pnpm pack:win`, en `release/`:
 
-- `Proyector Bíblico-1.0.0-win-x64.exe` — instalador
-- `Proyector Bíblico-1.0.0-portable.exe` — portable
+- `Lumen-1.0.0-win-x64.exe` — instalador
+- `Lumen-1.0.0-portable.exe` — portable
 - `win-unpacked/` — carpeta descomprimida (útil si el instalador falla)
 
 ### Capturas de pantalla (CI / VM)

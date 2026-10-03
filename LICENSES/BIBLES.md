@@ -1,4 +1,4 @@
-# Licencias de textos bíblicos — Proyector Bíblico
+# Licencias de textos bíblicos — Lumen
 
 Este documento registra cada traducción, su fuente y su licencia.
 Solo se incluyen textos en dominio público o con una licencia libre ya comprobada.

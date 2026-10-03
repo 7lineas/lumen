@@ -18,7 +18,7 @@ function findExecutable() {
     return { cmd: linuxBin, args: [], useWine: false };
   }
   const winDir = path.join(root, "release", "win-unpacked");
-  const winExe = path.join(winDir, "Proyector Bíblico.exe");
+  const winExe = path.join(winDir, "Lumen.exe");
   if (fs.existsSync(winExe)) {
     return { cmd: "wine", args: [winExe], useWine: true };
   }

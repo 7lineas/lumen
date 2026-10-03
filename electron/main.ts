@@ -79,7 +79,7 @@ function createOperatorWindow(): void {
     height: 800,
     minWidth: 1024,
     minHeight: 680,
-    title: "Proyector Bíblico",
+    title: "Lumen",
     webPreferences: {
       preload: getPreload(),
       contextIsolation: true,
@@ -130,7 +130,7 @@ function createProjectorWindow(): void {
     height,
     fullscreen: displaysCount() > 1,
     frame: displaysCount() <= 1,
-    title: "Proyector — Proyector Bíblico",
+    title: "Lumen — Proyección",
     backgroundColor: "#000000",
     webPreferences: {
       preload: getPreload(),
