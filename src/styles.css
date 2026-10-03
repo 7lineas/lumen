@@ -1005,14 +1005,9 @@ select:focus-visible {
   border-right: 0;
 }
 
-.songs-workspace {
-  flex: 1;
-  min-height: 0;
-  display: grid;
-  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr) minmax(230px, 310px);
-  gap: 0;
-  padding: 0;
-}
+.songs-side-panels { display: contents; }
+.songs-left { grid-column: 1; min-height: 0; overflow: auto; border-right: 1px solid #292d34; }
+.songs-mode .stage-col { grid-column: 2; }
 
 .songs-library,
 .song-editor,
@@ -1023,8 +1018,7 @@ select:focus-visible {
   padding: 1rem;
 }
 
-.songs-library,
-.song-editor { border-right: 1px solid #292d34; }
+.song-presenter { grid-column: 3; }
 .songs-panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; margin-bottom: 1rem; }
 .songs-panel-head h2, .song-presenter h2 { margin: 0; font-size: 1.05rem; }
 .eyebrow { color: var(--accent); font-size: 0.7rem; letter-spacing: 0.08em; margin: 0 0 0.2rem; text-transform: uppercase; }
@@ -1043,8 +1037,8 @@ select:focus-visible {
 .project-song { width: 100%; }
 
 @media (max-width: 900px) {
-  .songs-workspace { grid-template-columns: 1fr; overflow: auto; }
-  .songs-library, .song-editor, .song-presenter { min-height: 260px; border-right: 0; border-bottom: 1px solid #292d34; }
+  .songs-left, .songs-mode .stage-col, .song-presenter { grid-column: 1; }
+  .songs-left, .song-presenter { min-height: 260px; border-right: 0; border-bottom: 1px solid #292d34; }
 }
 
 .panel,

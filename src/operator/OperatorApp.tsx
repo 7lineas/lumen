@@ -484,13 +484,13 @@ export function OperatorApp() {
         </div>
       </header>
 
-      {mode === "canciones" ? (
-        <SongsWorkspace
-          settings={settings}
-          onProject={(payload) => void send(payload)}
-        />
-      ) : <div className="workspace">
-        <ChapterReader
+      <div className={`workspace ${mode === "canciones" ? "songs-mode" : ""}`}>
+        {mode === "canciones" ? (
+          <SongsWorkspace
+            settings={settings}
+            onProject={(payload) => void send(payload)}
+          />
+        ) : <ChapterReader
           versionId={settings.primaryVersionId}
           ready={ready}
           viewBook={viewBook}
@@ -526,7 +526,7 @@ export function OperatorApp() {
               end: { book: hit.book, chapter: hit.chapter, verse: hit.verse },
             })
           }
-        />
+        />}
 
         <section className="stage-col">
           {!ready && <p className="muted">Cargando textos bíblicos…</p>}
@@ -613,7 +613,7 @@ export function OperatorApp() {
           </div>
         </section>
 
-        <ServiceRundown
+        {mode === "biblia" && <ServiceRundown
           queue={queue}
           activeId={activeId}
           history={history}
@@ -639,8 +639,8 @@ export function OperatorApp() {
             const parsed = parseReference(reference);
             if (parsed.ok) stageRange(parsed.range);
           }}
-        />
-      </div>}
+        />}
+      </div>
 
       <Sheet open={overlay !== null} onOpenChange={(open) => !open && setOverlay(null)}>
         <SheetContent
