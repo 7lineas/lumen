@@ -1,3 +1,5 @@
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AppSettings, HistoryEntry, ProjectorPayload, QueueEntry, VerseRange } from "@shared/types";
 import { DEFAULT_SETTINGS } from "@shared/types";
@@ -19,6 +21,7 @@ import { SettingsPanel } from "./SettingsPanel";
 import { StageMonitor } from "./StageMonitor";
 import { ChapterReader } from "./ChapterReader";
 import { ServiceRundown } from "./ServiceRundown";
+import lumenLogo from "../../logo-dark.png";
 
 function newId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -360,10 +363,8 @@ export function OperatorApp() {
     <div className="app-shell">
       <header className="top-bar">
         <div className="brand">
-          <span className="brand-icon" aria-hidden>
-            ✦
-          </span>
-          <h1>Proyector Bíblico</h1>
+          <img className="brand-logo" src={lumenLogo} alt="" aria-hidden />
+          <h1>Lumen</h1>
         </div>
         <label className="version-select">
           Versión
@@ -380,7 +381,7 @@ export function OperatorApp() {
         </label>
         <label className="mini-slider">
           Fuente
-          <input
+          <Input
             type="range"
             min={40}
             max={110}
@@ -390,7 +391,7 @@ export function OperatorApp() {
         </label>
         <label className="mini-slider">
           Luz
-          <input
+          <Input
             type="range"
             min={35}
             max={100}
@@ -401,38 +402,38 @@ export function OperatorApp() {
           />
         </label>
         <div className="tabs">
-          <button type="button" onClick={() => void toggleBlank()}>
+          <Button type="button" onClick={() => void toggleBlank()}>
             {live?.mode === "blank" ? "Quitar negro" : "Negro"}
-          </button>
-          <button type="button" onClick={() => void showLogo()}>
+          </Button>
+          <Button type="button" onClick={() => void showLogo()}>
             Logo
-          </button>
-          <button type="button" data-testid="tab-buscar" onClick={() => setOverlay(null)}>
+          </Button>
+          <Button type="button" data-testid="tab-buscar" onClick={() => setOverlay(null)}>
             Culto
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             data-testid="tab-biblias"
             className={overlay === "biblias" ? "active" : ""}
             onClick={() => setOverlay(overlay === "biblias" ? null : "biblias")}
           >
             Biblias
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             data-testid="tab-ajustes"
             className={overlay === "ajustes" ? "active" : ""}
             onClick={() => setOverlay(overlay === "ajustes" ? null : "ajustes")}
           >
             Ajustes
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             className={overlay === "acerca" ? "active" : ""}
             onClick={() => setOverlay(overlay === "acerca" ? null : "acerca")}
           >
             Acerca de
-          </button>
+          </Button>
         </div>
       </header>
 
@@ -492,15 +493,15 @@ export function OperatorApp() {
             />
           </div>
           <div className="action-row">
-            <button type="button" className="primary" data-testid="btn-project" onClick={() => void projectStaged()}>
+            <Button type="button" className="primary" data-testid="btn-project" onClick={() => void projectStaged()}>
               Proyectar
-            </button>
-            <button type="button" onClick={() => navigateVerse(-1)}>
+            </Button>
+            <Button type="button" onClick={() => navigateVerse(-1)}>
               ◀ Anterior
-            </button>
-            <button type="button" onClick={() => navigateVerse(1)}>
+            </Button>
+            <Button type="button" onClick={() => navigateVerse(1)}>
               Siguiente ▶
-            </button>
+            </Button>
           </div>
           <p className="hint">
             Las flechas solo cambian la vista previa. Enter proyecta. Esc o B pone la pantalla en negro.

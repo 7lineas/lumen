@@ -1,3 +1,5 @@
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { useEffect } from "react";
 import { BOOKS } from "@shared/books";
 import type { VerseRange } from "@shared/types";
@@ -69,7 +71,7 @@ export function ChapterReader(props: Props) {
   return (
     <section className="reader">
       <div className="ref-row">
-        <input
+        <Input
           data-role="ref"
           data-testid="ref-input"
           value={props.refInput}
@@ -78,13 +80,13 @@ export function ChapterReader(props: Props) {
           placeholder="jn 3:16, salmo 23, 1 cor 13:4-7"
           aria-label="Referencia"
         />
-        <button type="button" onClick={props.onRefSubmit}>
+        <Button type="button" onClick={props.onRefSubmit}>
           Ir
-        </button>
+        </Button>
       </div>
       {props.parseError && <p className="field-error">{props.parseError}</p>}
 
-      <input
+      <Input
         value={props.bookFilter}
         onChange={(e) => props.onBookFilter(e.target.value)}
         placeholder="Filtrar libros"
@@ -95,27 +97,27 @@ export function ChapterReader(props: Props) {
         <div>
           <p className="col-label">Antiguo Testamento</p>
           {ot.map((b) => (
-            <button
+            <Button
               key={b.code}
               type="button"
               className={b.code === props.viewBook ? "book-btn selected" : "book-btn"}
               onClick={() => props.onSelectBook(b.code)}
             >
               {b.name}
-            </button>
+            </Button>
           ))}
         </div>
         <div>
           <p className="col-label">Nuevo Testamento</p>
           {nt.map((b) => (
-            <button
+            <Button
               key={b.code}
               type="button"
               className={b.code === props.viewBook ? "book-btn selected" : "book-btn"}
               onClick={() => props.onSelectBook(b.code)}
             >
               {b.name}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -125,14 +127,14 @@ export function ChapterReader(props: Props) {
       </p>
       <div className="chapter-grid">
         {Array.from({ length: book?.chapters ?? 0 }, (_, i) => i + 1).map((c) => (
-          <button
+          <Button
             key={c}
             type="button"
             className={c === props.viewChapter ? "chip selected" : "chip"}
             onClick={() => props.onSelectChapter(c)}
           >
             {c}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -144,7 +146,7 @@ export function ChapterReader(props: Props) {
           const key = `${props.viewBook}:${props.viewChapter}:${v}`;
           return (
             <li key={v}>
-              <button
+              <Button
                 type="button"
                 className={`verse-row${inRange ? " in-range" : ""}${props.liveKey === key ? " is-live" : ""}`}
                 data-verse-active={inRange ? "1" : undefined}
@@ -153,14 +155,14 @@ export function ChapterReader(props: Props) {
               >
                 <span className="verse-num">{v}</span>
                 <span>{text}</span>
-              </button>
+              </Button>
             </li>
           );
         })}
       </ol>
 
       <p className="section-label">Buscar palabra</p>
-      <input
+      <Input
         data-testid="keyword-input"
         value={props.keyword}
         onChange={(e) => props.onKeyword(e.target.value)}
@@ -171,9 +173,9 @@ export function ChapterReader(props: Props) {
         <ul className="search-results">
           {props.searchResults.map((r) => (
             <li key={`${r.book}-${r.chapter}-${r.verse}`}>
-              <button type="button" onClick={() => props.onSearchPick(r)}>
+              <Button type="button" onClick={() => props.onSearchPick(r)}>
                 {r.snippet}
-              </button>
+              </Button>
             </li>
           ))}
         </ul>

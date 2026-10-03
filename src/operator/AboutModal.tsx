@@ -15,7 +15,7 @@ export function AboutModal() {
 
   return (
     <main className="panel single about">
-      <h2>Acerca de Proyector Bíblico</h2>
+      <h2>Acerca de Lumen</h2>
       <p>
         Aplicación offline para proyectar versículos en el culto. Versión 1.0. Sin conexión a internet
         necesaria durante el servicio.

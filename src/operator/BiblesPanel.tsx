@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import type { AppSettings } from "@shared/types";
 import type { BibleDownloadProgress, BibleLibraryEntry, BibleLibraryView } from "../vite-env.d";
@@ -145,15 +146,15 @@ function BibleRow({
         {entry.availability === "installed" && !downloading && (
           <>
             <span className="muted">Descargada</span>
-            <button type="button" onClick={onRemove} disabled={busy}>
+            <Button type="button" onClick={onRemove} disabled={busy}>
               Quitar
-            </button>
+            </Button>
           </>
         )}
         {entry.availability === "available" && !downloading && (
-          <button type="button" className="primary" onClick={onDownload} disabled={busy}>
+          <Button type="button" className="primary" onClick={onDownload} disabled={busy}>
             {error ? "Reintentar" : "Descargar"}
-          </button>
+          </Button>
         )}
         {downloading && (
           <>

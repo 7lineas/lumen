@@ -10,8 +10,10 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "jsx": "react-jsx",
+    "baseUrl": ".",
     "resolveJsonModule": true,
     "paths": {
+      "@/*": ["./src/*"],
       "@shared/*": ["./shared/*"]
     }
   },
