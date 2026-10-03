@@ -1,5 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { AppSettings, ProjectorPayload } from "@shared/types";
@@ -125,7 +136,21 @@ export function SongsWorkspace({ settings, onProject }: Props) {
         </> : <div className="song-edit-box">
           {!draft && <div className="song-empty"><span className="song-empty-icon">♫</span><h2>Crear canción</h2><p className="muted">Escribe el título y la letra.</p><Button type="button" className="primary" onClick={create}>Nueva canción</Button></div>}
           {draft && <>
-          <div className="songs-panel-head"><div><p className="eyebrow">Editor</p><h2>Contenido</h2></div><div className="action-row"><Button type="button" onClick={remove}>Eliminar</Button><Button type="button" className="primary" onClick={save}>Guardar</Button></div></div>
+          <div className="songs-panel-head"><div><p className="eyebrow">Editor</p><h2>Contenido</h2></div><div className="action-row"><AlertDialog>
+            <AlertDialogTrigger render={<Button type="button" data-testid="btn-delete-song">Eliminar</Button>} />
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Eliminar canción</AlertDialogTitle>
+                <AlertDialogDescription>
+                  ¿Eliminar “{draft.title}”? Esta acción no se puede deshacer.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel data-testid="cancel-delete-song">Cancelar</AlertDialogCancel>
+                <AlertDialogAction variant="destructive" data-testid="confirm-delete-song" onClick={remove}>Eliminar</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog><Button type="button" className="primary" onClick={save}>Guardar</Button></div></div>
           <label className="song-field"><span>Título</span><Input value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} /></label>
           <label className="song-field"><span>Letra</span><Textarea className="song-lyrics" value={draft.lyrics} onChange={(event) => setDraft({ ...draft, lyrics: event.target.value })} placeholder="Verso 1\n\nCoro\n\nPuente" /></label>
           <p className="hint">Separa las partes con una línea en blanco.</p>
