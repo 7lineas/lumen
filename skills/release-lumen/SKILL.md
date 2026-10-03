@@ -12,6 +12,7 @@ Use this skill for an explicit release request such as â€œrelease a new versionâ
 - Work from a clean, up-to-date `main` checkout. If the user explicitly says to include current uncommitted changes, inspect and include only those changes; otherwise stop for unrelated changes, unresolved conflicts, or a different branch. Never reset user work.
 - If the user gives a version, use that exact SemVer version. Otherwise increment the patch component of the current `package.json` version. Use a minor or major bump only when the user explicitly requests one.
 - Never print or commit R2 credentials. Publishing requires `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, and `R2_SECRET_ACCESS_KEY`; the script also accepts `R2_BUCKET`, `R2_ENDPOINT`, `R2_REGION`, and `DOWNLOAD_BASE_URL`.
+- If the repository has a local `.env.local` with release credentials, load it only in the current shell immediately before publishing (for example, `set -a; source .env.local; set +a`). Never print, commit, or include those values in command output, logs, or this skill.
 - A direct user request to release authorizes the version commit, tag, push, artifact upload, and manifest update. Do not upload anything for a dry-run, planning request, or validation request. Vercel deployment is intentionally outside this skill; after the public desktop release is verified, tell the user when to deploy Vercel.
 
 ## Workflow
@@ -19,11 +20,11 @@ Use this skill for an explicit release request such as â€œrelease a new versionâ
 1. Inspect `git status --short --branch`, `git log`, the current package version, and the latest `landing/releases.json`. Confirm `main` tracks `origin/main`, then fast-forward it with `git pull --ff-only`.
 2. Select the next version using the release contract. Update `package.json` with `pnpm version <version> --no-git-tag-version`. Do not invent a second version source.
 3. Run the relevant checks before packaging. At minimum run `pnpm exec eslint .` and `pnpm exec vite build`. The normal build uses the tracked local `data/bibles` JSON; `pnpm convert:bibles` is an explicit data refresh and must not be required for a release.
-4. Record a build start time, then build both Windows deliverables with `pnpm pack:win`. Electron Builder configuration must validate before artifacts are accepted. Because `release/` may contain older ignored files, stage only the two newly built `.exe` files in a fresh temporary directory and publish from that directory. Verify both files are newer than the build start, have the expected setup/portable roles, and are not stale artifacts.
+4. Record a build start time, then build both Windows deliverables with `pnpm pack:win`. Electron Builder configuration must validate before artifacts are accepted. Because `release/` may contain older ignored files, stage the two newly built `.exe` files plus the matching setup `.blockmap` and `latest.yml` in a fresh temporary directory, set that directory as `$release_dir`, and publish from it. Verify both executables are newer than the build start, have the expected setup/portable roles, and that `latest.yml` names the current builder artifact; never let stale files from `release/` win artifact discovery.
 5. Preview the release manifest without uploading:
 
    ```bash
-   node scripts/publish-release.mjs --dir release --dry-run --out /tmp/lumen-release-manifest.json
+   node scripts/publish-release.mjs --dir "$release_dir" --dry-run --out /tmp/lumen-release-manifest.json
    ```
 
    Check that the version and both filenames are correct. Never use a previous `release/` artifact when the current build did not complete.
@@ -31,7 +32,8 @@ Use this skill for an explicit release request such as â€œrelease a new versionâ
 6. Publish the artifacts and `releases.json` using the repository script. Uploads are large and can take several minutes; keep one upload process running, capture its exit status, and do not start duplicate retries while it is active:
 
    ```bash
-   node scripts/publish-release.mjs --dir release
+   set -a; source .env.local; set +a  # only if credentials are stored there; never print the environment
+   node scripts/publish-release.mjs --dir "$release_dir"
    ```
 
    This hashes both files, writes `landing/releases.json`, uploads both executables and the manifest to R2, and synchronizes `landing/config.json` with the download base URL.
