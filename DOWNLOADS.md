@@ -11,6 +11,8 @@ Cada enlace es `https://downloads.7lineas.com/` más el nombre del archivo. Esa 
 
 Esas URL empiezan a servir el archivo cuando se publica el build en el bucket R2 `desktop-releases`. Hasta entonces el bucket está vacío.
 
+La actualización automática dentro de la app lee `https://downloads.7lineas.com/latest.yml` (proveedor genérico de electron-updater). El script de publicación también sube `latest.yml`, su `.blockmap` y el `.exe` con el nombre que genera electron-builder (`Lumen-<versión>-win-x64.exe`), además de los dos archivos con nombre para la landing.
+
 Los módulos de Biblias van en el mismo bucket, bajo `bibles/`. La lista y el modo de subirlos están en el README, sección «Biblias descargables».
 
 Para generar el instalador: `pnpm pack:win` → `release/`.

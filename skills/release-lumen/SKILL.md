@@ -45,5 +45,5 @@ Use this skill for an explicit release request such as â€œrelease a new versionâ
 - `scripts/publish-release.mjs` is the source of truth for artifact naming, hashing, R2 upload, and the public manifest.
 - `release/` and generated build directories are ignored. Do not force-add them.
 - The packaged app includes tracked local Bible JSON. Do not add third-party Bible downloads back to the production build path; use the explicit converter only when intentionally refreshing source data.
-- There is no GitHub Release or Electron auto-updater in this project. Publishing R2 artifacts and `releases.json` is what updates the download page; existing installed copies do not update automatically.
+- There is no GitHub Release in this project. Publishing R2 artifacts, `releases.json` and `latest.yml` is what updates the download page and the in-app Actualizar button; installed Windows copies update through electron-updater reading `latest.yml` from the download base URL.
 - Keep release credentials in the environment only. Redact them from output and do not place them in command text, commits, or skill files.

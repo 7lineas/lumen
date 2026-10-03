@@ -23,7 +23,8 @@ import { SettingsPanel } from "./SettingsPanel";
 import { StageMonitor } from "./StageMonitor";
 import { ChapterReader } from "./ChapterReader";
 import { ServiceRundown } from "./ServiceRundown";
-import { SongsWorkspace } from "./SongsWorkspace";
+import { SongsWorkspace, type SongStage } from "./SongsWorkspace";
+import { UpdateButton } from "./UpdateButton";
 import lumenLogo from "../lumen-icon.png";
 
 function newId(): string {
@@ -50,6 +51,23 @@ export function OperatorApp() {
   const [queue, setQueue] = useState<QueueEntry[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [mode, setMode] = useState<"biblia" | "canciones">("biblia");
+  const [songStaged, setSongStaged] = useState<SongStage | null>(null);
+  const [songSelectedId, setSongSelectedId] = useState<string | null>(null);
+  const [songLive, setSongLive] = useState<SongStage | null>(null);
+  const [projectOnClick, setProjectOnClick] = useState(() => {
+    try {
+      return localStorage.getItem("lumen.canciones.projectOnClick") === "1";
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem("lumen.canciones.projectOnClick", projectOnClick ? "1" : "0");
+    } catch {
+      // ignore
+    }
+  }, [projectOnClick]);
   const [overlay, setOverlay] = useState<"ajustes" | "acerca" | "biblias" | null>(null);
   // Keep rendering the last non-null overlay while the sheet plays its
   // close animation. Clearing children/className synchronously on ESC makes
@@ -166,6 +184,73 @@ export function OperatorApp() {
     const next = await window.proyector?.addHistory(entry);
     if (next) setHistory(next);
   }, [previewPayload, staged, send, settings.primaryVersionId]);
+
+  const songPayload = useCallback((_title: string, text: string): ProjectorPayload => ({
+    mode: "verse",
+    // Song titles are never projected; the operator sees them in the library.
+    referenceLabel: "",
+    blocks: [{ text }],
+    churchName: settings.churchName,
+    fontSize: settings.fontSize,
+    brightness: settings.brightness,
+    theme: settings.theme,
+    backgroundColor: settings.backgroundColor,
+    copyright: "",
+  }), [settings]);
+
+  const songPreviewPayload = useMemo<ProjectorPayload | null>(() => {
+    if (!songStaged || songStaged.slides.length === 0) return null;
+    const text = songStaged.slides[songStaged.index] ?? songStaged.slides[0];
+    if (text == null) return null;
+    return songPayload(songStaged.title, text);
+  }, [songStaged, songPayload]);
+
+  const selectSong = useCallback((songId: string, title: string, slides: string[]) => {
+    setSongSelectedId(songId);
+    setSongStaged(slides.length > 0 ? { title, slides, index: 0 } : null);
+  }, []);
+
+  const selectSongPart = useCallback((index: number) => {
+    setSongStaged((current) => {
+      if (!current || current.slides.length === 0) return current;
+      const clamped = Math.min(Math.max(index, 0), current.slides.length - 1);
+      const next = { ...current, index: clamped };
+      const text = next.slides[clamped];
+      if (projectOnClick && text != null) {
+        setSongLive(next);
+        void send(songPayload(next.title, text));
+      }
+      return next;
+    });
+  }, [projectOnClick, send, songPayload]);
+
+  const projectSongStaged = useCallback(async () => {
+    if (!songStaged || songStaged.slides.length === 0) return;
+    const text = songStaged.slides[songStaged.index] ?? songStaged.slides[0];
+    if (text == null) return;
+    setSongLive(songStaged);
+    await send(songPayload(songStaged.title, text));
+  }, [songStaged, send, songPayload]);
+
+  const navigateSongPreview = useCallback((delta: number) => {
+    setSongStaged((current) => {
+      if (!current || current.slides.length === 0) return current;
+      const clamped = Math.min(Math.max(current.index + delta, 0), current.slides.length - 1);
+      return clamped === current.index ? current : { ...current, index: clamped };
+    });
+  }, []);
+
+  const navigateSongLive = useCallback(async (delta: number) => {
+    const base = songLive;
+    if (!base || base.slides.length === 0) return;
+    const clamped = Math.min(Math.max(base.index + delta, 0), base.slides.length - 1);
+    if (clamped === base.index) return;
+    const next = { ...base, index: clamped };
+    const text = next.slides[clamped];
+    if (text == null) return;
+    setSongLive(next);
+    await send(songPayload(next.title, text));
+  }, [songLive, send, songPayload]);
 
   const showBlank = useCallback(async () => {
     await send({
@@ -436,6 +521,8 @@ export function OperatorApp() {
             <Button type="button" data-testid="mode-canciones" className={mode === "canciones" ? "active" : ""} onClick={() => setMode("canciones")}>
               Canciones
             </Button>
+            <span className="top-sep" aria-hidden />
+            <UpdateButton />
           </div>
         </div>
         <div className="top-right">
@@ -487,8 +574,12 @@ export function OperatorApp() {
       <div className={`workspace ${mode === "canciones" ? "songs-mode" : ""}`}>
         {mode === "canciones" ? (
           <SongsWorkspace
-            settings={settings}
-            onProject={(payload) => void send(payload)}
+            staged={songStaged}
+            selectedId={songSelectedId}
+            projectOnClick={projectOnClick}
+            onToggleProjectOnClick={setProjectOnClick}
+            onSelectSong={selectSong}
+            onSelectPart={selectSongPart}
           />
         ) : <ChapterReader
           versionId={settings.primaryVersionId}
@@ -529,25 +620,37 @@ export function OperatorApp() {
         />}
 
         <section className="stage-col">
-          {!ready && <p className="muted">Cargando textos bíblicos…</p>}
+          {!ready && mode === "biblia" && <p className="muted">Cargando textos bíblicos…</p>}
           <div className="monitors">
             <div className="monitor-col">
               <StageMonitor
                 title="Vista previa"
-                payload={previewPayload}
-                empty="Elija un versículo"
+                payload={mode === "canciones" ? songPreviewPayload : previewPayload}
+                empty={mode === "canciones" ? "Elija una parte de la canción" : "Elija un versículo"}
                 testId="preview-box"
               />
               <div className="action-row">
-                <Button type="button" className="primary" data-testid="btn-project" onClick={() => void projectStaged()}>
-                  Proyectar
-                </Button>
-                <Button type="button" onClick={() => navigateVerse(-1)}>
-                  ◀ Anterior
-                </Button>
-                <Button type="button" onClick={() => navigateVerse(1)}>
-                  Siguiente ▶
-                </Button>
+                {mode === "canciones" ? <>
+                  <Button type="button" className="primary" data-testid="btn-project" onClick={() => void projectSongStaged()}>
+                    Proyectar
+                  </Button>
+                  <Button type="button" onClick={() => navigateSongPreview(-1)}>
+                    ◀ Anterior
+                  </Button>
+                  <Button type="button" onClick={() => navigateSongPreview(1)}>
+                    Siguiente ▶
+                  </Button>
+                </> : <>
+                  <Button type="button" className="primary" data-testid="btn-project" onClick={() => void projectStaged()}>
+                    Proyectar
+                  </Button>
+                  <Button type="button" onClick={() => navigateVerse(-1)}>
+                    ◀ Anterior
+                  </Button>
+                  <Button type="button" onClick={() => navigateVerse(1)}>
+                    Siguiente ▶
+                  </Button>
+                </>}
               </div>
             </div>
             <div className="monitor-col">
@@ -570,12 +673,21 @@ export function OperatorApp() {
                 <Button type="button" onClick={() => void showLogo()}>
                   {live?.mode === "logo" ? "Restaurar" : "Logo"}
                 </Button>
-                <Button type="button" data-testid="btn-live-prev" onClick={() => void navigateLive(-1)}>
-                  ◀ Anterior
-                </Button>
-                <Button type="button" data-testid="btn-live-next" onClick={() => void navigateLive(1)}>
-                  Siguiente ▶
-                </Button>
+                {mode === "canciones" ? <>
+                  <Button type="button" data-testid="btn-live-prev" onClick={() => void navigateSongLive(-1)}>
+                    ◀ Anterior
+                  </Button>
+                  <Button type="button" data-testid="btn-live-next" onClick={() => void navigateSongLive(1)}>
+                    Siguiente ▶
+                  </Button>
+                </> : <>
+                  <Button type="button" data-testid="btn-live-prev" onClick={() => void navigateLive(-1)}>
+                    ◀ Anterior
+                  </Button>
+                  <Button type="button" data-testid="btn-live-next" onClick={() => void navigateLive(1)}>
+                    Siguiente ▶
+                  </Button>
+                </>}
               </div>
             </div>
           </div>

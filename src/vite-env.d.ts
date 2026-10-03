@@ -35,6 +35,28 @@ export interface BibleDownloadProgress {
   attempt: number;
 }
 
+export interface AppUpdateStatus {
+  version: string;
+  platform: NodeJS.Platform;
+  packaged: boolean;
+  portable: boolean;
+  supported: boolean;
+  feedUrl: string;
+}
+
+export interface AppUpdateEvent {
+  type:
+    | "checking-for-update"
+    | "update-available"
+    | "update-not-available"
+    | "download-progress"
+    | "update-downloaded"
+    | "error";
+  version?: string;
+  percent?: number;
+  message?: string;
+}
+
 export interface ProyectorApi {
   listBibleVersions: () => Promise<Array<{ id: string; name: string; abbr: string; language: string }>>;
   loadBible: (id: string) => Promise<unknown>;
@@ -53,6 +75,12 @@ export interface ProyectorApi {
   openProjector: () => Promise<boolean>;
   showOnProjector: (p: ProjectorPayload) => Promise<boolean>;
   pickBackgroundImage: () => Promise<string | null>;
+  getAppUpdateStatus: () => Promise<AppUpdateStatus>;
+  checkForAppUpdate: () => Promise<{ version: string | null; updateAvailable: boolean }>;
+  downloadAppUpdate: () => Promise<boolean>;
+  installAppUpdate: () => Promise<boolean>;
+  openAppDownload: (url: string) => Promise<boolean>;
+  onAppUpdateEvent: (cb: (event: AppUpdateEvent) => void) => () => void;
   onProjectorUpdate: (cb: (p: ProjectorPayload) => void) => () => void;
   onBibleDownloadProgress: (cb: (progress: BibleDownloadProgress) => void) => () => void;
   onOperatorShortcut: (cb: (data: { action: string }) => void) => () => void;

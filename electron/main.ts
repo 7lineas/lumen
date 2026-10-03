@@ -13,6 +13,7 @@ import Store from "electron-store";
 import type { AppSettings, ProjectorPayload, QueueEntry, HistoryEntry } from "../shared/types";
 import { DEFAULT_SETTINGS } from "../shared/types";
 import { buildBibleDataCandidates, resolveBibleDataDir } from "./bible-data-path";
+import { initAutoUpdater, registerUpdaterHandlers } from "./updater";
 import {
   buildLibraryView,
   bundledIds,
@@ -269,6 +270,8 @@ app.whenReady().then(() => {
   app.setName("Lumen");
   app.setAppUserModelId("com.7lineas.lumen");
   Menu.setApplicationMenu(null);
+  registerUpdaterHandlers();
+  initAutoUpdater();
   if (process.platform === "darwin" && app.dock) {
     const iconPath = path.join(app.getAppPath(), "build/icon.png");
     if (fs.existsSync(iconPath)) app.dock.setIcon(iconPath);

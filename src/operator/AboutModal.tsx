@@ -4,6 +4,11 @@ import type { BibleLibraryEntry } from "../vite-env.d";
 
 export function AboutModal() {
   const [extras, setExtras] = useState<BibleLibraryEntry[]>([]);
+  const [appVersion, setAppVersion] = useState<string | null>(null);
+
+  useEffect(() => {
+    void window.proyector?.getAppUpdateStatus().then((status) => setAppVersion(status.version)).catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     const known = new Set(bibleLicenses.versions.map((version) => version.id));
@@ -17,7 +22,7 @@ export function AboutModal() {
     <main className="panel single about">
       <h2>Acerca de Lumen</h2>
       <p>
-        Aplicación offline para proyectar versículos en el culto. Versión 1.0. Sin conexión a internet
+        Aplicación offline para proyectar versículos en el culto. Versión {appVersion ?? "1.0"}. Sin conexión a internet
         necesaria durante el servicio.
       </p>
 
