@@ -1030,7 +1030,9 @@ select:focus-visible {
 .song-part { align-items: flex-start; display: flex; gap: 0.65rem; line-height: 1.35; text-align: left; width: 100%; }
 .song-part-number { color: var(--accent); flex: none; font-variant-numeric: tabular-nums; }
 .song-part.selected { background: #1e3a5f; border-color: var(--accent-dim); }
-.song-edit-box { border-top: 1px solid #292d34; margin-top: 1rem; padding-top: 1rem; }
+.song-edit-box { margin-top: 0; padding-top: 0; }
+.song-edit-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-bottom: 1rem; }
+.song-hint-centered { text-align: center; }
 .song-tabs { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid #292d34; margin: -1rem -1rem 1rem; }
 .song-tab { border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: transparent; color: var(--muted); }
 .song-tab.active { border-bottom-color: var(--accent); color: var(--text); }
