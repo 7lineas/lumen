@@ -937,6 +937,12 @@ body {
   border-right: 0;
 }
 
+.modes button.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #061018;
+}
+
 .version-select {
   margin-left: 0;
 }
@@ -997,6 +1003,48 @@ select:focus-visible {
 
 .rundown {
   border-right: 0;
+}
+
+.songs-workspace {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr) minmax(230px, 310px);
+  gap: 0;
+  padding: 0;
+}
+
+.songs-library,
+.song-editor,
+.song-presenter {
+  min-height: 0;
+  overflow: auto;
+  background: var(--surface);
+  padding: 1rem;
+}
+
+.songs-library,
+.song-editor { border-right: 1px solid #292d34; }
+.songs-panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; margin-bottom: 1rem; }
+.songs-panel-head h2, .song-presenter h2 { margin: 0; font-size: 1.05rem; }
+.eyebrow { color: var(--accent); font-size: 0.7rem; letter-spacing: 0.08em; margin: 0 0 0.2rem; text-transform: uppercase; }
+.song-list { list-style: none; margin: 0.85rem 0 0; padding: 0; }
+.song-item { align-items: flex-start; display: flex; flex-direction: column; gap: 0.15rem; margin-bottom: 0.25rem; text-align: left; width: 100%; }
+.song-item.selected { background: #1e3a5f; border-color: var(--accent-dim); }
+.song-item small { color: var(--muted); font-size: 0.72rem; }
+.song-field { display: block; margin-bottom: 1rem; }
+.song-field > span { color: var(--muted); display: block; font-size: 0.8rem; margin-bottom: 0.35rem; }
+.song-lyrics { min-height: 320px; resize: vertical; width: 100%; }
+.song-empty { align-items: center; display: flex; flex-direction: column; justify-content: center; min-height: 70%; text-align: center; }
+.song-empty-icon { color: var(--accent); font-size: 3rem; line-height: 1; }
+.song-preview { background: #0a0e12; border: 1px solid #303b49; min-height: 270px; padding: 1.2rem; white-space: pre-wrap; }
+.song-preview-title { color: var(--accent); font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; }
+.song-slides { display: flex; flex-wrap: wrap; gap: 0.3rem; margin: 0.65rem 0; }
+.project-song { width: 100%; }
+
+@media (max-width: 900px) {
+  .songs-workspace { grid-template-columns: 1fr; overflow: auto; }
+  .songs-library, .song-editor, .song-presenter { min-height: 260px; border-right: 0; border-bottom: 1px solid #292d34; }
 }
 
 .panel,

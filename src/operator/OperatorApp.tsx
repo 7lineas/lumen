@@ -23,6 +23,7 @@ import { SettingsPanel } from "./SettingsPanel";
 import { StageMonitor } from "./StageMonitor";
 import { ChapterReader } from "./ChapterReader";
 import { ServiceRundown } from "./ServiceRundown";
+import { SongsWorkspace } from "./SongsWorkspace";
 import lumenLogo from "../lumen-icon.png";
 
 function newId(): string {
@@ -48,6 +49,7 @@ export function OperatorApp() {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [queue, setQueue] = useState<QueueEntry[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [mode, setMode] = useState<"biblia" | "canciones">("biblia");
   const [overlay, setOverlay] = useState<"ajustes" | "acerca" | "biblias" | null>(null);
   // Keep rendering the last non-null overlay while the sheet plays its
   // close animation. Clearing children/className synchronously on ESC makes
@@ -428,10 +430,10 @@ export function OperatorApp() {
             <h1>Lumen</h1>
           </div>
           <div className="modes">
-            <Button type="button" data-testid="mode-biblia" title="Próximamente" onClick={() => {}}>
+            <Button type="button" data-testid="mode-biblia" className={mode === "biblia" ? "active" : ""} onClick={() => setMode("biblia")}>
               Biblia
             </Button>
-            <Button type="button" data-testid="mode-canciones" title="Próximamente" onClick={() => {}}>
+            <Button type="button" data-testid="mode-canciones" className={mode === "canciones" ? "active" : ""} onClick={() => setMode("canciones")}>
               Canciones
             </Button>
           </div>
@@ -482,7 +484,12 @@ export function OperatorApp() {
         </div>
       </header>
 
-      <div className="workspace">
+      {mode === "canciones" ? (
+        <SongsWorkspace
+          settings={settings}
+          onProject={(payload) => void send(payload)}
+        />
+      ) : <div className="workspace">
         <ChapterReader
           versionId={settings.primaryVersionId}
           ready={ready}
@@ -633,7 +640,7 @@ export function OperatorApp() {
             if (parsed.ok) stageRange(parsed.range);
           }}
         />
-      </div>
+      </div>}
 
       <Sheet open={overlay !== null} onOpenChange={(open) => !open && setOverlay(null)}>
         <SheetContent
