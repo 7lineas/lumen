@@ -79,6 +79,7 @@ function createOperatorWindow(): void {
     height: 800,
     minWidth: 1024,
     minHeight: 680,
+    icon: path.join(app.getAppPath(), "build/icon.png"),
     title: "Lumen",
     webPreferences: {
       preload: getPreload(),
@@ -130,6 +131,7 @@ function createProjectorWindow(): void {
     height,
     fullscreen: displaysCount() > 1,
     frame: displaysCount() <= 1,
+    icon: path.join(app.getAppPath(), "build/icon.png"),
     title: "Lumen — Proyección",
     backgroundColor: "#000000",
     webPreferences: {
@@ -160,18 +162,6 @@ function sendToProjector(payload: ProjectorPayload): void {
     createProjectorWindow();
   }
   projectorWindow?.webContents.send("projector:update", payload);
-}
-
-function registerShortcuts(): void {
-  globalShortcut.unregisterAll();
-  const ok = globalShortcut.register("Escape", () => {
-    operatorWindow?.webContents.send("operator:shortcut", { action: "blank" });
-  });
-  if (!ok) console.warn("Could not register Escape shortcut");
-
-  globalShortcut.register("CommandOrControl+B", () => {
-    operatorWindow?.webContents.send("operator:shortcut", { action: "blank" });
-  });
 }
 
 function delay(ms: number): Promise<void> {
@@ -260,7 +250,7 @@ async function captureScreenshots(): Promise<void> {
   fs.writeFileSync(path.join(outDir, "biblias-window.png"), bibliasImg.toPNG());
 
   await operatorWindow.webContents.executeJavaScript(`
-    document.querySelector('[data-testid="tab-buscar"]')?.click();
+    document.querySelector('[data-slot="sheet-close"]')?.click();
   `);
   await delay(300);
 
@@ -273,13 +263,19 @@ async function captureScreenshots(): Promise<void> {
 }
 
 app.whenReady().then(() => {
+  app.setName("Lumen");
+  app.setAppUserModelId("com.7lineas.lumen");
+  if (process.platform === "darwin" && app.dock) {
+    const iconPath = path.join(app.getAppPath(), "build/icon.png");
+    if (fs.existsSync(iconPath)) app.dock.setIcon(iconPath);
+  }
+
   if (process.env.PROYECTOR_SCREENSHOT === "1") {
     void captureScreenshots();
     return;
   }
 
   createOperatorWindow();
-  registerShortcuts();
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
