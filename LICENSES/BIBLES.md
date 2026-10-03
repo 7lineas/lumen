@@ -6,7 +6,7 @@ Solo se incluyen textos en dominio público o con una licencia libre ya comproba
 La ficha que leen la ventana Acerca de y la página de descarga es `shared/bible-licenses.json`.
 Al añadir una versión, actualice ese archivo; no hace falta tocar el HTML de la landing.
 
-RV1909, KJV y WEB van dentro del instalador. Las demás se descargan desde
+RV1909 va dentro del instalador. Las demás versiones en español se descargan desde
 `https://downloads.7lineas.com/bibles/` y quedan en los datos del usuario.
 
 El módulo de cada versión es JSON (metadatos, libros y versículos), no SQLite.
@@ -27,24 +27,6 @@ RVC, LBLA y otras con copyright no se incluyen hasta que David tenga permiso.
 | Licencia | **Dominio público** (traducción de 1909) |
 | Notas | Canon protestante de 66 libros. Verificado en importación (conteo de libros y versículos). |
 
-## King James Version (id: `kjv`, abrev: KJV)
-
-| Campo | Valor |
-| --- | --- |
-| Idioma | Inglés |
-| Fuente | [eBible.org](https://ebible.org/Scriptures/eng_kjv_vpl.zip) — archivo VPL (`eng_kjv_vpl.txt`) |
-| Licencia | **Dominio público** |
-| Notas | Canon protestante de 66 libros. |
-
-## World English Bible (id: `web`, abrev: WEB)
-
-| Campo | Valor |
-| --- | --- |
-| Idioma | Inglés (inglés contemporáneo) |
-| Fuente | [eBible.org](https://ebible.org/Scriptures/engwebu_vpl.zip) — archivo VPL (`engwebu_vpl.txt`) |
-| Licencia | **Dominio público** / libre redistribución (WEB) |
-| Notas | Canon protestante de 66 libros. |
-
 ## Descargables (no van en el instalador)
 
 | Id | Nombre | Licencia | Notas |
@@ -54,7 +36,6 @@ RVC, LBLA y otras con copyright no se incluyen hasta que David tenga permiso.
 | `pddpt` | Palabra de Dios para ti | CC BY 4.0 | © 2020 Asociación Bíblica Latinoamericana. |
 | `bll` | Santa Biblia libre Latinoamericano | Dominio público | Borrador. Solo el canon protestante de 66 libros. |
 | `blm` | Santa Biblia libre para el mundo | Dominio público | Borrador de David Williams y Michael Paul Johnson. Solo 66 libros. |
-| `asv` | American Standard Version 1901 | Dominio público | Inglés. |
 
 ## Traducciones NO incluidas (derechos de autor)
 

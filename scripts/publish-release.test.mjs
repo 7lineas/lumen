@@ -13,15 +13,15 @@ import {
 
 describe("joinDownloadUrl", () => {
   it("joins the base and a safe filename once", () => {
-    expect(joinDownloadUrl("https://downloads.example.invalid/", "proyectorbiblico-1.0.0-setup.exe")).toBe(
-      "https://downloads.example.invalid/proyectorbiblico-1.0.0-setup.exe",
+    expect(joinDownloadUrl("https://downloads.example.invalid/", "lumen-1.0.0-setup.exe")).toBe(
+      "https://downloads.example.invalid/lumen-1.0.0-setup.exe",
     );
   });
 
   it("rejects a filename that could leave the bucket", () => {
     expect(joinDownloadUrl("https://downloads.example.invalid", "../secreto.exe")).toBe("");
     expect(joinDownloadUrl("https://downloads.example.invalid", "https://otro.example/a.exe")).toBe("");
-    expect(joinDownloadUrl("", "proyectorbiblico-1.0.0-setup.exe")).toBe("");
+    expect(joinDownloadUrl("", "lumen-1.0.0-setup.exe")).toBe("");
   });
 });
 
@@ -53,8 +53,8 @@ describe("signS3Request", () => {
 describe("release manifest", () => {
   it("names artifacts in ASCII and records size and sha256", async () => {
     const dir = await mkdtemp(path.join(tmpdir(), "proyector-release-"));
-    const setupPath = path.join(dir, "Proyector Bíblico-1.0.0-win-x64.exe");
-    const portablePath = path.join(dir, "Proyector Bíblico-1.0.0-portable.exe");
+    const setupPath = path.join(dir, "Lumen-1.0.0-win-x64.exe");
+    const portablePath = path.join(dir, "Lumen-1.0.0-portable.exe");
     await writeFile(setupPath, "instalador");
     await writeFile(portablePath, "portable");
 
@@ -84,7 +84,7 @@ describe("public download base", () => {
     expect(config.DOWNLOAD_BASE_URL).toBe("https://downloads.7lineas.com");
     expect(releases.downloadBaseUrl).toBe("https://downloads.7lineas.com");
     expect(joinDownloadUrl(config.DOWNLOAD_BASE_URL, releases.files[0].filename)).toBe(
-      "https://downloads.7lineas.com/proyectorbiblico-1.0.0-setup.exe",
+      `https://downloads.7lineas.com/${artifactFilename(releases.version, "setup")}`,
     );
   });
 });

@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 import { createServer } from "node:http";
 import { createReadStream } from "node:fs";
-import { stat } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -55,7 +55,7 @@ const child = spawn(
     "--disable-gpu",
     "--no-sandbox",
     "--disable-dev-shm-usage",
-    "--user-data-dir=/tmp/proyector-landing-chrome",
+    "--user-data-dir=/tmp/lumen-landing-chrome",
     "--remote-debugging-port=9333",
     pageUrl,
   ],
@@ -142,8 +142,11 @@ if (!snapshot || snapshot.ready !== "1") {
   throw new Error(`La página no quedó lista (${snapshot?.ready || "vacío"}). ${logs.join(" | ")}`);
 }
 
-const setupHref = `${base}/proyectorbiblico-1.0.0-setup.exe`;
-const portableHref = `${base}/proyectorbiblico-1.0.0-portable.exe`;
+const release = JSON.parse(await readFile(path.join(root, "landing", "releases.json"), "utf8"));
+const setupFile = release.files.find((file) => file.id === "setup");
+const portableFile = release.files.find((file) => file.id === "portable");
+const setupHref = `${base}/${setupFile.filename}`;
+const portableHref = `${base}/${portableFile.filename}`;
 if (snapshot.setup !== setupHref) {
   throw new Error(`Enlace del instalador: ${snapshot.setup || "(vacío)"}`);
 }
@@ -152,7 +155,7 @@ if (snapshot.portable !== portableHref) {
 }
 if (!snapshot.text.includes("Reina-Valera 1909")) throw new Error("Faltan los créditos de RV1909");
 if (!snapshot.text.includes("sin modificar")) throw new Error("Falta la nota de distribución gratuita");
-if (!snapshot.text.includes("a7cb931aadeedf4e1b62ec7e6150b29e0ddd92ce849573b1c4813550ea693ca8")) {
+if (!snapshot.text.includes(setupFile.sha256)) {
   throw new Error("Falta el SHA-256 del instalador");
 }
 console.log("Landing OK");

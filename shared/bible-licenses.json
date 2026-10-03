@@ -18,34 +18,6 @@
       "draft": false
     },
     {
-      "id": "kjv",
-      "name": "King James Version",
-      "abbr": "KJV",
-      "language": "Inglés",
-      "languageCode": "en",
-      "license": "Dominio público",
-      "sourceName": "eBible.org",
-      "sourceUrl": "https://ebible.org/Scriptures/eng_kjv_vpl.zip",
-      "attribution": "King James Version. Texto de dominio público en formato VPL, publicado por eBible.org.",
-      "copyright": "King James Version. Dominio público.",
-      "availability": "Incluida en el instalador",
-      "draft": false
-    },
-    {
-      "id": "web",
-      "name": "World English Bible",
-      "abbr": "WEB",
-      "language": "Inglés",
-      "languageCode": "en",
-      "license": "Dominio público",
-      "sourceName": "eBible.org",
-      "sourceUrl": "https://ebible.org/Scriptures/engwebu_vpl.zip",
-      "attribution": "World English Bible. Dominio público y libre redistribución. Texto VPL publicado por eBible.org.",
-      "copyright": "World English Bible. Dominio público.",
-      "availability": "Incluida en el instalador",
-      "draft": false
-    },
-    {
       "id": "bes",
       "name": "Biblia en Español Sencillo",
       "abbr": "BES",
@@ -61,7 +33,12 @@
       "vplZip": "spabes_vpl.zip",
       "vplTxt": "spabes_vpl.txt",
       "minVerses": 30000,
-      "spot": { "book": "JHN", "chapter": "3", "verse": "16", "includes": "único" }
+      "spot": {
+        "book": "JHN",
+        "chapter": "3",
+        "verse": "16",
+        "includes": "único"
+      }
     },
     {
       "id": "onbv",
@@ -79,7 +56,12 @@
       "vplZip": "spaonbv_vpl.zip",
       "vplTxt": "spaonbv_vpl.txt",
       "minVerses": 28000,
-      "spot": { "book": "JHN", "chapter": "3", "verse": "16", "includes": "Hijo" }
+      "spot": {
+        "book": "JHN",
+        "chapter": "3",
+        "verse": "16",
+        "includes": "Hijo"
+      }
     },
     {
       "id": "pddpt",
@@ -97,7 +79,12 @@
       "vplZip": "spapddpt_vpl.zip",
       "vplTxt": "spapddpt_vpl.txt",
       "minVerses": 30000,
-      "spot": { "book": "GEN", "chapter": "1", "verse": "1", "includes": "Elohim" }
+      "spot": {
+        "book": "GEN",
+        "chapter": "1",
+        "verse": "1",
+        "includes": "Elohim"
+      }
     },
     {
       "id": "bll",
@@ -115,7 +102,12 @@
       "vplZip": "spabll_vpl.zip",
       "vplTxt": "spabll_vpl.txt",
       "minVerses": 30000,
-      "spot": { "book": "JHN", "chapter": "3", "verse": "16", "includes": "Hijo" }
+      "spot": {
+        "book": "JHN",
+        "chapter": "3",
+        "verse": "16",
+        "includes": "Hijo"
+      }
     },
     {
       "id": "blm",
@@ -133,25 +125,12 @@
       "vplZip": "spablm_vpl.zip",
       "vplTxt": "spablm_vpl.txt",
       "minVerses": 30000,
-      "spot": { "book": "JHN", "chapter": "3", "verse": "16", "includes": "Hijo" }
-    },
-    {
-      "id": "asv",
-      "name": "American Standard Version",
-      "abbr": "ASV",
-      "language": "Inglés",
-      "languageCode": "en",
-      "license": "Dominio público",
-      "sourceName": "eBible.org",
-      "sourceUrl": "https://ebible.org/Scriptures/eng-asv_vpl.zip",
-      "attribution": "American Standard Version (1901). Texto de dominio público en formato VPL, publicado por eBible.org.",
-      "copyright": "American Standard Version, 1901. Dominio público.",
-      "availability": "Se descarga dentro de la aplicación",
-      "draft": false,
-      "vplZip": "eng-asv_vpl.zip",
-      "vplTxt": "eng-asv_vpl.txt",
-      "minVerses": 30000,
-      "spot": { "book": "JHN", "chapter": "3", "verse": "16", "includes": "begotten" }
+      "spot": {
+        "book": "JHN",
+        "chapter": "3",
+        "verse": "16",
+        "includes": "Hijo"
+      }
     }
   ]
 }

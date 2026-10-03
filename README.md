@@ -9,7 +9,7 @@ Aplicación de escritorio **offline** para proyectar versículos de la Biblia en
 
 ## Instalación (voluntarios)
 
-1. Descargue el instalador `Lumen-1.0.0-win-x64.exe` o el ejecutable portable `Lumen-1.0.0-portable.exe` desde la carpeta de entrega de su iglesia.
+1. Descargue el instalador `Lumen-1.0.2-win-x64.exe` o el ejecutable portable `Lumen-1.0.2-portable.exe` desde la carpeta de entrega de su iglesia.
 2. Ejecute el archivo. Windows puede mostrar **“Windows protegió su PC”** porque la aplicación no está firmada digitalmente.
 3. Haga clic en **“Más información”** y luego en **“Ejecutar de todas formas”**.
 4. En el instalador NSIS, elija la carpeta de instalación y finalice.
@@ -55,8 +55,7 @@ La columna **En vivo** repite lo que hay en el proyector. Fuente y luz están en
 
 - Reina-Valera 1909 (español, principal)
 - King James Version (inglés)
-- World English Bible (inglés)
-
+- 
 Detalle legal: `LICENSES/BIBLES.md`.
 
 **No** se incluyen RVR1960, NVI, NTV ni otras traducciones con derechos de autor.
@@ -89,8 +88,8 @@ pnpm publish:release   # hashes + subida a R2 (ver variables abajo)
 
 Tras `pnpm pack:win`, en `release/`:
 
-- `Lumen-1.0.0-win-x64.exe` — instalador
-- `Lumen-1.0.0-portable.exe` — portable
+- `Lumen-1.0.2-win-x64.exe` — instalador
+- `Lumen-1.0.2-portable.exe` — portable
 - `win-unpacked/` — carpeta descomprimida (útil si el instalador falla)
 
 ### Capturas de pantalla (CI / VM)
@@ -134,7 +133,7 @@ pnpm publish:release -- --dir release
 
 ## Biblias descargables
 
-Dentro de la app, la pantalla Biblias baja versiones libres a la carpeta de datos del usuario (`userData/bibles`). RV1909, KJV y WEB siguen dentro del instalador. El catálogo remoto es `https://downloads.7lineas.com/bibles/bibles-catalog.json`. Si no hay internet, se usa la copia que va con el programa y las versiones ya descargadas.
+Dentro de la app, la pantalla Biblias baja versiones libres a la carpeta de datos del usuario (`userData/bibles`). RV1909 sigue dentro del instalador. El catálogo remoto es `https://downloads.7lineas.com/bibles/bibles-catalog.json`. Si no hay internet, se usa la copia que va con el programa y las versiones ya descargadas.
 
 Cada módulo es un JSON con metadatos (nombre, copyright, licencia), libros y versículos: el mismo formato que `data/bibles`. No se usa SQLite. La app ya lee ese JSON sin conexión, y un addon nativo complicaría el instalador de Windows.
 
@@ -154,7 +153,6 @@ Después de `pnpm build:bible-modules`, suba estos archivos del directorio `data
 | `pddpt.json` | `bibles/pddpt.json` | https://downloads.7lineas.com/bibles/pddpt.json |
 | `bll.json` | `bibles/bll.json` | https://downloads.7lineas.com/bibles/bll.json |
 | `blm.json` | `bibles/blm.json` | https://downloads.7lineas.com/bibles/blm.json |
-| `asv.json` | `bibles/asv.json` | https://downloads.7lineas.com/bibles/asv.json |
 
 Ejemplo, sin guardar secretos en el repo:
 
@@ -168,7 +166,7 @@ aws s3 cp data/bible-modules/bes.json s3://desktop-releases/bibles/bes.json \
   --content-type application/json
 ```
 
-Repita el `aws s3 cp` para `onbv.json`, `pddpt.json`, `bll.json`, `blm.json` y `asv.json`. El proceso de Electron descarga directo; no hace falta CORS en el bucket. La landing sigue leyendo solo sus propios JSON.
+Repita el `aws s3 cp` para `onbv.json`, `pddpt.json`, `bll.json`, `blm.json`. El proceso de Electron descarga directo; no hace falta CORS en el bucket. La landing sigue leyendo solo sus propios JSON.
 
 ## Licencia del código
 

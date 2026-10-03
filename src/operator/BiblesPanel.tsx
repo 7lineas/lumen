@@ -85,8 +85,7 @@ export function BiblesPanel({ onChanged }: Props) {
     <main className="panel single bibles" data-testid="bible-list">
       <h2>Biblias</h2>
       <p>
-        Elija una versión para guardarla en este equipo. Después funciona sin internet. RV1909, KJV y WEB
-        ya vienen con el programa.
+        Elija una versión para guardarla en este equipo. Después funciona sin internet. RV1909 ya viene con el programa.
       </p>
       {library?.offline && (
         <p className="bible-banner">

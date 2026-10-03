@@ -9,7 +9,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const catalog = JSON.parse(fs.readFileSync(path.join(root, "data/bible-modules/bibles-catalog.json"), "utf8"));
 const licenses = JSON.parse(fs.readFileSync(path.join(root, "shared/bible-licenses.json"), "utf8"));
 
-const EXPECTED = ["bes", "onbv", "pddpt", "bll", "blm", "asv"];
+const EXPECTED = ["bes", "onbv", "pddpt", "bll", "blm"];
 const FORBIDDEN = ["rvg", "sparvg", "rvr1960", "nvi", "ntv", "dhh", "tla", "rvc", "lbla", "nblh"];
 
 describe("bibles catalog", () => {
@@ -49,7 +49,7 @@ describe("bibles catalog", () => {
 
   it("keeps landing credits for bundled and downloadable versions", () => {
     const ids = licenses.versions.map((version: { id: string }) => version.id);
-    expect(ids).toEqual(["rv1909", "kjv", "web", ...EXPECTED]);
+    expect(ids).toEqual(["rv1909", ...EXPECTED]);
     for (const version of licenses.versions) {
       expect(version.copyright).toBeTruthy();
       expect(version.attribution).toBeTruthy();

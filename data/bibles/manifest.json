@@ -4,17 +4,5 @@
     "name": "Reina-Valera 1909",
     "abbr": "RV1909",
     "language": "es"
-  },
-  {
-    "id": "kjv",
-    "name": "King James Version",
-    "abbr": "KJV",
-    "language": "en"
-  },
-  {
-    "id": "web",
-    "name": "World English Bible",
-    "abbr": "WEB",
-    "language": "en"
   }
 ]

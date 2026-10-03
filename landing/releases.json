@@ -1,5 +1,5 @@
 {
-  "version": "1.0.1",
+  "version": "1.0.2",
   "releasedAt": "2026-10-03",
   "downloadBaseUrl": "https://downloads.7lineas.com",
   "files": [
@@ -7,17 +7,17 @@
       "id": "setup",
       "role": "primary",
       "label": "Instalador para Windows",
-      "filename": "proyectorbiblico-1.0.1-setup.exe",
-      "bytes": 106402771,
-      "sha256": "04fc2441222145a7b14a61127bcf346395d1fb01a220e878809ea07ff9b829f5"
+      "filename": "lumen-1.0.2-setup.exe",
+      "bytes": 102242764,
+      "sha256": "f3b3862d21677806fdf8067b2d47dbf1caa28a7823b468dace98f99674f28b42"
     },
     {
       "id": "portable",
       "role": "secondary",
       "label": "Versión portable",
-      "filename": "proyectorbiblico-1.0.1-portable.exe",
-      "bytes": 106213525,
-      "sha256": "32dc1f5f4b71ea50a0334688e226829b8c088b2e24b147798a753c1affd940b4"
+      "filename": "lumen-1.0.2-portable.exe",
+      "bytes": 102053523,
+      "sha256": "18d0ab5cedff4d5151aab343a6da3ad985c3346aac968cd63aeb0a37a5d224eb"
     }
   ]
 }

@@ -121,8 +121,8 @@ export async function hashFile(filePath) {
 
 export function artifactFilename(version, role) {
   const safeVersion = String(version).trim();
-  if (role === "portable") return `proyectorbiblico-${safeVersion}-portable.exe`;
-  return `proyectorbiblico-${safeVersion}-setup.exe`;
+  if (role === "portable") return `lumen-${safeVersion}-portable.exe`;
+  return `lumen-${safeVersion}-setup.exe`;
 }
 
 export async function findWindowsArtifacts(dir) {

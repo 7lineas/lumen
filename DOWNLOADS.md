@@ -6,8 +6,8 @@ Cada enlace es `https://downloads.7lineas.com/` más el nombre del archivo. Esa 
 
 | Archivo | URL |
 | --- | --- |
-| Instalador | https://downloads.7lineas.com/proyectorbiblico-1.0.0-setup.exe |
-| Portable | https://downloads.7lineas.com/proyectorbiblico-1.0.0-portable.exe |
+| Instalador | https://downloads.7lineas.com/lumen-1.0.2-setup.exe |
+| Portable | https://downloads.7lineas.com/lumen-1.0.2-portable.exe |
 
 Esas URL empiezan a servir el archivo cuando se publica el build en el bucket R2 `desktop-releases`. Hasta entonces el bucket está vacío.
 

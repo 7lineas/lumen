@@ -67,19 +67,6 @@
       "copyright": "Santa Biblia libre para el mundo. Dominio público. Edición marcada como borrador. David Williams y Michael Paul Johnson.",
       "abbr": "BLM",
       "draft": true
-    },
-    {
-      "id": "asv",
-      "name": "American Standard Version",
-      "language": "Inglés",
-      "file": "asv.json",
-      "bytes": 10546484,
-      "sha256": "08d8ed083c1b490e45e4abf51ff41fb25c01531ed5f9c1eb1218b5fb71b483ef",
-      "license": "Dominio público",
-      "attribution": "American Standard Version (1901). Texto de dominio público en formato VPL, publicado por eBible.org.",
-      "copyright": "American Standard Version, 1901. Dominio público.",
-      "abbr": "ASV",
-      "draft": false
     }
   ]
 }
