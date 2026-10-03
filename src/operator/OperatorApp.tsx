@@ -1,5 +1,7 @@
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AppSettings, HistoryEntry, ProjectorPayload, QueueEntry, VerseRange } from "@shared/types";
 import { DEFAULT_SETTINGS } from "@shared/types";
@@ -21,7 +23,7 @@ import { SettingsPanel } from "./SettingsPanel";
 import { StageMonitor } from "./StageMonitor";
 import { ChapterReader } from "./ChapterReader";
 import { ServiceRundown } from "./ServiceRundown";
-import lumenLogo from "../../logo-dark.png";
+import lumenLogo from "../lumen-icon.png";
 
 function newId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -47,6 +49,15 @@ export function OperatorApp() {
   const [queue, setQueue] = useState<QueueEntry[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overlay, setOverlay] = useState<"ajustes" | "acerca" | "biblias" | null>(null);
+  // Keep rendering the last non-null overlay while the sheet plays its
+  // close animation. Clearing children/className synchronously on ESC makes
+  // the panel go empty (and jump 460px -> 720px when leaving "ajustes")
+  // mid-exit, which is the broken wide state with a bare left border.
+  const [lastOverlay, setLastOverlay] = useState<typeof overlay>(null);
+  useEffect(() => {
+    if (overlay !== null) setLastOverlay(overlay);
+  }, [overlay]);
+  const activeOverlay = overlay ?? lastOverlay;
   const [libraryTick, setLibraryTick] = useState(0);
   const lastVerse = useRef<ProjectorPayload | null>(null);
   const booted = useRef(false);
@@ -290,6 +301,58 @@ export function OperatorApp() {
     [stageRange, settings, send],
   );
 
+  const navigateLive = useCallback(
+    async (delta: number) => {
+      const base = liveRange ?? staged;
+      const ref = base?.start;
+      if (!ref) return;
+      const bible = getBible(settings.primaryVersionId);
+      if (!bible) return;
+      let chapter = ref.chapter;
+      let verse = ref.verse + delta;
+      const book = ref.book;
+      const maxInChapter = getChapterVerseCount(bible, book, chapter);
+      if (verse > maxInChapter) {
+        chapter += 1;
+        verse = 1;
+      } else if (verse < 1) {
+        chapter -= 1;
+        if (chapter < 1) return;
+        verse = getChapterVerseCount(bible, book, chapter) || 1;
+      }
+      const bookMeta = BOOKS.find((b) => b.code === book);
+      if (!bookMeta || chapter > bookMeta.chapters) return;
+      if (!getVerseText(bible, { book, chapter, verse })) return;
+      const next = {
+        start: { book, chapter, verse },
+        end: { book, chapter, verse },
+      };
+      const content = fetchRangeTexts(
+        settings.primaryVersionId,
+        settings.dualView ? settings.secondaryVersionId : null,
+        next,
+      );
+      if (!content) return;
+      setLiveRange(next);
+      await send({
+        mode: "verse",
+        referenceLabel: content.referenceLabel,
+        blocks: content.blocks,
+        churchName: settings.churchName,
+        fontSize: settings.fontSize,
+        brightness: settings.brightness,
+        theme: settings.theme,
+        backgroundColor: settings.backgroundColor,
+        copyright: projectionCopyright(
+          settings.primaryVersionId,
+          settings.dualView ? settings.secondaryVersionId : null,
+          settings.showCopyright,
+        ),
+      });
+    },
+    [liveRange, staged, settings, send],
+  );
+
   useEffect(() => {
     const api = window.proyector;
     if (!api) return;
@@ -318,14 +381,11 @@ export function OperatorApp() {
       } else if (e.key === "Enter") {
         e.preventDefault();
         void projectStaged();
-      } else if (e.key === "Escape" || e.key === "b" || e.key === "B") {
-        e.preventDefault();
-        void toggleBlank();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [navigateVerse, projectStaged, resolveFromInput, toggleBlank]);
+  }, [navigateVerse, projectStaged, resolveFromInput]);
 
   const searchResults = useMemo(() => {
     if (!keyword.trim() || !ready) return [];
@@ -362,78 +422,63 @@ export function OperatorApp() {
   return (
     <div className="app-shell">
       <header className="top-bar">
-        <div className="brand">
-          <img className="brand-logo" src={lumenLogo} alt="" aria-hidden />
-          <h1>Lumen</h1>
+        <div className="top-left">
+          <div className="brand">
+            <img className="brand-logo" src={lumenLogo} alt="" aria-hidden />
+            <h1>Lumen</h1>
+          </div>
+          <div className="modes">
+            <Button type="button" data-testid="mode-biblia" title="Próximamente" onClick={() => {}}>
+              Biblia
+            </Button>
+            <Button type="button" data-testid="mode-canciones" title="Próximamente" onClick={() => {}}>
+              Canciones
+            </Button>
+          </div>
         </div>
-        <label className="version-select">
-          Versión
-          <select
-            value={settings.primaryVersionId}
-            onChange={(e) => void applyChrome({ ...settings, primaryVersionId: e.target.value })}
-          >
-            {versions.map((v) => (
-              <option key={v.id} value={v.id}>
-                {v.abbr}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="mini-slider">
-          Fuente
-          <Input
-            type="range"
-            min={40}
-            max={110}
-            value={settings.fontSize}
-            onChange={(e) => void applyChrome({ ...settings, fontSize: parseInt(e.target.value, 10) })}
-          />
-        </label>
-        <label className="mini-slider">
-          Luz
-          <Input
-            type="range"
-            min={35}
-            max={100}
-            value={Math.round(settings.brightness * 100)}
-            onChange={(e) =>
-              void applyChrome({ ...settings, brightness: parseInt(e.target.value, 10) / 100 })
-            }
-          />
-        </label>
-        <div className="tabs">
-          <Button type="button" onClick={() => void toggleBlank()}>
-            {live?.mode === "blank" ? "Quitar negro" : "Negro"}
-          </Button>
-          <Button type="button" onClick={() => void showLogo()}>
-            Logo
-          </Button>
-          <Button type="button" data-testid="tab-buscar" onClick={() => setOverlay(null)}>
-            Culto
-          </Button>
-          <Button
-            type="button"
-            data-testid="tab-biblias"
-            className={overlay === "biblias" ? "active" : ""}
-            onClick={() => setOverlay(overlay === "biblias" ? null : "biblias")}
-          >
-            Biblias
-          </Button>
-          <Button
-            type="button"
-            data-testid="tab-ajustes"
-            className={overlay === "ajustes" ? "active" : ""}
-            onClick={() => setOverlay(overlay === "ajustes" ? null : "ajustes")}
-          >
-            Ajustes
-          </Button>
-          <Button
-            type="button"
-            className={overlay === "acerca" ? "active" : ""}
-            onClick={() => setOverlay(overlay === "acerca" ? null : "acerca")}
-          >
-            Acerca de
-          </Button>
+        <div className="top-right">
+          <label className="version-select">
+            Versión
+            <Select
+              value={settings.primaryVersionId}
+              onValueChange={(value) => value && void applyChrome({ ...settings, primaryVersionId: value })}
+            >
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+              {versions.map((v) => (
+                <SelectItem key={v.id} value={v.id}>
+                  {v.abbr}
+                </SelectItem>
+              ))}
+              </SelectContent>
+            </Select>
+          </label>
+          <span className="top-sep" aria-hidden />
+          <div className="tabs">
+            <Button
+              type="button"
+              data-testid="tab-biblias"
+              className={overlay === "biblias" ? "active" : ""}
+              onClick={() => setOverlay(overlay === "biblias" ? null : "biblias")}
+            >
+              Biblias
+            </Button>
+            <Button
+              type="button"
+              data-testid="tab-ajustes"
+              className={overlay === "ajustes" ? "active" : ""}
+              onClick={() => setOverlay(overlay === "ajustes" ? null : "ajustes")}
+            >
+              Ajustes
+            </Button>
+            <Button
+              type="button"
+              className={overlay === "acerca" ? "active" : ""}
+              onClick={() => setOverlay(overlay === "acerca" ? null : "acerca")}
+            >
+              Acerca de
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -479,33 +524,86 @@ export function OperatorApp() {
         <section className="stage-col">
           {!ready && <p className="muted">Cargando textos bíblicos…</p>}
           <div className="monitors">
-            <StageMonitor
-              title="Vista previa"
-              payload={previewPayload}
-              empty="Elija un versículo"
-              testId="preview-box"
-            />
-            <StageMonitor
-              title="En vivo"
-              payload={live}
-              empty="Todavía no se proyecta"
-              testId="live-box"
-            />
+            <div className="monitor-col">
+              <StageMonitor
+                title="Vista previa"
+                payload={previewPayload}
+                empty="Elija un versículo"
+                testId="preview-box"
+              />
+              <div className="action-row">
+                <Button type="button" className="primary" data-testid="btn-project" onClick={() => void projectStaged()}>
+                  Proyectar
+                </Button>
+                <Button type="button" onClick={() => navigateVerse(-1)}>
+                  ◀ Anterior
+                </Button>
+                <Button type="button" onClick={() => navigateVerse(1)}>
+                  Siguiente ▶
+                </Button>
+              </div>
+            </div>
+            <div className="monitor-col">
+              <StageMonitor
+                title="En vivo"
+                payload={live}
+                empty="Todavía no se proyecta"
+                testId="live-box"
+                isLive
+              />
+              <div className="action-row">
+                <Button
+                  type="button"
+                  variant="destructive"
+                  data-testid="btn-clear"
+                  onClick={() => void toggleBlank()}
+                >
+                  {live?.mode === "blank" ? "Restaurar" : "Limpiar"}
+                </Button>
+                <Button type="button" onClick={() => void showLogo()}>
+                  {live?.mode === "logo" ? "Restaurar" : "Logo"}
+                </Button>
+                <Button type="button" data-testid="btn-live-prev" onClick={() => void navigateLive(-1)}>
+                  ◀ Anterior
+                </Button>
+                <Button type="button" data-testid="btn-live-next" onClick={() => void navigateLive(1)}>
+                  Siguiente ▶
+                </Button>
+              </div>
+            </div>
           </div>
-          <div className="action-row">
-            <Button type="button" className="primary" data-testid="btn-project" onClick={() => void projectStaged()}>
-              Proyectar
-            </Button>
-            <Button type="button" onClick={() => navigateVerse(-1)}>
-              ◀ Anterior
-            </Button>
-            <Button type="button" onClick={() => navigateVerse(1)}>
-              Siguiente ▶
-            </Button>
+          <div className="stage-tweaks">
+            <label className="tweak">
+              <span className="tweak-head">
+                <span>Fuente</span>
+                <span className="tweak-val">{settings.fontSize}px</span>
+              </span>
+              <Slider
+                min={40}
+                max={110}
+                value={[settings.fontSize]}
+                onValueChange={(value) => {
+                  const next = Array.isArray(value) ? value[0] : value;
+                  void applyChrome({ ...settings, fontSize: next ?? settings.fontSize });
+                }}
+              />
+            </label>
+            <label className="tweak">
+              <span className="tweak-head">
+                <span>Luz</span>
+                <span className="tweak-val">{Math.round(settings.brightness * 100)}%</span>
+              </span>
+              <Slider
+                min={35}
+                max={100}
+                value={[Math.round(settings.brightness * 100)]}
+                onValueChange={(value) => {
+                  const next = Array.isArray(value) ? value[0] : value;
+                  void applyChrome({ ...settings, brightness: (next ?? Math.round(settings.brightness * 100)) / 100 });
+                }}
+              />
+            </label>
           </div>
-          <p className="hint">
-            Las flechas solo cambian la vista previa. Enter proyecta. Esc o B pone la pantalla en negro.
-          </p>
         </section>
 
         <ServiceRundown
@@ -537,26 +635,24 @@ export function OperatorApp() {
         />
       </div>
 
-      {overlay === "ajustes" && (
-        <div className="overlay" data-testid="settings-panel">
-          <SettingsPanel settings={settings} versions={versions} onSave={applyChrome} />
-        </div>
-      )}
-      {overlay === "biblias" && (
-        <div className="overlay wide">
-          <BiblesPanel
-            onChanged={(next) => {
-              if (next) setSettings(mergeSettings(next));
-              setLibraryTick((tick) => tick + 1);
-            }}
-          />
-        </div>
-      )}
-      {overlay === "acerca" && (
-        <div className="overlay wide">
-          <AboutModal />
-        </div>
-      )}
+      <Sheet open={overlay !== null} onOpenChange={(open) => !open && setOverlay(null)}>
+        <SheetContent
+          side="right"
+          data-testid={activeOverlay === "ajustes" ? "settings-panel" : undefined}
+          className={activeOverlay === "ajustes" ? "overlay-sheet settings-sheet" : "overlay-sheet wide-sheet"}
+        >
+          {activeOverlay === "ajustes" && <SettingsPanel settings={settings} versions={versions} onSave={applyChrome} />}
+          {activeOverlay === "biblias" && (
+            <BiblesPanel
+              onChanged={(next) => {
+                if (next) setSettings(mergeSettings(next));
+                setLibraryTick((tick) => tick + 1);
+              }}
+            />
+          )}
+          {activeOverlay === "acerca" && <AboutModal />}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { BOOKS } from "@shared/books";
 import type { VerseRange } from "@shared/types";
 import { getBible } from "@shared/bible-service";
@@ -43,6 +43,7 @@ function normalize(s: string): string {
 }
 
 export function ChapterReader(props: Props) {
+  const [showText, setShowText] = useState(false);
   const book = BOOKS.find((b) => b.code === props.viewBook);
   const bible = props.ready ? getBible(props.versionId) : undefined;
   const chapterMap = bible?.verses[props.viewBook]?.[String(props.viewChapter)];
@@ -95,7 +96,7 @@ export function ChapterReader(props: Props) {
 
       <div className="book-cols">
         <div>
-          <p className="col-label">Antiguo Testamento</p>
+          <p className="col-label">Antiguo</p>
           {ot.map((b) => (
             <Button
               key={b.code}
@@ -108,7 +109,7 @@ export function ChapterReader(props: Props) {
           ))}
         </div>
         <div>
-          <p className="col-label">Nuevo Testamento</p>
+          <p className="col-label">Nuevo</p>
           {nt.map((b) => (
             <Button
               key={b.code}
@@ -138,6 +139,19 @@ export function ChapterReader(props: Props) {
         ))}
       </div>
 
+      <div className="verse-head">
+        <p className="section-label">Versículos</p>
+        <Button
+          type="button"
+          className={showText ? "chip selected" : "chip"}
+          aria-pressed={showText}
+          onClick={() => setShowText((v) => !v)}
+        >
+          Texto
+        </Button>
+      </div>
+
+      {showText ? (
       <ol className="verse-list">
         {verses.map((v) => {
           const inRange =
@@ -160,6 +174,26 @@ export function ChapterReader(props: Props) {
           );
         })}
       </ol>
+      ) : (
+      <div className="chapter-grid">
+        {verses.map((v) => {
+          const inRange =
+            stagedHere != null && v >= stagedHere.start.verse && v <= stagedHere.end.verse;
+          return (
+            <Button
+              key={v}
+              type="button"
+              className={inRange ? "chip selected" : "chip"}
+              data-verse-active={inRange ? "1" : undefined}
+              onClick={(e) => props.onVerseClick(v, e.shiftKey)}
+              onDoubleClick={() => props.onVerseDoubleClick(v)}
+            >
+              {v}
+            </Button>
+          );
+        })}
+      </div>
+      )}
 
       <p className="section-label">Buscar palabra</p>
       <Input

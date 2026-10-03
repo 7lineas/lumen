@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import type { HistoryEntry, QueueEntry } from "@shared/types";
 
 interface Props {
@@ -54,6 +55,7 @@ export function ServiceRundown(props: Props) {
           </li>
         ))}
       </ol>
+      <Separator />
       <h3>Historial</h3>
       <ul className="compact-list">
         {props.history.map((h) => (

@@ -1,4 +1,6 @@
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { useEffect, useState } from "react";
 import type { AppSettings } from "@shared/types";
 import type { BibleDownloadProgress, BibleLibraryEntry, BibleLibraryView } from "../vite-env.d";
@@ -136,7 +138,7 @@ function BibleRow({
     <article className="bible-row" data-testid={`bible-row-${entry.id}`}>
       <h3>
         {entry.name}
-        {entry.draft && <span className="badge">Borrador</span>}
+        {entry.draft && <Badge className="badge">Borrador</Badge>}
       </h3>
       <p className="bible-meta">
         {entry.language} · {formatByteSize(entry.bytes)} · {entry.license}
@@ -158,7 +160,7 @@ function BibleRow({
         )}
         {downloading && (
           <>
-            <progress value={percent ?? undefined} max={100} />
+            <Progress value={percent ?? 0} />
             <span>{percent == null ? "Descargando…" : `${percent}%`}</span>
           </>
         )}

@@ -102,7 +102,7 @@ body {
 .tabs {
   display: flex;
   gap: 0.35rem;
-  flex: 1;
+  flex: none;
 }
 
 .tabs button {
@@ -230,12 +230,18 @@ button.primary {
 
 .search-results button,
 .compact-list button {
+  display: block;
   width: 100%;
+  height: auto;
   text-align: left;
   background: transparent;
   border: none;
   padding: 0.35rem 0;
   color: var(--accent);
+  font-size: 0.85rem;
+  line-height: 1.45;
+  white-space: normal;
+  overflow-wrap: break-word;
 }
 
 .preview-box {
@@ -274,6 +280,7 @@ button.primary {
 .field-error {
   color: var(--danger);
   font-size: 0.9rem;
+  margin: -0.25rem 0 0.5rem;
 }
 
 .linkish {
@@ -398,6 +405,51 @@ button.primary {
   font-size: 0.8rem;
 }
 
+.stage-tweaks {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+  margin-top: auto;
+  border-top: 1px solid #292d34;
+  padding-top: 0.65rem;
+  position: sticky;
+  bottom: -0.9rem;
+  margin-bottom: -0.9rem;
+  background: var(--surface);
+  padding-bottom: 1.15rem;
+}
+
+.stage-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.tweak {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  min-width: 0;
+}
+
+.tweak-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.tweak-val {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.tweak [data-slot="slider"] {
+  width: 100%;
+  padding-block: 0.4rem;
+}
+
 .mini-slider input,
 .version-select select {
   width: auto;
@@ -473,6 +525,12 @@ button.primary {
   grid-template-columns: 1.8rem 1fr;
   gap: 0.35rem;
   line-height: 1.35;
+  font-size: 0.9rem;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: break-word;
+  height: auto;
+  align-items: start;
 }
 
 .verse-num {
@@ -497,6 +555,18 @@ button.primary {
   margin-bottom: 0.5rem;
 }
 
+.verse-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0.35rem 0;
+}
+
+.verse-head .section-label {
+  margin: 0;
+}
+
 .chip {
   width: auto;
   min-width: 2rem;
@@ -516,16 +586,61 @@ button.primary {
   gap: 0.65rem;
 }
 
+.monitor-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.monitor-col .action-row {
+  margin-top: 0;
+  gap: 0.35rem;
+}
+
 .monitor-card {
   margin: 0;
 }
 
-.monitor-card figcaption {
+.monitor-card [data-slot="card-title"] {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
   font-size: 0.75rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--muted);
   margin-bottom: 0.35rem;
+}
+
+.live-dot {
+  width: 0.6rem;
+  height: 0.6rem;
+  flex: none;
+  border-radius: 999px;
+  background: #3a404a;
+}
+
+.live-dot.on {
+  background: #ff3b30;
+  box-shadow: 0 0 8px rgba(255, 59, 48, 0.8);
+  animation: live-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes live-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-dot.on {
+    animation: none;
+  }
 }
 
 .monitor {
@@ -537,6 +652,22 @@ button.primary {
   justify-content: center;
   text-align: center;
   overflow: auto;
+}
+
+.monitor-card {
+  gap: 0;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.monitor-card [data-slot="card-header"] {
+  padding: 0 0 0.35rem;
+}
+
+.monitor-content {
+  padding: 0;
 }
 
 .monitor.dark {
@@ -618,6 +749,28 @@ button.primary {
 
 .overlay.wide .panel {
   width: min(720px, 100%);
+}
+
+.overlay-sheet {
+  width: min(460px, 100vw);
+  max-width: none !important;
+  padding: 0 !important;
+  border-left: 1px solid #3a404a;
+  border-radius: 0 !important;
+}
+
+.overlay-sheet.wide-sheet {
+  width: min(720px, 100vw);
+}
+
+.overlay-sheet > .panel {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  margin: 0;
+  border: 0;
+  overflow: auto;
+  padding: 1rem;
 }
 
 .bible-banner {
@@ -703,6 +856,12 @@ button.primary {
     height: auto;
     overflow: auto;
   }
+
+  .reader,
+  .stage-col {
+    border-right: 0;
+    border-bottom: 1px solid #292d34;
+  }
 }
 
 /* Lumen visual system: dense, near-black surfaces with quiet dividers. */
@@ -727,6 +886,18 @@ body {
   padding: 0.65rem 1rem;
   background: var(--surface);
   border-bottom-color: #292d34;
+  justify-content: space-between;
+}
+
+.top-left,
+.top-right {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.top-right {
+  margin-left: auto;
 }
 
 .brand {
@@ -746,6 +917,34 @@ body {
 
 .tabs {
   gap: 0;
+  justify-content: flex-end;
+  margin-left: 0;
+}
+
+.modes {
+  display: flex;
+  gap: 0;
+}
+
+.modes button {
+  border-radius: 0;
+  border-bottom: 2px solid transparent;
+  padding-inline: 0.7rem;
+  color: var(--muted);
+  background: transparent;
+  border-top: 0;
+  border-left: 0;
+  border-right: 0;
+}
+
+.version-select {
+  margin-left: 0;
+}
+
+.top-sep {
+  width: 1px;
+  align-self: stretch;
+  background: #292d34;
 }
 
 .tabs button {
@@ -786,19 +985,18 @@ select:focus-visible {
 .reader,
 .stage-col,
 .rundown {
+  border: 0;
   border-radius: 0;
-  border-top: 0;
-  border-bottom: 0;
   padding: 0.9rem;
 }
 
 .reader,
 .stage-col {
-  border-right-color: #292d34;
+  border-right: 1px solid #292d34;
 }
 
 .rundown {
-  border-left-color: #292d34;
+  border-right: 0;
 }
 
 .panel,
@@ -846,4 +1044,16 @@ select:focus-visible {
 
 .overlay .panel {
   border-left-color: #3a404a;
+}
+
+@media (max-width: 1100px) {
+  .reader,
+  .stage-col {
+    border-right: 0;
+    border-bottom: 1px solid #292d34;
+  }
+
+  .rundown {
+    border-bottom: 0;
+  }
 }
