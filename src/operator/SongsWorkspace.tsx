@@ -136,7 +136,7 @@ export function SongsWorkspace({ settings, onProject }: Props) {
         </> : <div className="song-edit-box">
           {!draft && <div className="song-empty"><span className="song-empty-icon">♫</span><h2>Crear canción</h2><p className="muted">Escribe el título y la letra.</p><Button type="button" className="primary" onClick={create}>Nueva canción</Button></div>}
           {draft && <>
-          <div className="songs-panel-head"><div><p className="eyebrow">Editor</p><h2>Contenido</h2></div><div className="action-row"><AlertDialog>
+          <div className="song-edit-actions"><AlertDialog>
             <AlertDialogTrigger render={<Button type="button" data-testid="btn-delete-song">Eliminar</Button>} />
             <AlertDialogContent>
               <AlertDialogHeader>
@@ -150,10 +150,10 @@ export function SongsWorkspace({ settings, onProject }: Props) {
                 <AlertDialogAction variant="destructive" data-testid="confirm-delete-song" onClick={remove}>Eliminar</AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
-          </AlertDialog><Button type="button" className="primary" onClick={save}>Guardar</Button></div></div>
+          </AlertDialog><Button type="button" className="primary" onClick={save}>Guardar</Button></div>
           <label className="song-field"><span>Título</span><Input value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} /></label>
           <label className="song-field"><span>Letra</span><Textarea className="song-lyrics" value={draft.lyrics} onChange={(event) => setDraft({ ...draft, lyrics: event.target.value })} placeholder="Verso 1\n\nCoro\n\nPuente" /></label>
-          <p className="hint">Separa las partes con una línea en blanco.</p>
+          <p className="hint song-hint-centered">Separa las partes con una línea en blanco.</p>
           </>}
         </div>}
       </aside>
