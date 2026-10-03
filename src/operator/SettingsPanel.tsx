@@ -2,7 +2,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
 import { useEffect, useState } from "react";
 import type { AppSettings, BibleVersionMeta } from "@shared/types";
 import type { DisplayInfo } from "../vite-env.d";
@@ -30,17 +29,16 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
       <h2>Ajustes</h2>
 
       <label className="field">
-        <span>Nombre en la pantalla de logo</span>
-        <Input
-          value={local.churchName}
-          onChange={(e) => setLocal({ ...local, churchName: e.target.value })}
-        />
-      </label>
-
-      <label className="field">
         <span>Pantalla del proyector</span>
         <Select
           value={local.projectorDisplayId == null ? "auto" : String(local.projectorDisplayId)}
+          items={[
+            { value: "auto", label: "Automática (segunda pantalla)" },
+            ...displays.map((d) => ({
+              value: String(d.id),
+              label: `${d.label} ${d.primary ? "(principal)" : ""}`.trim(),
+            })),
+          ]}
           onValueChange={(value) =>
             value && setLocal({ ...local, projectorDisplayId: value === "auto" ? null : parseInt(value, 10) })
           }
@@ -78,6 +76,10 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
           <span>Segunda versión</span>
           <Select
             value={local.secondaryVersionId ?? "none"}
+            items={[
+              { value: "none", label: "—" },
+              ...versions.map((v) => ({ value: v.id, label: v.name })),
+            ]}
             onValueChange={(value) => value && setLocal({ ...local, secondaryVersionId: value === "none" ? null : value })}
           >
             <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
@@ -97,26 +99,13 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
 
       <label className="field">
         <span>Tema del proyector</span>
-        <Select value={local.theme} onValueChange={(value) => value && setLocal({ ...local, theme: value as "dark" | "light" })}>
+        <Select value={local.theme} items={[{ value: "dark", label: "Oscuro" }, { value: "light", label: "Claro" }]} onValueChange={(value) => value && setLocal({ ...local, theme: value as "dark" | "light" })}>
           <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="dark">Oscuro</SelectItem>
             <SelectItem value="light">Claro</SelectItem>
           </SelectContent>
         </Select>
-      </label>
-
-      <label className="field">
-        <span>Tamaño de fuente ({local.fontSize}px)</span>
-        <Slider
-          min={40}
-          max={120}
-          value={[local.fontSize]}
-          onValueChange={(value) => {
-            const next = Array.isArray(value) ? value[0] : value;
-            setLocal({ ...local, fontSize: next ?? local.fontSize });
-          }}
-        />
       </label>
 
       <label className="field">
@@ -128,34 +117,43 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
         />
       </label>
 
-      <div className="field row">
-        <Button
-          type="button"
-          onClick={async () => {
-            const path = await window.proyector?.pickBackgroundImage();
-            if (path) setLocal({ ...local, backgroundImagePath: path });
-          }}
-        >
-          Imagen de fondo…
-        </Button>
-        {local.backgroundImagePath && (
-          <Button
-            type="button"
-            onClick={() => setLocal({ ...local, backgroundImagePath: null })}
-          >
-            Quitar imagen
-          </Button>
-        )}
-      </div>
+      <label className="field">
+        <span>Color de la referencia (arriba a la izquierda)</span>
+        <Input
+          type="color"
+          value={local.referenceColor}
+          onChange={(e) => setLocal({ ...local, referenceColor: e.target.value })}
+        />
+      </label>
 
       <label className="field">
-        <span>Transición (ms)</span>
+        <span>Color de la versión (abajo a la derecha)</span>
+        <Input
+          type="color"
+          value={local.versionColor}
+          onChange={(e) => setLocal({ ...local, versionColor: e.target.value })}
+        />
+      </label>
+
+      <label className="field">
+        <span>Transición del texto (ms)</span>
         <Input
           type="number"
           min={0}
           max={2000}
           value={local.fadeMs}
           onChange={(e) => setLocal({ ...local, fadeMs: parseInt(e.target.value, 10) || 0 })}
+        />
+      </label>
+
+      <label className="field">
+        <span>Fundido del fondo (ms)</span>
+        <Input
+          type="number"
+          min={0}
+          max={2000}
+          value={local.backgroundFadeMs}
+          onChange={(e) => setLocal({ ...local, backgroundFadeMs: parseInt(e.target.value, 10) || 0 })}
         />
       </label>
 

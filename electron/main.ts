@@ -6,8 +6,11 @@ import {
   globalShortcut,
   dialog,
   Menu,
+  net,
+  protocol,
 } from "electron";
 import path from "path";
+import { pathToFileURL } from "url";
 import fs from "fs";
 import Store from "electron-store";
 import type { AppSettings, ProjectorPayload, QueueEntry, HistoryEntry } from "../shared/types";
@@ -44,7 +47,16 @@ const store = new Store<{
 
 let operatorWindow: BrowserWindow | null = null;
 let projectorWindow: BrowserWindow | null = null;
+let projectorReady = false;
+let pendingProjectorPayload: ProjectorPayload | null = null;
 const isDev = !app.isPackaged && process.env.PROYECTOR_SCREENSHOT !== "1";
+
+function devServerUrl(): string {
+  const fromPlugin = process.env.VITE_DEV_SERVER_URL;
+  if (fromPlugin) return fromPlugin.endsWith("/") ? fromPlugin : `${fromPlugin}/`;
+  const port = process.env.PORT ?? "43123";
+  return `http://localhost:${port}/`;
+}
 
 function getPreload(): string {
   return path.join(__dirname, "preload.js");
@@ -92,7 +104,7 @@ function createOperatorWindow(): void {
   });
 
   if (isDev) {
-    void operatorWindow.loadURL("http://localhost:43123/");
+    void operatorWindow.loadURL(devServerUrl());
     operatorWindow.webContents.openDevTools({ mode: "detach" });
   } else {
     void operatorWindow.loadFile(path.join(__dirname, "../dist/index.html"));
@@ -125,8 +137,13 @@ function createProjectorWindow(): void {
   }
 
   const display = getTargetDisplay();
-  const { x, y, width, height } = display.bounds;
+  const singleDisplay = displaysCount() <= 1;
+  const width = singleDisplay ? Math.min(960, display.bounds.width - 48) : display.bounds.width;
+  const height = singleDisplay ? Math.min(540, display.bounds.height - 96) : display.bounds.height;
+  const x = singleDisplay ? display.bounds.x + Math.max(24, Math.round((display.bounds.width - width) / 2)) : display.bounds.x;
+  const y = singleDisplay ? display.bounds.y + Math.max(48, Math.round((display.bounds.height - height) / 2)) : display.bounds.y;
 
+  projectorReady = false;
   projectorWindow = new BrowserWindow({
     x,
     y,
@@ -147,13 +164,22 @@ function createProjectorWindow(): void {
 
   const hash = "#/projector";
   if (isDev) {
-    void projectorWindow.loadURL(`http://localhost:43123/${hash}`);
+    void projectorWindow.loadURL(`${devServerUrl()}${hash}`);
   } else {
     void projectorWindow.loadFile(path.join(__dirname, "../dist/index.html"), { hash: "/projector" });
   }
 
+  projectorWindow.webContents.on("did-finish-load", () => {
+    projectorReady = true;
+    if (pendingProjectorPayload) {
+      projectorWindow?.webContents.send("projector:update", pendingProjectorPayload);
+      pendingProjectorPayload = null;
+    }
+  });
+
   projectorWindow.on("closed", () => {
     projectorWindow = null;
+    projectorReady = false;
   });
 }
 
@@ -162,10 +188,14 @@ function displaysCount(): number {
 }
 
 function sendToProjector(payload: ProjectorPayload): void {
+  pendingProjectorPayload = payload;
   if (!projectorWindow) {
     createProjectorWindow();
   }
-  projectorWindow?.webContents.send("projector:update", payload);
+  if (projectorReady) {
+    projectorWindow?.webContents.send("projector:update", payload);
+    pendingProjectorPayload = null;
+  }
 }
 
 function delay(ms: number): Promise<void> {
@@ -270,6 +300,13 @@ app.whenReady().then(() => {
   app.setName("Lumen");
   app.setAppUserModelId("com.7lineas.lumen");
   Menu.setApplicationMenu(null);
+  protocol.handle("lumen-media", (request) => {
+    const encodedPath = new URL(request.url).pathname.slice("/media/".length);
+    const target = path.resolve(decodeURIComponent(encodedPath));
+    const root = path.resolve(app.getPath("userData"), "background-images");
+    if (!target.startsWith(`${root}${path.sep}`)) return new Response("Forbidden", { status: 403 });
+    return net.fetch(pathToFileURL(target).toString());
+  });
   registerUpdaterHandlers();
   initAutoUpdater();
   if (process.platform === "darwin" && app.dock) {
@@ -395,11 +432,35 @@ ipcMain.handle("projector:show", (_e, payload: ProjectorPayload) => {
 
 ipcMain.handle("dialog:openImage", async () => {
   const result = await dialog.showOpenDialog(operatorWindow!, {
-    filters: [{ name: "Imágenes", extensions: ["jpg", "jpeg", "png", "webp"] }],
+    filters: [{ name: "Imágenes y videos", extensions: ["jpg", "jpeg", "png", "webp", "mp4", "webm", "ogg", "mov"] }],
     properties: ["openFile"],
   });
   if (result.canceled || !result.filePaths[0]) return null;
-  return result.filePaths[0];
+  const filePath = result.filePaths[0];
+  try {
+    const imagesDir = path.join(app.getPath("userData"), "background-images");
+    fs.mkdirSync(imagesDir, { recursive: true });
+    const ext = path.extname(filePath).toLowerCase();
+    const storedPath = path.join(imagesDir, `${Date.now()}-${Math.random().toString(36).slice(2, 9)}${ext}`);
+    fs.copyFileSync(filePath, storedPath);
+    // Persist the managed copy path, never the user's original location.
+    // The renderer converts this path to a file URL when it needs to display it.
+    return storedPath;
+  } catch {
+    return null;
+  }
+});
+
+ipcMain.handle("background:delete", (_e, filePath: string) => {
+  const root = path.resolve(app.getPath("userData"), "background-images");
+  const target = path.resolve(String(filePath));
+  if (!target.startsWith(`${root}${path.sep}`)) return false;
+  try {
+    fs.rmSync(target, { force: true });
+    return true;
+  } catch {
+    return false;
+  }
 });
 
 ipcMain.on("operator:navigate", (_e, dir: "prev" | "next") => {

@@ -75,6 +75,7 @@ export interface ProyectorApi {
   openProjector: () => Promise<boolean>;
   showOnProjector: (p: ProjectorPayload) => Promise<boolean>;
   pickBackgroundImage: () => Promise<string | null>;
+  deleteBackgroundMedia: (path: string) => Promise<boolean>;
   getAppUpdateStatus: () => Promise<AppUpdateStatus>;
   checkForAppUpdate: () => Promise<{ version: string | null; updateAvailable: boolean }>;
   downloadAppUpdate: () => Promise<boolean>;

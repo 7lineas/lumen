@@ -28,10 +28,23 @@ export interface ProjectorPayload {
   churchName: string;
   fontSize: number;
   brightness: number;
+  /** Uniform projector content padding in viewport width units. */
+  padding: number;
   theme: "dark" | "light";
   backgroundColor: string;
   /** Shown in the projection footer when the operator leaves the option on. */
   copyright?: string;
+  /** Color of the top-left reference (e.g. "Juan 5:13"). */
+  referenceColor?: string;
+  /** Color of the bottom-right version tag (e.g. "RV1909"). */
+  versionColor?: string;
+  /** Fade transition duration in ms. */
+  fadeMs?: number;
+  backgroundFadeMs?: number;
+  /**
+   * Managed background media path. Kept optional so blank/logo payloads stay lean.
+   */
+  backgroundImagePath?: string | null;
 }
 
 export interface AppSettings {
@@ -42,14 +55,23 @@ export interface AppSettings {
   fontSize: number;
   backgroundColor: string;
   backgroundImagePath: string | null;
+  /** Images copied into this user's app data folder for reuse. */
+  backgroundImages: string[];
   projectorDisplayId: number | null;
   fadeMs: number;
+  backgroundFadeMs: number;
   /** Name shown on the logo screen. */
   churchName: string;
   /** 0.35–1, applied on the projector. */
   brightness: number;
+  /** Uniform projector content padding in viewport width units. */
+  padding: number;
   /** Copyright line on the projection footer. */
   showCopyright: boolean;
+  /** Color of the top-left reference on the projection. */
+  referenceColor: string;
+  /** Color of the bottom-right version tag on the projection. */
+  versionColor: string;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -60,11 +82,16 @@ export const DEFAULT_SETTINGS: AppSettings = {
   fontSize: 72,
   backgroundColor: "#0f1419",
   backgroundImagePath: null,
+  backgroundImages: [],
   projectorDisplayId: null,
-  fadeMs: 350,
+  fadeMs: 100,
+  backgroundFadeMs: 400,
   churchName: "Iglesia",
   brightness: 1,
+  padding: 5,
   showCopyright: true,
+  referenceColor: "#f6a623",
+  versionColor: "#f6a623",
 };
 
 export interface HistoryEntry {

@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -17,6 +18,7 @@ import {
 import { BOOKS } from "@shared/books";
 import { rangeFromVerseClick } from "@shared/stage";
 import { projectionCopyright } from "@shared/copyright-line";
+import { backgroundImageUrl, isBackgroundVideo } from "@shared/background-image";
 import { AboutModal } from "./AboutModal";
 import { BiblesPanel } from "./BiblesPanel";
 import { SettingsPanel } from "./SettingsPanel";
@@ -36,6 +38,7 @@ function mergeSettings(s: AppSettings): AppSettings {
 }
 
 export function OperatorApp() {
+  const [deletingMedia, setDeletingMedia] = useState(false);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [refInput, setRefInput] = useState("Juan 3:16");
   const [keyword, setKeyword] = useState("");
@@ -111,6 +114,7 @@ export function OperatorApp() {
       churchName: settings.churchName,
       fontSize: settings.fontSize,
       brightness: settings.brightness,
+      padding: settings.padding,
       theme: settings.theme,
       backgroundColor: settings.backgroundColor,
       copyright: projectionCopyright(
@@ -118,6 +122,11 @@ export function OperatorApp() {
         settings.dualView ? settings.secondaryVersionId : null,
         settings.showCopyright,
       ),
+      referenceColor: settings.referenceColor,
+      versionColor: settings.versionColor,
+      backgroundImagePath: settings.backgroundImagePath,
+      fadeMs: settings.fadeMs,
+      backgroundFadeMs: settings.backgroundFadeMs,
     };
   }, [previewContent, settings]);
 
@@ -127,6 +136,7 @@ export function OperatorApp() {
       churchName: settings.churchName,
       fontSize: settings.fontSize,
       brightness: settings.brightness,
+      padding: settings.padding,
       theme: settings.theme,
       backgroundColor: settings.backgroundColor,
       copyright:
@@ -137,6 +147,11 @@ export function OperatorApp() {
               settings.showCopyright,
             )
           : "",
+      referenceColor: settings.referenceColor,
+      versionColor: settings.versionColor,
+      backgroundImagePath: settings.backgroundImagePath,
+      fadeMs: settings.fadeMs,
+      backgroundFadeMs: settings.backgroundFadeMs,
     }),
     [settings],
   );
@@ -193,9 +208,15 @@ export function OperatorApp() {
     churchName: settings.churchName,
     fontSize: settings.fontSize,
     brightness: settings.brightness,
+    padding: settings.padding,
     theme: settings.theme,
     backgroundColor: settings.backgroundColor,
     copyright: "",
+    referenceColor: settings.referenceColor,
+    versionColor: settings.versionColor,
+    backgroundImagePath: settings.backgroundImagePath,
+    fadeMs: settings.fadeMs,
+    backgroundFadeMs: settings.backgroundFadeMs,
   }), [settings]);
 
   const songPreviewPayload = useMemo<ProjectorPayload | null>(() => {
@@ -260,30 +281,14 @@ export function OperatorApp() {
       churchName: settings.churchName,
       fontSize: settings.fontSize,
       brightness: settings.brightness,
+      padding: settings.padding,
       theme: settings.theme,
       backgroundColor: "#000000",
       copyright: "",
+      fadeMs: settings.fadeMs,
+      backgroundFadeMs: settings.backgroundFadeMs,
     });
   }, [send, settings]);
-
-  const showLogo = useCallback(async () => {
-    if (live?.mode === "logo") {
-      if (lastVerse.current) await send(chrome(lastVerse.current));
-      else await showBlank();
-      return;
-    }
-    await send({
-      mode: "logo",
-      referenceLabel: "",
-      blocks: [],
-      churchName: settings.churchName,
-      fontSize: settings.fontSize,
-      brightness: settings.brightness,
-      theme: settings.theme,
-      backgroundColor: settings.backgroundColor,
-      copyright: "",
-    });
-  }, [live, send, chrome, showBlank, settings]);
 
   const toggleBlank = useCallback(async () => {
     if (live?.mode === "blank") {
@@ -303,8 +308,14 @@ export function OperatorApp() {
         churchName: next.churchName,
         fontSize: next.fontSize,
         brightness: next.brightness,
+        padding: next.padding,
         theme: next.theme,
         backgroundColor: next.backgroundColor,
+        backgroundImagePath: next.backgroundImagePath,
+        referenceColor: next.referenceColor,
+        versionColor: next.versionColor,
+        fadeMs: next.fadeMs,
+        backgroundFadeMs: next.backgroundFadeMs,
         copyright:
           live.mode === "verse"
             ? projectionCopyright(
@@ -376,6 +387,7 @@ export function OperatorApp() {
         churchName: settings.churchName,
         fontSize: settings.fontSize,
         brightness: settings.brightness,
+      padding: settings.padding,
         theme: settings.theme,
         backgroundColor: settings.backgroundColor,
         copyright: projectionCopyright(
@@ -383,6 +395,11 @@ export function OperatorApp() {
           settings.dualView ? settings.secondaryVersionId : null,
           settings.showCopyright,
         ),
+        referenceColor: settings.referenceColor,
+        versionColor: settings.versionColor,
+        backgroundImagePath: settings.backgroundImagePath,
+        fadeMs: settings.fadeMs,
+        backgroundFadeMs: settings.backgroundFadeMs,
       });
     },
     [stageRange, settings, send],
@@ -428,6 +445,7 @@ export function OperatorApp() {
         churchName: settings.churchName,
         fontSize: settings.fontSize,
         brightness: settings.brightness,
+      padding: settings.padding,
         theme: settings.theme,
         backgroundColor: settings.backgroundColor,
         copyright: projectionCopyright(
@@ -435,6 +453,11 @@ export function OperatorApp() {
           settings.dualView ? settings.secondaryVersionId : null,
           settings.showCopyright,
         ),
+        referenceColor: settings.referenceColor,
+        versionColor: settings.versionColor,
+        backgroundImagePath: settings.backgroundImagePath,
+        fadeMs: settings.fadeMs,
+        backgroundFadeMs: settings.backgroundFadeMs,
       });
     },
     [liveRange, staged, settings, send],
@@ -530,6 +553,7 @@ export function OperatorApp() {
             Versión
             <Select
               value={settings.primaryVersionId}
+              items={versions.map((v) => ({ value: v.id, label: v.abbr }))}
               onValueChange={(value) => value && void applyChrome({ ...settings, primaryVersionId: value })}
             >
               <SelectTrigger><SelectValue /></SelectTrigger>
@@ -670,9 +694,6 @@ export function OperatorApp() {
                 >
                   {live?.mode === "blank" ? "Restaurar" : "Limpiar"}
                 </Button>
-                <Button type="button" onClick={() => void showLogo()}>
-                  {live?.mode === "logo" ? "Restaurar" : "Logo"}
-                </Button>
                 {mode === "canciones" ? <>
                   <Button type="button" data-testid="btn-live-prev" onClick={() => void navigateSongLive(-1)}>
                     ◀ Anterior
@@ -690,6 +711,56 @@ export function OperatorApp() {
                 </>}
               </div>
             </div>
+          </div>
+          <div className="stage-background">
+            <span className="tweak-head">
+              <span>Fondo</span>
+            </span>
+            <div className="stage-background-row">
+              <Button
+                type="button"
+                className={!settings.backgroundImagePath ? "background-solid active" : "background-solid"}
+                aria-pressed={!settings.backgroundImagePath}
+                onClick={() => void applyChrome({ ...settings, backgroundImagePath: null })}
+              >
+                Color sólido
+              </Button>
+              <Button
+                type="button"
+                onClick={async () => {
+                  const path = await window.proyector?.pickBackgroundImage();
+                  if (path) void applyChrome({
+                    ...settings,
+                    backgroundImages: [...(settings.backgroundImages ?? []), path],
+                  });
+                }}
+              >
+                Añadir media
+              </Button>
+              {(settings.backgroundImages ?? []).length > 0 && (
+                <Button type="button" variant={deletingMedia ? "destructive" : "secondary"} onClick={() => setDeletingMedia((value) => !value)}>
+                  {deletingMedia ? "Cancelar eliminación" : "Eliminar media"}
+                </Button>
+              )}
+            </div>
+            {(settings.backgroundImages ?? []).length > 0 && (
+              <div className="background-gallery" aria-label="Imágenes de fondo guardadas">
+                {settings.backgroundImages.map((imagePath, index) => (
+                  <div key={`${imagePath}-${index}`} className="background-choice-wrap">
+                    <button type="button" className={`background-choice${settings.backgroundImagePath === imagePath ? " active" : ""}`} aria-label={deletingMedia ? `Eliminar media ${index + 1}` : `Usar media ${index + 1}`} aria-pressed={settings.backgroundImagePath === imagePath} onClick={() => { if (!deletingMedia) void applyChrome({ ...settings, backgroundImagePath: imagePath }); }}>
+                      {isBackgroundVideo(imagePath) ? <video src={backgroundImageUrl(imagePath)} muted loop autoPlay playsInline /> : <img src={backgroundImageUrl(imagePath)} alt="" />}
+                    </button>
+                    {deletingMedia && <AlertDialog>
+                      <AlertDialogTrigger render={<Button type="button" variant="destructive" className="background-delete">Eliminar</Button>} />
+                      <AlertDialogContent>
+                        <AlertDialogHeader><AlertDialogTitle>Eliminar media</AlertDialogTitle><AlertDialogDescription>¿Quieres eliminar este archivo de la biblioteca de fondos?</AlertDialogDescription></AlertDialogHeader>
+                        <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction variant="destructive" onClick={() => void (async () => { await window.proyector?.deleteBackgroundMedia(imagePath); void applyChrome({ ...settings, backgroundImages: settings.backgroundImages.filter((item) => item !== imagePath), backgroundImagePath: settings.backgroundImagePath === imagePath ? null : settings.backgroundImagePath }); })()}>Eliminar</AlertDialogAction></AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           <div className="stage-tweaks">
             <label className="tweak">
@@ -719,6 +790,21 @@ export function OperatorApp() {
                 onValueChange={(value) => {
                   const next = Array.isArray(value) ? value[0] : value;
                   void applyChrome({ ...settings, brightness: (next ?? Math.round(settings.brightness * 100)) / 100 });
+                }}
+              />
+            </label>
+            <label className="tweak">
+              <span className="tweak-head">
+                <span>Padding</span>
+                <span className="tweak-val">{settings.padding}vw</span>
+              </span>
+              <Slider
+                min={0}
+                max={12}
+                value={[settings.padding]}
+                onValueChange={(value) => {
+                  const next = Array.isArray(value) ? value[0] : value;
+                  void applyChrome({ ...settings, padding: next ?? settings.padding });
                 }}
               />
             </label>
