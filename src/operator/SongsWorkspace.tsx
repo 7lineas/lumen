@@ -90,23 +90,25 @@ export function SongsWorkspace({ settings, onProject }: Props) {
   };
 
   return (
-    <div className="songs-workspace">
-      <aside className="songs-library">
+    <div className="songs-side-panels">
+      <div className="songs-left">
+        <aside className="songs-library">
         <div className="songs-panel-head"><div><p className="eyebrow">Biblioteca</p><h2>Canciones</h2></div><Button type="button" className="primary" onClick={create}>Nueva</Button></div>
         <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar canción" aria-label="Buscar canción" />
         {visibleSongs.length === 0 ? <p className="muted">Crea tu primera canción para comenzar.</p> : (
           <ul className="song-list">{visibleSongs.map((song) => <li key={song.id}><Button type="button" className={song.id === selectedId ? "song-item selected" : "song-item"} onClick={() => choose(song)}><span>{song.title}</span><small>{slidesFor(song).length} partes</small></Button></li>)}</ul>
         )}
-      </aside>
+        </aside>
 
-      <main className="song-editor">
+        <main className="song-editor">
         {!draft ? <div className="song-empty"><span className="song-empty-icon">♫</span><h2>Prepara una canción</h2><p className="muted">Crea una canción y separa sus partes con una línea en blanco.</p><Button type="button" className="primary" onClick={create}>Crear canción</Button></div> : <>
           <div className="songs-panel-head"><div><p className="eyebrow">Editor</p><h2>Contenido de la canción</h2></div><div className="action-row"><Button type="button" onClick={remove}>Eliminar</Button><Button type="button" className="primary" onClick={save}>Guardar</Button></div></div>
           <label className="song-field"><span>Título</span><Input value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} /></label>
           <label className="song-field"><span>Letra</span><Textarea className="song-lyrics" value={draft.lyrics} onChange={(event) => setDraft({ ...draft, lyrics: event.target.value })} placeholder="Verso 1\n\nCoro\n\nPuente" /></label>
           <p className="hint">Cada bloque separado por una línea en blanco se convierte en una parte proyectable.</p>
         </>}
-      </main>
+        </main>
+      </div>
 
       <aside className="song-presenter">
         <p className="eyebrow">Presentación</p><h2>Vista previa</h2>
