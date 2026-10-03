@@ -1,0 +1,4 @@
+interface:
+  display_name: "Release Lumen"
+  short_description: "Build and publish a new Lumen desktop release"
+  default_prompt: "Release a new Lumen version from the current main branch."
