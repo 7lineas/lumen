@@ -1006,8 +1006,8 @@ select:focus-visible {
 }
 
 .songs-side-panels { display: contents; }
-.songs-left { grid-column: 1; min-height: 0; overflow: auto; border-right: 1px solid #292d34; }
-.songs-mode .stage-col { grid-column: 2; }
+.songs-left { grid-column: 1; grid-row: 1; min-height: 0; overflow: auto; border-right: 1px solid #292d34; }
+.songs-mode .stage-col { grid-column: 2; grid-row: 1; }
 
 .songs-library,
 .song-editor,
@@ -1018,7 +1018,7 @@ select:focus-visible {
   padding: 1rem;
 }
 
-.song-presenter { grid-column: 3; }
+.song-presenter { grid-column: 3; grid-row: 1; }
 .songs-panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; margin-bottom: 1rem; }
 .songs-panel-head h2, .song-presenter h2 { margin: 0; font-size: 1.05rem; }
 .eyebrow { color: var(--accent); font-size: 0.7rem; letter-spacing: 0.08em; margin: 0 0 0.2rem; text-transform: uppercase; }
@@ -1026,6 +1026,11 @@ select:focus-visible {
 .song-item { align-items: flex-start; display: flex; flex-direction: column; gap: 0.15rem; margin-bottom: 0.25rem; text-align: left; width: 100%; }
 .song-item.selected { background: #1e3a5f; border-color: var(--accent-dim); }
 .song-item small { color: var(--muted); font-size: 0.72rem; }
+.song-parts-list { list-style: none; margin: 0.85rem 0; padding: 0; }
+.song-part { align-items: flex-start; display: flex; gap: 0.65rem; line-height: 1.35; text-align: left; width: 100%; }
+.song-part-number { color: var(--accent); flex: none; font-variant-numeric: tabular-nums; }
+.song-part.selected { background: #1e3a5f; border-color: var(--accent-dim); }
+.song-edit-box { border-top: 1px solid #292d34; margin-top: 1rem; padding-top: 1rem; }
 .song-field { display: block; margin-bottom: 1rem; }
 .song-field > span { color: var(--muted); display: block; font-size: 0.8rem; margin-bottom: 0.35rem; }
 .song-lyrics { min-height: 320px; resize: vertical; width: 100%; }
@@ -1037,7 +1042,7 @@ select:focus-visible {
 .project-song { width: 100%; }
 
 @media (max-width: 900px) {
-  .songs-left, .songs-mode .stage-col, .song-presenter { grid-column: 1; }
+  .songs-left, .songs-mode .stage-col, .song-presenter { grid-column: 1; grid-row: auto; }
   .songs-left, .song-presenter { min-height: 260px; border-right: 0; border-bottom: 1px solid #292d34; }
 }
 
