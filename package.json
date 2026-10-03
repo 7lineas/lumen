@@ -1,6 +1,6 @@
 {
   "name": "lumen",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Lumen — versículos para iglesia (offline)",
   "author": "7Lineas",
   "license": "MIT",
@@ -21,7 +21,6 @@
     "postinstall": "node node_modules/electron/install.js",
     "convert:bibles": "node scripts/convert-vpl.mjs",
     "build:bible-modules": "node scripts/build-bible-modules.mjs",
-    "prebuild": "pnpm convert:bibles",
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
@@ -80,7 +79,6 @@
   "build": {
     "appId": "com.7lineas.lumen",
     "productName": "Lumen",
-    "publisherName": "7Lineas",
     "directories": {
       "output": "release"
     },

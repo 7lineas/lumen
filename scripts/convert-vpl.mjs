@@ -14,6 +14,8 @@ const root = path.join(__dirname, "..");
 const tmpDir = path.join(root, "tmp-bible");
 const outDir = path.join(root, "data", "bibles");
 
+// Only the bundled Spanish edition is part of the desktop build. Additional
+// editions can be refreshed explicitly later from the release bucket.
 const SOURCES = [
   {
     zip: "spaRV1909_vpl.zip",
@@ -22,22 +24,6 @@ const SOURCES = [
     name: "Reina-Valera 1909",
     abbr: "RV1909",
     language: "es",
-  },
-  {
-    zip: "eng_kjv_vpl.zip",
-    txt: "eng-kjv_vpl.txt",
-    id: "kjv",
-    name: "King James Version",
-    abbr: "KJV",
-    language: "en",
-  },
-  {
-    zip: "engwebu_vpl.zip",
-    txt: "engwebu_vpl.txt",
-    id: "web",
-    name: "World English Bible",
-    abbr: "WEB",
-    language: "en",
   },
 ];
 

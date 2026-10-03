@@ -5,6 +5,7 @@ import {
   screen,
   globalShortcut,
   dialog,
+  Menu,
 } from "electron";
 import path from "path";
 import fs from "fs";
@@ -81,6 +82,7 @@ function createOperatorWindow(): void {
     minHeight: 680,
     icon: path.join(app.getAppPath(), "build/icon.png"),
     title: "Lumen",
+    autoHideMenuBar: true,
     webPreferences: {
       preload: getPreload(),
       contextIsolation: true,
@@ -134,6 +136,7 @@ function createProjectorWindow(): void {
     icon: path.join(app.getAppPath(), "build/icon.png"),
     title: "Lumen — Proyección",
     backgroundColor: "#000000",
+    autoHideMenuBar: true,
     webPreferences: {
       preload: getPreload(),
       contextIsolation: true,
@@ -265,6 +268,7 @@ async function captureScreenshots(): Promise<void> {
 app.whenReady().then(() => {
   app.setName("Lumen");
   app.setAppUserModelId("com.7lineas.lumen");
+  Menu.setApplicationMenu(null);
   if (process.platform === "darwin" && app.dock) {
     const iconPath = path.join(app.getAppPath(), "build/icon.png");
     if (fs.existsSync(iconPath)) app.dock.setIcon(iconPath);
