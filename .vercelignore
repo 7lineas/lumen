@@ -1,0 +1,13 @@
+# Vercel deploys the landing site only. Keep desktop builds and development
+# dependencies out of the upload payload.
+node_modules
+release
+dist
+dist-electron
+landing-dist
+tmp-bible
+data
+electron
+src
+build
+skills
