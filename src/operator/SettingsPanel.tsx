@@ -109,31 +109,33 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
       </label>
 
       <label className="field">
-        <span>Color de la referencia (arriba a la izquierda)</span>
+        <span>Color de acento (referencia y versión)</span>
         <Input
           type="color"
-          value={local.referenceColor}
-          onChange={(e) => setLocal({ ...local, referenceColor: e.target.value })}
+          value={local.accentColor}
+          onChange={(e) => setLocal({ ...local, accentColor: e.target.value })}
         />
       </label>
 
       <label className="field">
-        <span>Color de la versión (abajo a la derecha)</span>
-        <Input
-          type="color"
-          value={local.versionColor}
-          onChange={(e) => setLocal({ ...local, versionColor: e.target.value })}
-        />
-      </label>
-
-      <label className="field">
-        <span>Transición del texto (ms)</span>
+        <span>Transición Biblia (ms)</span>
         <Input
           type="number"
           min={0}
           max={2000}
           value={local.fadeMs}
           onChange={(e) => setLocal({ ...local, fadeMs: parseInt(e.target.value, 10) || 0 })}
+        />
+      </label>
+
+      <label className="field">
+        <span>Transición Canciones (ms)</span>
+        <Input
+          type="number"
+          min={0}
+          max={2000}
+          value={local.songFadeMs}
+          onChange={(e) => setLocal({ ...local, songFadeMs: parseInt(e.target.value, 10) || 0 })}
         />
       </label>
 

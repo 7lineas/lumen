@@ -58,7 +58,10 @@ export interface AppSettings {
   /** Images copied into this user's app data folder for reuse. */
   backgroundImages: string[];
   projectorDisplayId: number | null;
+  /** Bible text transition duration in ms. */
   fadeMs: number;
+  /** Songs text transition duration in ms. */
+  songFadeMs: number;
   backgroundFadeMs: number;
   /** Name shown on the logo screen. */
   churchName: string;
@@ -68,10 +71,8 @@ export interface AppSettings {
   padding: number;
   /** Copyright line on the projection footer. */
   showCopyright: boolean;
-  /** Color of the top-left reference on the projection. */
-  referenceColor: string;
-  /** Color of the bottom-right version tag on the projection. */
-  versionColor: string;
+  /** Single accent color for the reference (top-left) and version tag (bottom-right). */
+  accentColor: string;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -79,19 +80,19 @@ export const DEFAULT_SETTINGS: AppSettings = {
   secondaryVersionId: null,
   dualView: false,
   theme: "dark",
-  fontSize: 72,
+  fontSize: 74,
   backgroundColor: "#0f1419",
   backgroundImagePath: null,
   backgroundImages: [],
   projectorDisplayId: null,
-  fadeMs: 100,
-  backgroundFadeMs: 400,
+  fadeMs: 400,
+  songFadeMs: 100,
+  backgroundFadeMs: 100,
   churchName: "Iglesia",
-  brightness: 1,
-  padding: 5,
+  brightness: 0.4,
+  padding: 9,
   showCopyright: true,
-  referenceColor: "#f6a623",
-  versionColor: "#f6a623",
+  accentColor: "#f6a623",
 };
 
 export interface HistoryEntry {

@@ -191,8 +191,15 @@ export function ProjectorView() {
   }
 
   const { ref, version } = splitReference(payload.referenceLabel);
-  const referenceColor = payload.referenceColor ?? settings.referenceColor ?? "#f6a623";
-  const versionColor = payload.versionColor ?? settings.versionColor ?? "#f6a623";
+  // Settings saved before the accent-color split still carry the legacy keys.
+  const legacyColors = settings as Partial<AppSettings> & {
+    referenceColor?: string;
+    versionColor?: string;
+  };
+  const referenceColor =
+    payload.referenceColor ?? settings.accentColor ?? legacyColors.referenceColor ?? "#f6a623";
+  const versionColor =
+    payload.versionColor ?? settings.accentColor ?? legacyColors.versionColor ?? "#f6a623";
 
   return (
       <div className={themeClass} style={style}>
