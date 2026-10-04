@@ -1,7 +1,9 @@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import { BOOKS } from "@shared/books";
+import { MAX_QUEUE_ITEMS } from "@shared/types";
 import type { VerseRange } from "@shared/reference";
 import { getBible } from "@shared/bible-service";
 
@@ -23,6 +25,9 @@ interface Props {
   onBookFilter: (value: string) => void;
   onSelectBook: (code: string) => void;
   onSelectChapter: (chapter: number) => void;
+  onAddCurrent: () => void;
+  /** References already stored in the rundown; caps how many can be added. */
+  savedCount: number;
   onVerseClick: (verse: number, shiftKey: boolean) => void;
   onVerseDoubleClick: (verse: number) => void;
   refInput: string;
@@ -151,14 +156,32 @@ export function ChapterReader(props: Props) {
 
       <div className="verse-head">
         <p className="section-label">Versículos{props.loadingChapter ? " · cargando…" : ""}</p>
-        <Button
-          type="button"
-          className={showText ? "chip selected" : "chip"}
-          aria-pressed={showText}
-          onClick={() => setShowText((v) => !v)}
-        >
-          Texto
-        </Button>
+        <div className="verse-head-actions">
+          <Button
+            type="button"
+            size="icon-sm"
+            variant="outline"
+            className="add-preview-btn"
+            disabled={props.savedCount >= MAX_QUEUE_ITEMS}
+            aria-label="Añadir lo que está en vista previa"
+            title={
+              props.savedCount >= MAX_QUEUE_ITEMS
+                ? `Máximo de ${MAX_QUEUE_ITEMS} guardados`
+                : "Añadir lo que está en vista previa"
+            }
+            onClick={props.onAddCurrent}
+          >
+            <Save />
+          </Button>
+          <Button
+            type="button"
+            className={showText ? "chip selected" : "chip"}
+            aria-pressed={showText}
+            onClick={() => setShowText((v) => !v)}
+          >
+            Texto
+          </Button>
+        </div>
       </div>
 
       {showText ? (
