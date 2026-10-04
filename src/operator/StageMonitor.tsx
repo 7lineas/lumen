@@ -226,7 +226,7 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
               </section>
             ))}
           </div>
-          {(version || renderPayload.copyright) && (
+          {(version || renderPayload.copyright || renderPayload.hasCopyright) && (
             <div className="monitor-screen-footer">
               {renderPayload.copyright
                 ? <footer className="monitor-screen-copyright" style={{ fontSize: `${Number.isFinite(copyrightPx) && copyrightPx > 0 ? copyrightPx : footerPx}px` }}>
@@ -238,7 +238,7 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
                   className="monitor-screen-version"
                   style={{ color: versionColor, fontSize: `${versionPx}px` }}
                 >
-                  {version}
+                  {version}{renderPayload.hasCopyright && !renderPayload.copyright ? "®" : ""}
                 </div>
               )}
             </div>

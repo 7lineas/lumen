@@ -170,7 +170,7 @@ export function SongsWorkspace({ staged, selectedId, projectOnClick, onTogglePro
       <aside className="song-presenter songs-library-panel">
         <div className="song-tabs" role="tablist" aria-label="Gestión de canciones">
           <Button type="button" role="tab" aria-selected={rightTab === "library"} className={rightTab === "library" ? "song-tab active" : "song-tab"} onClick={() => setRightTab("library")}>Biblioteca</Button>
-          <Button type="button" role="tab" aria-selected={rightTab === "creation"} className={rightTab === "creation" ? "song-tab active" : "song-tab"} onClick={openCreation}>{draft && !isNew ? "Edición" : "Creación"}</Button>
+          <Button type="button" role="tab" aria-selected={rightTab === "creation"} className={rightTab === "creation" ? "song-tab active" : "song-tab"} onClick={openCreation}>{draft && !isNew ? "Edición" : "Nueva"}</Button>
         </div>
         {rightTab === "library" ? <>
           <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar canción" aria-label="Buscar canción" />
@@ -213,9 +213,9 @@ export function SongsWorkspace({ staged, selectedId, projectOnClick, onTogglePro
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-          </> : <Button type="button" onClick={() => setDraft(null)}>Cancelar</Button>}<Button type="button" className="primary" onClick={save} disabled={!draft.title.trim()}>Guardar</Button></div>
+          </> : <Button type="button" onClick={() => { setDraft(null); setRightTab("library"); }}>Cancelar</Button>}<Button type="button" className="primary" onClick={save} disabled={!draft.title.trim()}>Guardar</Button></div>
           <label className="song-field"><span>Título</span><Input value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} placeholder="Título de la canción" /></label>
-          <label className="song-field"><span>Letra</span><Textarea className="song-lyrics" value={draft.lyrics} onChange={(event) => setDraft({ ...draft, lyrics: event.target.value })} placeholder={"Verso 1\n\nCoro\n\nPuente"} /></label>
+          <label className="song-field song-field-lyrics"><span>Letra</span><Textarea className="song-lyrics" value={draft.lyrics} onChange={(event) => setDraft({ ...draft, lyrics: event.target.value })} placeholder={"Verso 1\n\nCoro\n\nPuente"} /></label>
           <p className="hint song-hint-centered">Separa las partes con una línea en blanco.</p>
           </>}
         </div>}
