@@ -108,7 +108,11 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
   const version = sep < 0 ? "" : label.slice(sep + 3);
   const referenceColor = renderPayload?.referenceColor ?? "#f6a623";
   const versionColor = renderPayload?.versionColor ?? "#f6a623";
-  const backgroundPath = renderPayload?.backgroundImagePath;
+  // Same rule as the projector: slides => solid color background, switched
+  // from the incoming payload (not the lagging displayed one) so it fades in
+  // parallel with the slide.
+  const slidesActive = (isLive ? payload : renderPayload)?.mode === "slides";
+  const backgroundPath = slidesActive ? undefined : renderPayload?.backgroundImagePath;
   const backgroundFadeMs = Math.max(0, renderPayload?.backgroundFadeMs ?? DEFAULT_SETTINGS.backgroundFadeMs);
   const pad = renderPayload?.padding ?? DEFAULT_SETTINGS.padding;
 
@@ -266,7 +270,8 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
             width: screenSize ? `${screenSize.width}px` : "100%",
             height: screenSize ? `${screenSize.height}px` : "auto",
             aspectRatio: screenAspect,
-            padding: `${pad}%`,
+            // A diapositiva image is full-bleed: the text padding must not shrink it.
+            padding: slideImage ? 0 : `${pad}%`,
           }}
         >
           <div

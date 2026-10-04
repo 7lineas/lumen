@@ -41,6 +41,7 @@ interface Props {
   onSelectDeck: (id: string, title: string, images: string[]) => void;
   onSelectSlide: (index: number) => void;
   onClearSelection?: () => void;
+  onDeckRemoved?: (id: string) => void;
 }
 
 /** A presentation being converted to images (kept in memory only; never persisted as a deck). */
@@ -52,7 +53,7 @@ interface Job {
   error?: string;
 }
 
-export function SlidesWorkspace({ staged, selectedId, projectOnClick, onToggleProjectOnClick, onSelectDeck, onSelectSlide, onClearSelection }: Props) {
+export function SlidesWorkspace({ staged, selectedId, projectOnClick, onToggleProjectOnClick, onSelectDeck, onSelectSlide, onClearSelection, onDeckRemoved }: Props) {
   const [decks, setDecks] = useState<StoredSlideDeck[]>([]);
   const [decksLoaded, setDecksLoaded] = useState(false);
   const [query, setQuery] = useState("");
@@ -173,6 +174,7 @@ export function SlidesWorkspace({ staged, selectedId, projectOnClick, onTogglePr
   const removeDeck = (id: string) => {
     setDecks((current) => current.filter((deck) => deck.id !== id));
     if (id === selectedId) onClearSelection?.();
+    onDeckRemoved?.(id);
   };
   return <div className="songs-side-panels slides-mode-panels">
     <aside className="songs-left songs-parts">

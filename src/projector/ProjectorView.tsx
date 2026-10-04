@@ -35,6 +35,10 @@ export function ProjectorView() {
   const [payload, setPayload] = useState<ProjectorPayload>(EMPTY);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [visible, setVisible] = useState(false);
+  // True as soon as a slides payload arrives (and false as soon as anything
+  // else does), without waiting for the content fade: the background must
+  // change to solid color / back to media in parallel with the slide fade.
+  const [slidesActive, setSlidesActive] = useState(false);
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
   const displayedRef = useRef<ProjectorPayload>(EMPTY);
@@ -60,6 +64,7 @@ export function ProjectorView() {
       });
     };
     const off = api.onProjectorUpdate((p) => {
+      setSlidesActive(p.mode === "slides");
       const ms = Math.max(0, p.fadeMs ?? settingsRef.current.fadeMs ?? DEFAULT_SETTINGS.fadeMs);
       if (timerRef.current !== null) {
         clearTimeout(timerRef.current);
@@ -153,7 +158,9 @@ export function ProjectorView() {
   // Background media is an application setting, so it must stay identical to
   // the operator's preview/live monitors even when the last payload was sent
   // before the user changed the selected image or video.
-  const backgroundPath = settings.backgroundImagePath;
+  // While slides are shown the background is always the solid color (the
+  // media fades out over backgroundFadeMs and fades back in when they hide).
+  const backgroundPath = slidesActive ? undefined : settings.backgroundImagePath;
   const backgroundFadeMs = Math.max(0, payload.backgroundFadeMs ?? settings.backgroundFadeMs ?? DEFAULT_SETTINGS.backgroundFadeMs);
   const backgroundMedia = (
     <FadingBackgroundMedia path={backgroundPath} brightness={brightness} fadeMs={backgroundFadeMs} fit={settings.backgroundFit ?? DEFAULT_SETTINGS.backgroundFit} className="projector-background-media" />

@@ -432,13 +432,16 @@ button.primary {
   pointer-events: none;
 }
 
+/* Thumbnail = the whole slide image: no border, radius, padding or cropping. */
 button.song-part .song-part-thumb {
   width: 4.5rem;
-  height: 2.6rem;
+  height: auto;
   flex: none;
-  object-fit: cover;
-  border-radius: 0.35rem;
-  border: 1px solid #3a404a;
+  object-fit: contain;
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
 }
 
 .projector-col-label {

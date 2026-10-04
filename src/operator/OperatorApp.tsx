@@ -363,8 +363,11 @@ export function OperatorApp() {
     // A diapositiva is just its image: no text blocks.
     blocks: [],
     slideImagePath: imagePath,
-    fadeMs: settings.songFadeMs,
-  }), [songPayload, settings.songFadeMs]);
+    // Slides fade in/out/between with the same backgroundFadeMs as the
+    // background media (no separate setting), and the background switches to
+    // the solid color while they are shown (see ProjectorView / StageMonitor).
+    fadeMs: settings.backgroundFadeMs,
+  }), [songPayload, settings.backgroundFadeMs]);
 
   const songPreviewPayload = useMemo<ProjectorPayload | null>(() => {
     if (!songStaged || songStaged.slides.length === 0) return null;
@@ -425,6 +428,13 @@ export function OperatorApp() {
     setSlideStaged(images.length ? { deckId: id, title, images, index: 0 } : null);
   }, []);
   const clearSlideSelection = useCallback(() => { setSlideSelectedId(null); setSlideStaged(null); }, []);
+  // Removing the deck that is on screen stops showing it: the projector fades
+  // the slide out (backgroundFadeMs) and the normal background returns.
+  const slideDeckRemoved = useCallback((id: string) => {
+    if (slideLive?.deckId !== id) return;
+    setSlideLive(null);
+    void send(blankPayload(settings, settings.backgroundFadeMs));
+  }, [slideLive, send, settings]);
   const selectSlide = useCallback((index: number) => {
     setSlideStaged((current) => {
       if (!current || current.images.length === 0) return current;
@@ -469,7 +479,7 @@ export function OperatorApp() {
     // "Limpiar" clears only the text (verse/song/slide). Background color and
     // media stay so the projector keeps showing them behind empty content.
     // The blank transition uses the current workspace's fade setting.
-    await send(blankPayload(settings, mode === "canciones" || mode === "diapositivas" ? settings.songFadeMs : settings.fadeMs));
+    await send(blankPayload(settings, mode === "diapositivas" ? settings.backgroundFadeMs : mode === "canciones" ? settings.songFadeMs : settings.fadeMs));
   }, [send, settings, mode]);
 
   const toggleBlank = useCallback(async () => {
@@ -829,6 +839,7 @@ export function OperatorApp() {
           onSelectDeck={selectSlideDeck}
           onSelectSlide={selectSlide}
           onClearSelection={clearSlideSelection}
+          onDeckRemoved={slideDeckRemoved}
         /> : <ChapterReader
           versionId={settings.primaryVersionId}
           ready={ready}
@@ -1043,7 +1054,7 @@ export function OperatorApp() {
             )}
           </div>
           <div className="stage-tweaks">
-            <label className="tweak">
+            {mode !== "diapositivas" && <label className="tweak">
               <span className="tweak-head">
                 <span>Fuente</span>
                 <span className="tweak-val">{settings.fontSize}px</span>
@@ -1057,7 +1068,7 @@ export function OperatorApp() {
                   void applyChrome({ ...settings, fontSize: next ?? settings.fontSize });
                 }}
               />
-            </label>
+            </label>}
             <label className="tweak">
               <span className="tweak-head">
                 <span>Luz</span>
@@ -1073,7 +1084,7 @@ export function OperatorApp() {
                 }}
               />
             </label>
-            <label className="tweak">
+            {mode !== "diapositivas" && <label className="tweak">
               <span className="tweak-head">
                 <span>Padding</span>
                 <span className="tweak-val">{settings.padding}vw</span>
@@ -1087,7 +1098,7 @@ export function OperatorApp() {
                   void applyChrome({ ...settings, padding: next ?? settings.padding });
                 }}
               />
-            </label>
+            </label>}
           </div>
         </section>
 
