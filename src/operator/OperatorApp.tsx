@@ -27,6 +27,7 @@ import { StageMonitor } from "./StageMonitor";
 import { ChapterReader } from "./ChapterReader";
 import { ServiceRundown } from "./ServiceRundown";
 import { SongsWorkspace, type SongStage } from "./SongsWorkspace";
+import { SlidesWorkspace, type SlideStage } from "./SlidesWorkspace";
 import { UpdateButton } from "./UpdateButton";
 import lumenLogo from "../lumen-icon.png";
 
@@ -93,10 +94,13 @@ export function OperatorApp() {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [queue, setQueue] = useState<QueueEntry[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [mode, setMode] = useState<"biblia" | "canciones">("biblia");
+  const [mode, setMode] = useState<"biblia" | "canciones" | "diapositivas">("biblia");
   const [songStaged, setSongStaged] = useState<SongStage | null>(null);
   const [songSelectedId, setSongSelectedId] = useState<string | null>(null);
   const [songLive, setSongLive] = useState<SongStage | null>(null);
+  const [slideStaged, setSlideStaged] = useState<SlideStage | null>(null);
+  const [slideSelectedId, setSlideSelectedId] = useState<string | null>(null);
+  const [slideLive, setSlideLive] = useState<SlideStage | null>(null);
   const [projectOnClick, setProjectOnClick] = useState(false);
   const [overlay, setOverlay] = useState<"ajustes" | "acerca" | "biblias" | null>(null);
   // Keep rendering the last non-null overlay while the sheet plays its
@@ -111,6 +115,7 @@ export function OperatorApp() {
   const [libraryTick, setLibraryTick] = useState(0);
   const [projectorBounds, setProjectorBounds] = useState<{ width: number; height: number } | null>(null);
   const lastVerse = useRef<ProjectorPayload | null>(null);
+  const lastContent = useRef<ProjectorPayload | null>(null);
   const booted = useRef(false);
 
   // Track the real projector window size so the live/preview monitors
@@ -282,7 +287,7 @@ export function OperatorApp() {
     stageRange(liveRange);
   }, [mode, staged, liveRange, stageRange]);
 
-  const switchMode = useCallback((next: "biblia" | "canciones") => {
+  const switchMode = useCallback((next: "biblia" | "canciones" | "diapositivas") => {
     setMode(next);
     if (next !== "biblia" || staged) return;
     if (liveRange) {
@@ -308,6 +313,11 @@ export function OperatorApp() {
     setLive(payload);
     if (payload.mode === "verse") {
       lastVerse.current = payload;
+    }
+    // Any projected content (verse/song/slide) is restorable: "Limpiar"
+    // only removes the text above the permanent background.
+    if (payload.mode !== "blank") {
+      lastContent.current = payload;
       setHasLiveContent(true);
     }
     await window.proyector?.showOnProjector(payload);
@@ -344,6 +354,15 @@ export function OperatorApp() {
     fadeMs: settings.songFadeMs,
     backgroundFadeMs: settings.backgroundFadeMs,
   }), [settings]);
+
+  const slidePayload = useCallback((text: string, imagePath?: string | null): ProjectorPayload => ({
+    ...songPayload("", text),
+    mode: "slides",
+    // Image slides project the picture, not the navigation label.
+    blocks: imagePath ? [] : [{ text }],
+    slideImagePath: imagePath ?? null,
+    fadeMs: settings.songFadeMs,
+  }), [songPayload, settings.songFadeMs]);
 
   const songPreviewPayload = useMemo<ProjectorPayload | null>(() => {
     if (!songStaged || songStaged.slides.length === 0) return null;
@@ -399,16 +418,79 @@ export function OperatorApp() {
     await send(songPayload(next.title, text));
   }, [songLive, send, songPayload]);
 
+  const selectSlideDeck = useCallback((id: string, title: string, slides: string[], images?: Array<string | null>) => {
+    if (!slides.length) {
+      setSlideSelectedId(id);
+      setSlideStaged(null);
+      return;
+    }
+    const normalized = slides.map((_, i) => images?.[i] ?? null);
+    setSlideSelectedId(id);
+    setSlideStaged({ deckId: id, title, slides, images: normalized, index: 0 });
+  }, []);
+  const clearSlideSelection = useCallback(() => { setSlideSelectedId(null); setSlideStaged(null); }, []);
+  const handleSlideImagesReady = useCallback((id: string, slides: string[], images: string[]) => {
+    // Only the matching deck is touched, so no dependency on the current selection.
+    setSlideStaged((staged) => (staged && staged.deckId === id ? { ...staged, slides, images } : staged));
+    setSlideLive((live) => (live && live.deckId === id ? { ...live, slides, images } : live));
+  }, []);
+  const selectSlide = useCallback((index: number) => {
+    setSlideStaged((current) => {
+      if (!current || current.slides.length === 0) return current;
+      const clamped = Math.min(Math.max(index, 0), current.slides.length - 1);
+      if (clamped === current.index) return current;
+      const next = { ...current, index: clamped };
+      if (projectOnClick) {
+        const text = next.slides[clamped] ?? "";
+        const image = next.images[clamped] ?? null;
+        // Defer the projection out of the state updater to avoid
+        // double-sends under StrictMode double-invocation.
+        queueMicrotask(() => {
+          setSlideLive(next);
+          void send(slidePayload(text, image));
+        });
+      }
+      return next;
+    });
+  }, [projectOnClick, send, slidePayload]);
+  const slidePreviewPayload = useMemo<ProjectorPayload | null>(() => {
+    if (!slideStaged || slideStaged.slides.length === 0) return null;
+    const index = Math.min(Math.max(slideStaged.index, 0), slideStaged.slides.length - 1);
+    const text = slideStaged.slides[index] ?? slideStaged.slides[0];
+    if (text == null) return null;
+    return slidePayload(text, slideStaged.images[index] ?? null);
+  }, [slideStaged, slidePayload]);
+  const projectSlideStaged = useCallback(async () => {
+    if (!slideStaged || slideStaged.slides.length === 0) return;
+    const index = Math.min(Math.max(slideStaged.index, 0), slideStaged.slides.length - 1);
+    const text = slideStaged.slides[index] ?? slideStaged.slides[0];
+    if (text == null) return;
+    setSlideLive(slideStaged);
+    await send(slidePayload(text, slideStaged.images[index] ?? null));
+  }, [slideStaged, send, slidePayload]);
+  const navigateSlidePreview = useCallback((delta: number) => { setSlideStaged((current) => current && current.slides.length ? { ...current, index: Math.min(Math.max(current.index + delta, 0), current.slides.length - 1) } : current); }, []);
+  const navigateSlideLive = useCallback(async (delta: number) => {
+    const current = slideLive;
+    if (!current || current.slides.length === 0) return;
+    const index = Math.min(Math.max(current.index + delta, 0), current.slides.length - 1);
+    if (index === current.index) return;
+    const next = { ...current, index };
+    const text = next.slides[index];
+    if (text == null) return;
+    setSlideLive(next);
+    await send(slidePayload(text, next.images[index] ?? null));
+  }, [slideLive, send, slidePayload]);
+
   const showBlank = useCallback(async () => {
-    // "Limpiar" clears only the text (verse/song). Background color and
+    // "Limpiar" clears only the text (verse/song/slide). Background color and
     // media stay so the projector keeps showing them behind empty content.
     // The blank transition uses the current workspace's fade setting.
-    await send(blankPayload(settings, mode === "canciones" ? settings.songFadeMs : settings.fadeMs));
+    await send(blankPayload(settings, mode === "canciones" || mode === "diapositivas" ? settings.songFadeMs : settings.fadeMs));
   }, [send, settings, mode]);
 
   const toggleBlank = useCallback(async () => {
     if (live?.mode === "blank") {
-      if (lastVerse.current) await send(chrome(lastVerse.current));
+      if (lastContent.current) await send(chrome(lastContent.current));
       return;
     }
     await showBlank();
@@ -681,6 +763,9 @@ export function OperatorApp() {
             <Button type="button" data-testid="mode-canciones" className={mode === "canciones" ? "active" : ""} onClick={() => switchMode("canciones")}>
               Canciones
             </Button>
+            <Button type="button" data-testid="mode-diapositivas" className={mode === "diapositivas" ? "active" : ""} onClick={() => switchMode("diapositivas")}>
+              Diapositivas
+            </Button>
             <span className="top-sep" aria-hidden />
             <UpdateButton />
           </div>
@@ -732,7 +817,7 @@ export function OperatorApp() {
         </div>
       </header>
 
-      <div className={`workspace ${mode === "canciones" ? "songs-mode" : ""}`}>
+      <div className={`workspace ${mode !== "biblia" ? "songs-mode" : ""}`}>
         {mode === "canciones" ? (
           <SongsWorkspace
             staged={songStaged}
@@ -742,7 +827,16 @@ export function OperatorApp() {
             onSelectSong={selectSong}
             onSelectPart={selectSongPart}
           />
-        ) : <ChapterReader
+        ) : mode === "diapositivas" ? <SlidesWorkspace
+          staged={slideStaged}
+          selectedId={slideSelectedId}
+          projectOnClick={projectOnClick}
+          onToggleProjectOnClick={setProjectOnClick}
+          onSelectDeck={selectSlideDeck}
+          onSelectSlide={selectSlide}
+          onClearSelection={clearSlideSelection}
+          onImagesReady={handleSlideImagesReady}
+        /> : <ChapterReader
           versionId={settings.primaryVersionId}
           ready={ready}
           viewBook={viewBook}
@@ -786,8 +880,8 @@ export function OperatorApp() {
             <div className="monitor-col">
               <StageMonitor
                 title="Vista previa"
-                payload={mode === "canciones" ? songPreviewPayload : previewPayload}
-                empty={mode === "canciones" ? "Elija una parte de la canción" : "Elija un versículo"}
+                payload={mode === "canciones" ? songPreviewPayload : mode === "diapositivas" ? slidePreviewPayload : previewPayload}
+                empty={mode === "canciones" ? "Elija una parte de la canción" : mode === "diapositivas" ? "Elija una diapositiva" : "Elija un versículo"}
                 testId="preview-box"
                 aspectRatio={projectorAspect}
                 displayWidth={projectorBounds?.width}
@@ -804,6 +898,10 @@ export function OperatorApp() {
                   <Button type="button" onClick={() => navigateSongPreview(1)}>
                     Siguiente ▶
                   </Button>
+                </> : mode === "diapositivas" ? <>
+                  <Button type="button" className="primary" data-testid="btn-project" onClick={() => void projectSlideStaged()}>Proyectar</Button>
+                  <Button type="button" onClick={() => navigateSlidePreview(-1)}>◀ Anterior</Button>
+                  <Button type="button" onClick={() => navigateSlidePreview(1)}>Siguiente ▶</Button>
                 </> : <>
                   <Button type="button" className="primary" data-testid="btn-project" onClick={() => void projectStaged()}>
                     Proyectar
@@ -843,6 +941,9 @@ export function OperatorApp() {
                   <Button type="button" data-testid="btn-live-next" onClick={() => void navigateSongLive(1)}>
                     Siguiente ▶
                   </Button>
+                </> : mode === "diapositivas" ? <>
+                  <Button type="button" data-testid="btn-live-prev" onClick={() => void navigateSlideLive(-1)}>◀ Anterior</Button>
+                  <Button type="button" data-testid="btn-live-next" onClick={() => void navigateSlideLive(1)}>Siguiente ▶</Button>
                 </> : <>
                   <Button type="button" data-testid="btn-live-prev" onClick={() => void navigateLive(-1)}>
                     ◀ Anterior

@@ -10,7 +10,8 @@ export default defineConfig({
     tailwindcss(),
     electron({
       main: {
-        entry: "electron/main.ts",
+        // pptx-worker runs in a utilityProcess (see electron/pptx-render.ts).
+        entry: { main: "electron/main.ts", "pptx-worker": "electron/pptx-worker.ts" },
         vite: {
           build: {
             outDir: "dist-electron",

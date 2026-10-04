@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { ProjectorPayload } from "@shared/types";
 import { DEFAULT_SETTINGS } from "@shared/types";
+import { backgroundImageUrl } from "@shared/background-image";
 import { FadingBackgroundMedia } from "@/components/BackgroundMedia";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -24,7 +25,7 @@ interface Props {
 function contentKey(p: ProjectorPayload | null): string {
   if (!p || p.mode === "blank") return "blank";
   if (p.mode === "logo") return `logo:${p.churchName}`;
-  return `verse:${p.referenceLabel}|${p.blocks.map((b) => `${b.label ?? ""}=${b.text}`).join("|")}`;
+  return `${p.mode}:${p.referenceLabel}|${p.slideImagePath ?? ""}|${p.blocks.map((b) => `${b.label ?? ""}=${b.text}`).join("|")}`;
 }
 
 export function StageMonitor({ title, payload, empty, testId, isLive, aspectRatio, displayWidth, ratioLabel }: Props) {
@@ -96,7 +97,7 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
   const projectorFontPx = renderPayload?.fontSize ?? DEFAULT_SETTINGS.fontSize;
   const fadeMs = Math.max(0, renderPayload?.fadeMs ?? DEFAULT_SETTINGS.fadeMs);
   const isLogo = renderPayload?.mode === "logo";
-  const projecting = renderPayload?.mode === "verse" || renderPayload?.mode === "logo";
+  const projecting = renderPayload?.mode === "verse" || renderPayload?.mode === "slides" || renderPayload?.mode === "logo";
   const label = renderPayload?.referenceLabel ?? "";
   const sep = label.lastIndexOf(" — ");
   const ref = sep < 0 ? label : label.slice(0, sep);
@@ -161,7 +162,7 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
       // Always restart from the full size so growing the window grows text back.
       let size = projectorFontPx * s;
       const el = textRef.current;
-      if (el && renderPayload?.mode === "verse") {
+      if (el && (renderPayload?.mode === "verse" || renderPayload?.mode === "slides")) {
         el.style.fontSize = `${size}px`;
         // Same rule as the projector: the body is a flex-1 box with overflow
         // hidden, so fitting to its own clientHeight keeps header/footer
@@ -194,11 +195,15 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
   // line breaks match after the screen is reduced into the fixed card.
   const bodyFitPx = fitPx * 0.84;
 
+  const slideImage = renderPayload?.mode === "slides" ? renderPayload.slideImagePath ?? null : null;
   const screenContent = (
     <>
       {!renderPayload && empty && <p className="monitor-screen-empty">{empty}</p>}
       {isLogo && <p className="monitor-screen-logo" style={{ fontSize: `${fitPx * 0.65}px` }}>{renderPayload?.churchName}</p>}
-      {renderPayload?.mode === "verse" && (
+      {slideImage && (
+        <img src={backgroundImageUrl(slideImage)} alt="" className="monitor-screen-slide" />
+      )}
+      {(renderPayload?.mode === "verse" || (renderPayload?.mode === "slides" && !slideImage)) && (
         <>
           {ref && <header className="monitor-screen-ref" style={{ color: referenceColor, fontSize: `${fitPx * 0.5}px` }}>{ref}</header>}
           <div

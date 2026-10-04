@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from "electron";
-import type { AppSettings, HistoryEntry, ProjectorPayload, QueueEntry, StoredSong } from "../shared/types";
+import type { AppSettings, HistoryEntry, ProjectorPayload, QueueEntry, StoredSong, StoredSlideDeck } from "../shared/types";
 
 export interface BibleLibraryEntry {
   id: string;
@@ -55,6 +55,19 @@ contextBridge.exposeInMainWorld("proyector", {
   setFavorites: (f: QueueEntry[]): Promise<QueueEntry[]> => ipcRenderer.invoke("favorites:set", f),
   getSongs: (): Promise<StoredSong[]> => ipcRenderer.invoke("songs:get"),
   setSongs: (songs: StoredSong[]): Promise<StoredSong[]> => ipcRenderer.invoke("songs:set", songs),
+  getSlideDecks: (): Promise<StoredSlideDeck[]> => ipcRenderer.invoke("slides:get"),
+  setSlideDecks: (decks: StoredSlideDeck[]): Promise<StoredSlideDeck[]> => ipcRenderer.invoke("slides:set", decks),
+  importSlideDeck: (): Promise<StoredSlideDeck | { error: string; deck?: StoredSlideDeck } | null> =>
+    ipcRenderer.invoke("slides:import"),
+  readSlideSource: (file: string): Promise<string | null> => ipcRenderer.invoke("slides:readFile", file),
+  saveSlidePngs: (images: string[]): Promise<string[] | null> => ipcRenderer.invoke("slides:savePngs", images),
+  convertPptx: (request: { deckId: string; file: string; total: number }): Promise<{ ok: true; images: string[] } | { ok: false; error: string }> =>
+    ipcRenderer.invoke("slides:convertPptx", request),
+  onSlideProgress: (callback: (progress: { deckId: string; done: number; total: number }) => void): (() => void) => {
+    const listener = (_event: unknown, progress: { deckId: string; done: number; total: number }) => callback(progress);
+    ipcRenderer.on("slides:progress", listener);
+    return () => ipcRenderer.removeListener("slides:progress", listener);
+  },
   listDisplays: (): Promise<DisplayInfo[]> => ipcRenderer.invoke("displays:list"),
   openProjector: (): Promise<boolean> => ipcRenderer.invoke("projector:open"),
   getProjectorBounds: (): Promise<{ width: number; height: number } | null> =>

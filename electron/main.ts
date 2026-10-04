@@ -13,7 +13,121 @@ import path from "path";
 import { pathToFileURL } from "url";
 import fs from "fs";
 import Store from "electron-store";
-import type { AppSettings, ProjectorPayload, QueueEntry, HistoryEntry, StoredSong } from "../shared/types";
+import { isPdfPath, isSlideTextPath, isUnsupportedPresentationPath } from "../shared/slide-deck";
+import { renderPptxInWorker } from "./pptx-render";
+import {
+  isPptxPath,
+  isSlideImagePath,
+  parsePptxBuffer,
+  sanitizeSlideDecks,
+  sortImagePathsNumerically,
+} from "./slides-import";
+
+function slideImagesDir(): string {
+  return path.join(app.getPath("userData"), "slide-images");
+}
+
+function slideDecksDir(): string {
+  return path.join(app.getPath("userData"), "slide-decks");
+}
+
+/** Copy an original .pptx into app data so the renderer can rasterize it. */
+function copyPptxToSlideDecks(deckId: string, filePath: string): string | null {
+  try {
+    const dir = slideDecksDir();
+    fs.mkdirSync(dir, { recursive: true });
+    const storedPath = path.join(dir, `${deckId}.pptx`);
+    fs.copyFileSync(filePath, storedPath);
+    return storedPath;
+  } catch (error) {
+    console.error("[slides] copyPptxToSlideDecks failed", error);
+    return null;
+  }
+}
+
+/** Copy an original PDF into app data so the renderer can rasterize it. */
+function copyPdfToSlideDecks(deckId: string, pdfPath: string): string | null {
+  try {
+    const dir = slideDecksDir();
+    fs.mkdirSync(dir, { recursive: true });
+    const storedPath = path.join(dir, `${deckId}.pdf`);
+    fs.copyFileSync(pdfPath, storedPath);
+    return storedPath;
+  } catch (error) {
+    console.error("[slides] copyPdfToSlideDecks failed", error);
+    return null;
+  }
+}
+
+function copyToSlideImages(filePath: string): string | null {
+  try {
+    const dir = slideImagesDir();
+    fs.mkdirSync(dir, { recursive: true });
+    const ext = path.extname(filePath).toLowerCase();
+    const storedPath = path.join(dir, `${Date.now()}-${Math.random().toString(36).slice(2, 9)}${ext}`);
+    fs.copyFileSync(filePath, storedPath);
+    return storedPath;
+  } catch (error) {
+    console.error("[slides] copyToSlideImages failed", error);
+    return null;
+  }
+}
+
+/** Files younger than this are never pruned: they may belong to an import/conversion whose deck is not persisted yet. */
+const PRUNE_GRACE_MS = 5 * 60 * 1000;
+
+function isRecent(fullPath: string): boolean {
+  try {
+    return Date.now() - fs.statSync(fullPath).mtimeMs < PRUNE_GRACE_MS;
+  } catch {
+    return false;
+  }
+}
+
+/** Delete managed slide images no longer referenced by any stored deck. */
+function pruneOrphanSlideImages(next: Array<{ images: Array<string | null> }>): void {
+  try {
+    const dir = path.resolve(slideImagesDir());
+    if (!fs.existsSync(dir)) return;
+    const referenced = new Set(
+      next.flatMap((deck) => deck.images).filter((entry): entry is string => typeof entry === "string"),
+    );
+    for (const name of fs.readdirSync(dir)) {
+      const full = path.join(dir, name);
+      if (!referenced.has(full) && !isRecent(full)) {
+        try {
+          fs.rmSync(full, { force: true });
+        } catch {
+          // ignore single-file failures
+        }
+      }
+    }
+  } catch {
+    // pruning is best-effort
+  }
+}
+
+/** Delete managed PDFs whose deck no longer exists. */
+function pruneOrphanSlideSources(next: Array<{ id: string }>): void {
+  try {
+    const dir = path.resolve(slideDecksDir());
+    if (!fs.existsSync(dir)) return;
+    const live = new Set(next.map((deck) => deck.id));
+    for (const name of fs.readdirSync(dir)) {
+      const full = path.join(dir, name);
+      if (!live.has(path.basename(name, path.extname(name))) && !isRecent(full)) {
+        try {
+          fs.rmSync(full, { force: true });
+        } catch {
+          // ignore single-file failures
+        }
+      }
+    }
+  } catch {
+    // pruning is best-effort
+  }
+}
+import type { AppSettings, ProjectorPayload, QueueEntry, HistoryEntry, StoredSong, StoredSlideDeck } from "../shared/types";
 import { DEFAULT_SETTINGS } from "../shared/types";
 import { buildBibleDataCandidates, resolveBibleDataDir } from "./bible-data-path";
 import { initAutoUpdater, registerUpdaterHandlers } from "./updater";
@@ -37,6 +151,7 @@ const store = new Store<{
   queue: QueueEntry[];
   favorites: QueueEntry[];
   songs: StoredSong[];
+  slideDecks: StoredSlideDeck[];
 }>({
   defaults: {
     settings: DEFAULT_SETTINGS,
@@ -44,6 +159,7 @@ const store = new Store<{
     queue: [],
     favorites: [],
     songs: [],
+    slideDecks: [],
   },
 });
 
@@ -335,8 +451,11 @@ app.whenReady().then(() => {
   protocol.handle("lumen-media", (request) => {
     const encodedPath = new URL(request.url).pathname.slice("/media/".length);
     const target = path.resolve(decodeURIComponent(encodedPath));
-    const root = path.resolve(app.getPath("userData"), "background-images");
-    if (!target.startsWith(`${root}${path.sep}`)) return new Response("Forbidden", { status: 403 });
+    const userData = path.resolve(app.getPath("userData"));
+    // Only folders whose files are meant to be shown on screen. slide-decks
+    // (original PPTX/PDF sources) is deliberately NOT served.
+    const allowed = ["background-images", "slide-images"].map((dir) => `${path.join(userData, dir)}${path.sep}`);
+    if (!allowed.some((root) => target.startsWith(root))) return new Response("Forbidden", { status: 403 });
     return net.fetch(pathToFileURL(target).toString());
   });
   registerUpdaterHandlers();
@@ -460,6 +579,227 @@ ipcMain.handle("songs:set", (_e, songs: StoredSong[]) => {
     : [];
   store.set("songs", next);
   return next;
+});
+
+ipcMain.handle("slides:get", () => store.get("slideDecks"));
+
+ipcMain.handle("slides:set", (_e, decks: StoredSlideDeck[]) => {
+  const next = sanitizeSlideDecks(decks);
+  store.set("slideDecks", next);
+  pruneOrphanSlideImages(next);
+  pruneOrphanSlideSources(next);
+  return next;
+});
+
+function newDeckId(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+ipcMain.handle("slides:import", async () => {
+  const result = await dialog.showOpenDialog({
+    properties: ["openFile", "multiSelections"],
+    filters: [
+      { name: "Presentaciones", extensions: ["pptx", "ppsx", "pdf", "png", "jpg", "jpeg", "webp", "json", "txt", "md"] },
+      { name: "PowerPoint/PDF", extensions: ["pptx", "ppsx", "pdf"] },
+      { name: "Imágenes", extensions: ["png", "jpg", "jpeg", "webp"] },
+      // Lets the user pick Keynote/.ppt/.odp to get a clear "export to PDF" hint instead of a greyed-out file.
+      { name: "Todos los archivos", extensions: ["*"] },
+    ],
+  });
+  if (result.canceled || result.filePaths.length === 0) return null;
+  // Multi-image pick (e.g. PowerPoint "Exportar como imágenes"): one deck,
+  // slides ordered naturally (Diapositiva2 antes que Diapositiva10).
+  if (result.filePaths.length > 1 && result.filePaths.every(isSlideImagePath)) {
+    const ordered = sortImagePathsNumerically(result.filePaths);
+    const stored = ordered.map(copyToSlideImages);
+    if (stored.some((entry) => entry === null)) {
+      for (const entry of stored) {
+        if (entry) {
+          try {
+            fs.rmSync(entry, { force: true });
+          } catch {
+            // ignore cleanup failures
+          }
+        }
+      }
+      return { error: "read-failed" };
+    }
+    const firstDir = path.basename(path.dirname(ordered[0]!));
+    const title = firstDir && firstDir !== "." ? firstDir : path.basename(ordered[0]!, path.extname(ordered[0]!));
+    const images = stored as string[];
+    return {
+      id: newDeckId(),
+      title,
+      slides: images.map((_, i) => `Diapositiva ${i + 1}`),
+      images,
+      updatedAt: Date.now(),
+      pinned: false,
+    } satisfies StoredSlideDeck;
+  }
+  const filePath = result.filePaths[0]!;
+  const title = path.basename(filePath, path.extname(filePath));
+  if (isSlideImagePath(filePath)) {
+    const storedPath = copyToSlideImages(filePath);
+    if (!storedPath) return { error: "read-failed" };
+    return {
+      id: newDeckId(),
+      title,
+      slides: ["Diapositiva 1"],
+      images: [storedPath],
+      updatedAt: Date.now(),
+      pinned: false,
+    } satisfies StoredSlideDeck;
+  }
+  if (isPptxPath(filePath)) {
+    // Screenshots are rendered later by "slides:convert" (pptx-glimpse in a
+    // utilityProcess, no extra apps). Here we keep the original plus the
+    // extracted texts (used as labels / fallback).
+    let slides: string[];
+    try {
+      const data = fs.readFileSync(filePath);
+      // One entry per slide (empty -> label) so text order matches the PNG order.
+      const rawSlides = await parsePptxBuffer(data, { keepEmpty: true });
+      slides = rawSlides.map((slide, i) => slide.trim() || `Diapositiva ${i + 1}`);
+    } catch (error) {
+      console.error("[slides] could not read pptx", error);
+      return { error: "invalid-pptx" };
+    }
+    if (!slides.length) return { error: "empty-presentation" };
+    const deckId = newDeckId();
+    const sourceFile = copyPptxToSlideDecks(deckId, filePath);
+    if (!sourceFile) return { error: "read-failed" };
+    return {
+      id: deckId,
+      title,
+      slides,
+      images: slides.map(() => null),
+      source: { kind: "pptx" as const, file: sourceFile },
+      updatedAt: Date.now(),
+      pinned: false,
+    } satisfies StoredSlideDeck;
+  }
+  if (isPdfPath(filePath)) {
+    const deckId = newDeckId();
+    const sourceFile = copyPdfToSlideDecks(deckId, filePath);
+    if (!sourceFile) return { error: "read-failed" };
+    return {
+      id: deckId,
+      title,
+      slides: ["Diapositiva 1"],
+      images: [null],
+      source: { kind: "pdf" as const, file: sourceFile },
+      updatedAt: Date.now(),
+      pinned: false,
+    } satisfies StoredSlideDeck;
+  }
+  if (isUnsupportedPresentationPath(filePath) || !isSlideTextPath(filePath)) {
+    // No visual renderer exists in JS for Keynote/.ppt/.odp: don't fake it.
+    return { error: "unsupported-format" };
+  }
+  let slides: string[] = [];
+  let deckTitle = title;
+  try {
+    const raw = fs.readFileSync(filePath, "utf8");
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      if (Array.isArray(parsed)) slides = parsed.filter((value): value is string => typeof value === "string");
+      else if (parsed && typeof parsed === "object") {
+        const value = parsed as { title?: unknown; slides?: unknown };
+        if (typeof value.title === "string" && value.title.trim()) deckTitle = value.title.trim();
+        if (Array.isArray(value.slides)) slides = value.slides.filter((slide): slide is string => typeof slide === "string");
+      }
+    } catch {
+      slides = raw.split(/\n\s*\n/);
+    }
+  } catch (error) {
+    console.error("[slides] could not read text deck", error);
+    return { error: "read-failed" };
+  }
+  slides = slides.map((slide) => slide.trim()).filter(Boolean);
+  if (!slides.length) return { error: "empty-presentation" };
+  return {
+    id: newDeckId(),
+    title: deckTitle,
+    slides,
+    images: slides.map(() => null),
+    updatedAt: Date.now(),
+    pinned: false,
+  } satisfies StoredSlideDeck;
+});
+
+const MAX_SLIDE_PNGS = 300;
+const MAX_SLIDE_PNG_BYTES = 20 * 1024 * 1024;
+
+function isManagedSlideSource(file: unknown): file is string {
+  if (typeof file !== "string") return false;
+  const root = path.resolve(slideDecksDir());
+  return path.resolve(file).startsWith(`${root}${path.sep}`);
+}
+
+/**
+ * Render a managed .pptx to PNGs (one per slide) in a utilityProcess with the
+ * system fonts. Returns the stored image paths; progress goes out on "slides:progress".
+ */
+ipcMain.handle("slides:convertPptx", async (event, request: { deckId: string; file: string; total: number }) => {
+  if (!isManagedSlideSource(request?.file) || !/\.(pptx|ppsx)$/i.test(request.file)) {
+    return { ok: false as const, error: "Archivo de origen no válido." };
+  }
+  try {
+    const { files, warnings } = await renderPptxInWorker({
+      file: request.file,
+      outDir: slideImagesDir(),
+      prefix: `pptx-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      total: Number.isFinite(request.total) ? request.total : 1,
+      onProgress: (done, total) => {
+        if (!event.sender.isDestroyed()) event.sender.send("slides:progress", { deckId: request.deckId, done, total });
+      },
+    });
+    if (warnings.length) console.warn("[slides] pptx render warnings:", warnings.join(" | "));
+    return { ok: true as const, images: files };
+  } catch (error) {
+    console.error("[slides] pptx conversion failed", error);
+    return { ok: false as const, error: error instanceof Error ? error.message : String(error) };
+  }
+});
+
+/** Read back a managed PDF so the operator window can rasterize it with pdf.js. */
+ipcMain.handle("slides:readFile", (_e, file: string): string | null => {
+  try {
+    if (!isManagedSlideSource(file)) return null;
+    const data = fs.readFileSync(path.resolve(file));
+    if (data.length === 0 || data.length > 200 * 1024 * 1024) return null;
+    return data.toString("base64");
+  } catch (error) {
+    console.error("[slides] could not read slide source", error);
+    return null;
+  }
+});
+
+/** Persist rasterized slide PNGs (base64) as managed images. Returns stored paths. */
+ipcMain.handle("slides:savePngs", (_e, images: string[]): string[] | null => {
+  const stored: string[] = [];
+  try {
+    if (!Array.isArray(images) || images.length === 0 || images.length > MAX_SLIDE_PNGS) return null;
+    const dir = slideImagesDir();
+    fs.mkdirSync(dir, { recursive: true });
+    const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    for (let i = 0; i < images.length; i++) {
+      const entry = images[i];
+      if (typeof entry !== "string" || entry.length === 0) throw new Error("bad image");
+      const data = Buffer.from(entry, "base64");
+      if (data.length === 0 || data.length > MAX_SLIDE_PNG_BYTES) throw new Error("bad image size");
+      // Validate PNG signature before writing.
+      if (data[0] !== 0x89 || data[1] !== 0x50 || data[2] !== 0x4e || data[3] !== 0x47) throw new Error("not png");
+      const filePath = path.join(dir, `${stamp}-${i}.png`);
+      fs.writeFileSync(filePath, data);
+      stored.push(filePath);
+    }
+    return stored;
+  } catch (error) {
+    console.error("[slides] could not save slide images", error);
+    for (const file of stored) fs.rmSync(file, { force: true });
+    return null;
+  }
 });
 
 ipcMain.handle("displays:list", () => {

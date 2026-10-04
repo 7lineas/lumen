@@ -19,7 +19,7 @@ export interface BibleData {
   searchIndex: Array<{ key: string; book: string; chapter: number; verse: number; text: string }>;
 }
 
-export type ProjectorMode = "verse" | "blank" | "logo";
+export type ProjectorMode = "verse" | "slides" | "blank" | "logo";
 
 export interface ProjectorPayload {
   mode: ProjectorMode;
@@ -45,6 +45,8 @@ export interface ProjectorPayload {
    * Managed background media path. Kept optional so blank/logo payloads stay lean.
    */
   backgroundImagePath?: string | null;
+  /** Managed per-slide image for diapositivas. Null/text-only when absent. */
+  slideImagePath?: string | null;
 }
 
 export interface AppSettings {
@@ -112,6 +114,20 @@ export interface StoredSong {
   id: string;
   title: string;
   lyrics: string;
+  updatedAt: number;
+  pinned: boolean;
+}
+
+/** User-created slide deck saved in the application's persistent user data. */
+export interface StoredSlideDeck {
+  id: string;
+  title: string;
+  /** Slide texts (navigation labels/fallback when a slide has no image). */
+  slides: string[];
+  /** Managed image per slide (copied into app data), parallel to slides. Null = text-only. */
+  images: Array<string | null>;
+  /** Print-ready PDF kept in app data for silent screenshot conversion. */
+  source?: { kind: "pptx" | "pdf"; file: string } | null;
   updatedAt: number;
   pinned: boolean;
 }

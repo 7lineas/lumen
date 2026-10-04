@@ -412,6 +412,33 @@ button.primary {
   margin: 0;
 }
 
+.projector-slide {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  flex: 1 1 auto;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.monitor-screen-slide {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+button.song-part .song-part-thumb {
+  width: 4.5rem;
+  height: 2.6rem;
+  flex: none;
+  object-fit: cover;
+  border-radius: 0.35rem;
+  border: 1px solid #3a404a;
+}
+
 .projector-col-label {
   font-size: 0.35em;
   opacity: 0.7;
@@ -1266,6 +1293,9 @@ select:focus-visible {
 }
 
 .song-presenter { grid-column: 3; grid-row: 1; }
+.slides-library-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; margin-bottom: 1rem; }
+.slides-library-head h2 { margin: 0; font-size: 1.05rem; }
+.slides-library-head button { flex: none; }
 .songs-panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; margin-bottom: 1rem; }
 .songs-panel-head h2, .song-presenter h2 { margin: 0; font-size: 1.05rem; }
 .eyebrow { color: var(--accent); font-size: 0.7rem; letter-spacing: 0.08em; margin: 0 0 0.2rem; text-transform: uppercase; }

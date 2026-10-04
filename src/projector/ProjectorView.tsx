@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { AppSettings, ProjectorPayload } from "@shared/types";
 import { DEFAULT_SETTINGS } from "@shared/types";
+import { backgroundImageUrl } from "@shared/background-image";
 import { FadingBackgroundMedia } from "@/components/BackgroundMedia";
 
 const EMPTY: ProjectorPayload = {
@@ -25,7 +26,7 @@ function splitReference(label: string): { ref: string; version: string } {
 function contentKey(p: ProjectorPayload): string {
   if (p.mode === "blank") return "blank";
   if (p.mode === "logo") return `logo:${p.churchName}`;
-  return `verse:${p.referenceLabel}|${p.blocks.map((b) => `${b.label ?? ""}=${b.text}`).join("|")}`;
+  return `${p.mode}:${p.referenceLabel}|${p.slideImagePath ?? ""}|${p.blocks.map((b) => `${b.label ?? ""}=${b.text}`).join("|")}`;
 }
 
 export function ProjectorView() {
@@ -106,7 +107,7 @@ export function ProjectorView() {
 
   useEffect(() => {
     const el = textRef.current;
-    if (!el || payload.mode !== "verse") return;
+    if (!el || (payload.mode !== "verse" && payload.mode !== "slides")) return;
     let raf = 0;
     const fit = () => {
       // Always restart from the full size so growing the window grows text back.
@@ -200,6 +201,21 @@ export function ProjectorView() {
     payload.referenceColor ?? settings.accentColor ?? legacyColors.referenceColor ?? "#f6a623";
   const versionColor =
     payload.versionColor ?? settings.accentColor ?? legacyColors.versionColor ?? "#f6a623";
+
+  const slideImage = payload.mode === "slides" ? payload.slideImagePath ?? null : null;
+  const slideImageUrl = slideImage ? backgroundImageUrl(slideImage) ?? undefined : undefined;
+
+  if (slideImage && slideImageUrl) {
+    return (
+      <div className={themeClass} style={style}>
+        <div className="projector-background-layer" style={backgroundStyle} />
+        {backgroundMedia}
+        <div className={`projector-inner fade ${visible ? "show" : ""}`} style={fadeStyle}>
+          <img src={slideImageUrl} alt="" className="projector-slide" />
+        </div>
+      </div>
+    );
+  }
 
   return (
       <div className={themeClass} style={style}>
