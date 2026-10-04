@@ -7,7 +7,7 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Palette } from "lucide-react";
 import type { AppSettings, HistoryEntry, ProjectorPayload, QueueEntry } from "@shared/types";
-import { DEFAULT_SETTINGS } from "@shared/types";
+import { DEFAULT_SETTINGS, MAX_QUEUE_ITEMS } from "@shared/types";
 import { useBibleLoader } from "../hooks/useBibleLoader";
 import { useOnlineBibles } from "../hooks/useOnlineBibles";
 import { hasChapter, isOnlineVersionId } from "@shared/youversion";
@@ -821,6 +821,14 @@ export function OperatorApp() {
     void projectReference(next.reference, next.id);
   };
 
+  const goPrev = () => {
+    if (queue.length === 0) return;
+    const idx = queue.findIndex((q) => q.id === activeId);
+    const prev = idx > 0 ? queue[idx - 1] : queue[queue.length - 1];
+    if (!prev) return;
+    void projectReference(prev.reference, prev.id);
+  };
+
   const liveKey =
     liveRange && live?.mode === "verse"
       ? `${liveRange.start.book}:${liveRange.start.chapter}:${liveRange.start.verse}`
@@ -977,6 +985,11 @@ export function OperatorApp() {
             setViewChapter(1);
           }}
           onSelectChapter={setViewChapter}
+          onAddCurrent={() => {
+            if (!staged || queue.length >= MAX_QUEUE_ITEMS) return;
+            void persistQueue([...queue, { id: newId(), reference: formatRange(staged) }]);
+          }}
+          savedCount={queue.length}
           onVerseClick={(verse, shiftKey) => {
             const next = rangeFromVerseClick(anchor, viewBook, viewChapter, verse, shiftKey);
             stageRange(next.range, next.anchor);
@@ -1231,22 +1244,17 @@ export function OperatorApp() {
           history={history}
           onProject={(item) => void projectReference(item.reference, item.id)}
           onRemove={(id) => void persistQueue(queue.filter((q) => q.id !== id))}
-          onMove={(index, dir) => {
-            const target = index + dir;
-            if (target < 0 || target >= queue.length) return;
+          onReorder={(from, to) => {
+            if (from === to) return;
+            if (from < 0 || to < 0 || from >= queue.length || to >= queue.length) return;
             const copy = [...queue];
-            const current = copy[index];
-            const swap = copy[target];
-            if (!current || !swap) return;
-            copy[index] = swap;
-            copy[target] = current;
+            const [moved] = copy.splice(from, 1);
+            if (!moved) return;
+            copy.splice(to, 0, moved);
             void persistQueue(copy);
           }}
           onNext={goNext}
-          onAddCurrent={() => {
-            if (!staged) return;
-            void persistQueue([...queue, { id: newId(), reference: formatRange(staged) }]);
-          }}
+          onPrev={goPrev}
           onHistory={(reference) => {
             const parsed = parseReference(reference);
             if (parsed.ok) stageRange(parsed.range);

@@ -133,6 +133,9 @@ export interface QueueEntry {
   label?: string;
 }
 
+/** Upper bound on how many references can be stored in the service rundown. */
+export const MAX_QUEUE_ITEMS = 99;
+
 /** User-created song saved in the application's persistent user data. */
 export interface StoredSong {
   id: string;
