@@ -7,7 +7,7 @@ export function AboutModal() {
   const [appVersion, setAppVersion] = useState<string | null>(null);
 
   useEffect(() => {
-    void window.proyector?.getAppUpdateStatus().then((status) => setAppVersion(status.version)).catch(() => undefined);
+    void window.proyector?.getAppUpdateState().then((state) => setAppVersion(state.currentVersion)).catch(() => undefined);
   }, []);
 
   useEffect(() => {

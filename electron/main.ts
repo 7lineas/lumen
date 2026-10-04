@@ -130,7 +130,7 @@ function pruneStaleSlideSources(): void {
 import type { AppSettings, ProjectorPayload, QueueEntry, HistoryEntry, StoredSong, StoredSlideDeck, SlideImportResult } from "../shared/types";
 import { DEFAULT_SETTINGS } from "../shared/types";
 import { buildBibleDataCandidates, resolveBibleDataDir } from "./bible-data-path";
-import { initAutoUpdater, registerUpdaterHandlers } from "./updater";
+import { setupUpdater } from "./updater";
 import { YouVersionClient, resolveAppKey } from "./youversion";
 import {
   buildLibraryView,
@@ -170,6 +170,7 @@ let operatorWindow: BrowserWindow | null = null;
 let projectorWindow: BrowserWindow | null = null;
 let projectorReady = false;
 let pendingProjectorPayload: ProjectorPayload | null = null;
+let lastProjectorMode: ProjectorPayload["mode"] | null = null;
 const isDev = !app.isPackaged && process.env.PROYECTOR_SCREENSHOT !== "1";
 
 // Video and audio elements need the stream privilege when served through a
@@ -324,6 +325,7 @@ function createProjectorWindow(): void {
 
   projectorWindow.on("closed", () => {
     projectorWindow = null;
+    lastProjectorMode = null;
     projectorReady = false;
   });
 
@@ -352,8 +354,14 @@ function emitProjectorBounds(): void {
   }
 }
 
+/** Hay una ventana de proyección abierta y mostrando algo (no en negro). */
+function isProjectionActive(): boolean {
+  return Boolean(projectorWindow && !projectorWindow.isDestroyed() && lastProjectorMode && lastProjectorMode !== "blank");
+}
+
 function sendToProjector(payload: ProjectorPayload): void {
   pendingProjectorPayload = payload;
+  lastProjectorMode = payload.mode;
   if (!projectorWindow) {
     createProjectorWindow();
   }
@@ -475,8 +483,7 @@ app.whenReady().then(() => {
     if (!allowed.some((root) => target.startsWith(root))) return new Response("Forbidden", { status: 403 });
     return net.fetch(pathToFileURL(target).toString());
   });
-  registerUpdaterHandlers();
-  initAutoUpdater();
+  setupUpdater({ getOperatorWindow: () => operatorWindow, isProjectionActive });
   if (process.platform === "darwin" && app.dock) {
     const dockIcon = nativeImage.createFromPath(appIconPath());
     if (!dockIcon.isEmpty()) app.dock.setIcon(dockIcon);
