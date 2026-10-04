@@ -10,6 +10,14 @@ interface Props {
   empty: string;
   testId?: string;
   isLive?: boolean;
+  /** CSS aspect-ratio value (e.g. "16 / 9") matching the real projector display. */
+  aspectRatio?: string;
+  /** Real projector display width in px, used to scale fonts proportionally. */
+  displayWidth?: number;
+  /** Real projector display height in px, used for fixed-px footer scaling. */
+  displayHeight?: number;
+  /** Short label shown next to the title, e.g. "16:9 · 1920×1080". */
+  ratioLabel?: string;
 }
 
 function contentKey(p: ProjectorPayload | null): string {
@@ -18,9 +26,14 @@ function contentKey(p: ProjectorPayload | null): string {
   return `verse:${p.referenceLabel}|${p.blocks.map((b) => `${b.label ?? ""}=${b.text}`).join("|")}`;
 }
 
-export function StageMonitor({ title, payload, empty, testId, isLive }: Props) {
+export function StageMonitor({ title, payload, empty, testId, isLive, aspectRatio, displayWidth, displayHeight, ratioLabel }: Props) {
   // Live monitor mirrors the projector: fade out old content, swap, fade in.
   // Preview renders instantly (no fade).
+  // The inner screen renders at the real projector aspect ratio so the
+  // operator sees the same framing as the congregation.
+  const screenAspect = aspectRatio ?? "16 / 9";
+  const projectorW = displayWidth && displayWidth > 0 ? displayWidth : 1920;
+  const projectorH = displayHeight && displayHeight > 0 ? displayHeight : 1080;
   const [displayed, setDisplayed] = useState(payload);
   const [visible, setVisible] = useState(true);
   const displayedRef = useRef(payload);
@@ -80,7 +93,7 @@ export function StageMonitor({ title, payload, empty, testId, isLive }: Props) {
   const renderPayload = isLive ? displayed : payload;
   const theme = renderPayload?.theme === "light" ? "light" : "dark";
   const brightness = renderPayload?.brightness ?? 1;
-  const fontScale = (renderPayload?.fontSize ?? 72) / 72;
+  const projectorFontPx = renderPayload?.fontSize ?? DEFAULT_SETTINGS.fontSize;
   const fadeMs = Math.max(0, renderPayload?.fadeMs ?? DEFAULT_SETTINGS.fadeMs);
   const isBlank = !renderPayload || renderPayload.mode === "blank";
   const isLogo = renderPayload?.mode === "logo";
@@ -92,55 +105,132 @@ export function StageMonitor({ title, payload, empty, testId, isLive }: Props) {
   const referenceColor = renderPayload?.referenceColor ?? "#f6a623";
   const versionColor = renderPayload?.versionColor ?? "#f6a623";
   const bg = backgroundImageUrl(renderPayload?.backgroundImagePath);
+  const pad = renderPayload?.padding ?? DEFAULT_SETTINGS.padding;
 
-  const content = (
+  // Scale projector px values down to the miniature screen so type, padding
+  // and footer sizes keep the same proportions as the real projector.
+  const screenRef = useRef<HTMLDivElement>(null);
+  const textRef = useRef<HTMLDivElement>(null);
+  const [fitPx, setFitPx] = useState(projectorFontPx * 0.16);
+  const [scale, setScale] = useState(0.16);
+
+  useEffect(() => {
+    const screen = screenRef.current;
+    if (!screen) return;
+    const fit = () => {
+      const w = screen.clientWidth || 1;
+      const h = screen.clientHeight || 1;
+      const s = w / projectorW;
+      setScale(s);
+      let size = projectorFontPx * s;
+      const el = textRef.current;
+      if (el && renderPayload?.mode === "verse") {
+        el.style.fontSize = `${size}px`;
+        const min = Math.max(4, 28 * s);
+        const step = Math.max(0.5, 2 * s);
+        let guard = 200;
+        while (guard-- > 0 && size > min && el.scrollHeight > h * 0.72) {
+          size -= step;
+          el.style.fontSize = `${size}px`;
+        }
+      }
+      setFitPx(size);
+    };
+    fit();
+    if (typeof ResizeObserver !== "undefined") {
+      const ro = new ResizeObserver(fit);
+      ro.observe(screen);
+      return () => ro.disconnect();
+    }
+    window.addEventListener("resize", fit);
+    return () => window.removeEventListener("resize", fit);
+  }, [renderPayload, projectorFontPx, projectorW, screenAspect]);
+
+  const copyrightPx = (18 / projectorH) * (screenRef.current?.clientHeight || projectorH * scale) || 18 * scale;
+  const footerPx = 18 * scale;
+  const versionMinPx = 18 * scale;
+  const versionMaxPx = 32 * scale;
+
+  const screenContent = (
     <>
-      {isBlank && <p className="monitor-empty">{empty}</p>}
-      {isLogo && <p className="monitor-logo" style={{ fontSize: `${fontScale}em` }}>{renderPayload?.churchName}</p>}
+      {isBlank && <p className="monitor-screen-empty">{empty}</p>}
+      {isLogo && <p className="monitor-screen-logo" style={{ fontSize: `${fitPx * 0.65}px` }}>{renderPayload?.churchName}</p>}
       {renderPayload?.mode === "verse" && (
-        <div className="monitor-verse" style={{ fontSize: `${fontScale}em` }}>
-          {ref && <p className="monitor-ref" style={{ color: referenceColor }}>{ref}</p>}
-          {renderPayload.blocks.map((block, i) => (
-            <p key={i}>{block.text}</p>
-          ))}
-          {version && <p className="monitor-version" style={{ color: versionColor }}>{version}</p>}
-          {renderPayload.copyright && <p className="monitor-copyright">{renderPayload.copyright}</p>}
-        </div>
+        <>
+          {ref && <header className="monitor-screen-ref" style={{ color: referenceColor, fontSize: `${fitPx * 0.5}px` }}>{ref}</header>}
+          <div
+            ref={textRef}
+            className={`monitor-screen-body ${renderPayload.blocks.length > 1 ? "dual" : ""}`}
+            style={{ fontSize: `${fitPx}px` }}
+          >
+            {renderPayload.blocks.map((block, i) => (
+              <section key={i} className="monitor-screen-column">
+                {block.label && <div className="monitor-screen-col-label">{block.label}</div>}
+                <p className="monitor-screen-text">{block.text}</p>
+              </section>
+            ))}
+          </div>
+          {version && (
+            <div
+              className="monitor-screen-version"
+              style={{ color: versionColor, fontSize: `clamp(${versionMinPx}px, 0.3em, ${versionMaxPx}px)` }}
+            >
+              {version}
+            </div>
+          )}
+          {renderPayload.copyright && (
+            <footer className="monitor-screen-copyright" style={{ fontSize: `${Number.isFinite(copyrightPx) && copyrightPx > 0 ? copyrightPx : footerPx}px` }}>
+              {renderPayload.copyright}
+            </footer>
+          )}
+        </>
       )}
     </>
   );
 
   return (
     <Card className="monitor-card">
-      <CardHeader><CardTitle>{isLive && <span className={`live-dot ${projecting ? "on" : ""}`} aria-hidden />}{title}</CardTitle></CardHeader>
+      <CardHeader>
+        <CardTitle>
+          {isLive && <span className={`live-dot ${projecting ? "on" : ""}`} aria-hidden />}
+          {title}
+          {ratioLabel && <span className="monitor-ratio" title="Relación real del proyector">{ratioLabel}</span>}
+        </CardTitle>
+      </CardHeader>
       <CardContent className="monitor-content">
       <div
         className={`monitor ${theme} ${isBlank ? "is-blank" : ""}`}
         data-testid={testId}
-        style={{
-          padding: `${(renderPayload?.padding ?? DEFAULT_SETTINGS.padding) / 5}rem`,
-        }}
       >
         <div
-          className="monitor-background-layer"
+          ref={screenRef}
+          className="monitor-screen"
           style={{
-            background: isBlank ? "#000" : renderPayload?.backgroundColor,
-            backgroundImage: isBlank || !bg ? undefined : `url("${bg}")`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            transition: `background-color ${Math.max(0, renderPayload?.backgroundFadeMs ?? DEFAULT_SETTINGS.backgroundFadeMs)}ms ease`,
-            filter: isBlank ? undefined : `brightness(${brightness})`,
+            aspectRatio: screenAspect,
+            padding: `${pad}%`,
           }}
-        />
-        {isBackgroundVideo(renderPayload?.backgroundImagePath) && <video className="monitor-background-video" style={{ filter: `brightness(${brightness})` }} src={bg} muted loop autoPlay playsInline preload="auto" onCanPlay={(event) => { void event.currentTarget.play().catch(() => undefined); }} />}
-        {isLive ? (
+        >
           <div
-            className={`monitor-fade ${visible ? "show" : ""}`}
-            style={{ transitionDuration: `${fadeMs}ms` }}
-          >
-            {content}
-          </div>
-        ) : content}
+            className="monitor-background-layer"
+            style={{
+              background: isBlank ? "#000" : renderPayload?.backgroundColor,
+              backgroundImage: isBlank || !bg ? undefined : `url("${bg}")`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              transition: `background-color ${Math.max(0, renderPayload?.backgroundFadeMs ?? DEFAULT_SETTINGS.backgroundFadeMs)}ms ease`,
+              filter: isBlank ? undefined : `brightness(${brightness})`,
+            }}
+          />
+          {isBackgroundVideo(renderPayload?.backgroundImagePath) && <video className="monitor-background-video" style={{ filter: `brightness(${brightness})` }} src={bg} muted loop autoPlay playsInline preload="auto" onCanPlay={(event) => { void event.currentTarget.play().catch(() => undefined); }} />}
+          {isLive ? (
+            <div
+              className={`monitor-screen-fade ${visible ? "show" : ""}`}
+              style={{ transitionDuration: `${fadeMs}ms` }}
+            >
+              {screenContent}
+            </div>
+          ) : screenContent}
+        </div>
       </div>
       </CardContent>
     </Card>
