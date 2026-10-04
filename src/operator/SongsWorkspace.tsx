@@ -120,7 +120,9 @@ export function SongsWorkspace({ staged, selectedId, projectOnClick, onTogglePro
     setSongs((current) =>
       current.some((song) => song.id === next.id) ? current.map((song) => (song.id === next.id ? next : song)) : [next, ...current],
     );
-    setDraft(next);
+    setDraft(null);
+    setQuery("");
+    setRightTab("library");
     if (next.id === selectedId) {
       onSelectSong(next.id, next.title, slidesFor(next));
     }
