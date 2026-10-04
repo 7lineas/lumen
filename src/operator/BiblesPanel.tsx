@@ -3,10 +3,13 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useEffect, useState } from "react";
 import type { AppSettings } from "@shared/types";
+import type { OnlineVersionsResult } from "@shared/youversion";
 import type { BibleDownloadProgress, BibleLibraryEntry, BibleLibraryView } from "../vite-env.d";
 
 interface Props {
   onChanged: (settings?: AppSettings) => void;
+  online?: OnlineVersionsResult;
+  onRefreshOnline?: () => void;
 }
 
 function formatByteSize(bytes: number | null): string {
@@ -15,7 +18,7 @@ function formatByteSize(bytes: number | null): string {
   return `${mb.toLocaleString("es-ES", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} MB`;
 }
 
-export function BiblesPanel({ onChanged }: Props) {
+export function BiblesPanel({ onChanged, online, onRefreshOnline }: Props) {
   const [library, setLibrary] = useState<BibleLibraryView | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -109,6 +112,36 @@ export function BiblesPanel({ onChanged }: Props) {
           />
         ))}
       </div>
+      <h2>En línea (YouVersion)</h2>
+      {!online?.configured && (
+        <p className="muted">Esta compilación no incluye la clave de YouVersion Platform, así que las Biblias en línea no están disponibles.</p>
+      )}
+      {online?.configured && (
+        <>
+          <p>
+            Se consultan al elegirlas y cada capítulo se guarda en este equipo por 30 días: lo ya consultado funciona sin
+            internet. El texto lleva siempre el copyright de la editorial.
+          </p>
+          <Button type="button" onClick={onRefreshOnline} data-testid="online-refresh">Actualizar lista</Button>
+          {online.stale && <p className="bible-banner">Sin conexión: se muestra la lista guardada.{online.error ? ` (${online.error})` : ""}</p>}
+          {!online.stale && online.error && online.versions.length === 0 && (
+            <p className="error">{online.error}{" "}<Button type="button" onClick={onRefreshOnline}>Reintentar</Button></p>
+          )}
+          <div className="bible-list">
+            {online.versions.map((version) => (
+              <article className="bible-row" key={version.id} data-testid={`online-row-${version.id}`}>
+                <h3>{version.name}</h3>
+                <p className="bible-meta">{version.abbr} · {version.license ?? "YouVersion Platform"}</p>
+                <div className="bible-actions">
+                  {version.locked
+                    ? <span className="error">{version.lockedReason}</span>
+                    : <span className="muted">Disponible en el selector de versión</span>}
+                </div>
+              </article>
+            ))}
+          </div>
+        </>
+      )}
     </main>
   );
 }

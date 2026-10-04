@@ -1,6 +1,6 @@
 {
   "distributionNote": "Los textos se incluyen sin modificar y solo para distribución gratuita. Esta aplicación no se vende.",
-  "excludedNote": "No se incluyen Reina Valera Gómez, RVR1960, NVI, NTV, DHH, TLA, RVC, LBLA ni otras ediciones con copyright. David aún no tiene esos permisos.",
+  "excludedNote": "No se incluyen en la aplicación Reina Valera Gómez, RVR1960, NVI, NTV, DHH, TLA, RVC, LBLA ni otras ediciones con copyright. Algunas (NVI, NBLA, LBLA, RVES) se pueden leer en línea desde YouVersion Platform, con su copyright y sujetas a la licencia que David acepte allí; RVR1960 no está en Platform.",
   "extensionNote": "Otra versión libre se añade después solo con su archivo y una entrada en bibles-catalog.json, sin cambiar el código. Esas ediciones con copyright se sumarán igual cuando haya permiso.",
   "versions": [
     {

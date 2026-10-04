@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import type { BibleData, BibleVersionMeta } from "@shared/types";
-import { loadBible, setManifest, getVersions } from "@shared/bible-service";
+import { loadBible, setManifest, getVersions, getBible } from "@shared/bible-service";
+import { emptyOnlineBible, isOnlineVersionId } from "@shared/youversion";
 
-export function useBibleLoader(versionIds: string[], refreshKey = 0) {
+export function useBibleLoader(versionIds: string[], refreshKey = 0, onlineVersions: BibleVersionMeta[] = []) {
   const [ready, setReady] = useState(false);
   const [versions, setVersions] = useState<BibleVersionMeta[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -23,6 +24,12 @@ export function useBibleLoader(versionIds: string[], refreshKey = 0) {
 
         const unique = [...new Set(versionIds.filter(Boolean))];
         for (const id of unique) {
+          if (isOnlineVersionId(id)) {
+            // Online Bibles start empty; chapters are merged in on demand.
+            const meta = onlineVersions.find((v) => v.id === id);
+            if (meta && !getBible(id)) loadBible(emptyOnlineBible(meta));
+            continue;
+          }
           const data = (await api.loadBible(id)) as BibleData;
           loadBible(data);
         }
@@ -39,7 +46,7 @@ export function useBibleLoader(versionIds: string[], refreshKey = 0) {
     };
     // refreshKey reloads the list after a download or removal.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refreshKey, versionIds.join(",")]);
+  }, [refreshKey, versionIds.join(","), onlineVersions]);
 
   return { ready, versions: versions.length ? versions : getVersions(), error };
 }

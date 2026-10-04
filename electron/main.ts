@@ -130,6 +130,7 @@ import type { AppSettings, ProjectorPayload, QueueEntry, HistoryEntry, StoredSon
 import { DEFAULT_SETTINGS } from "../shared/types";
 import { buildBibleDataCandidates, resolveBibleDataDir } from "./bible-data-path";
 import { initAutoUpdater, registerUpdaterHandlers } from "./updater";
+import { YouVersionClient, resolveAppKey } from "./youversion";
 import {
   buildLibraryView,
   bundledIds,
@@ -494,6 +495,24 @@ ipcMain.handle("bibles:load", (_e, id: string) => {
   const file = resolveModulePath(biblesPath(), userBiblesDir(), String(id));
   return JSON.parse(fs.readFileSync(file, "utf-8"));
 });
+
+let youVersion: YouVersionClient | null = null;
+function yvp(): YouVersionClient {
+  if (!youVersion) {
+    youVersion = new YouVersionClient({
+      appKey: resolveAppKey(),
+      cacheDir: path.join(app.getPath("userData"), "yvp-cache"),
+      fetchImpl: (url, init) => fetch(url, init),
+    });
+  }
+  return youVersion;
+}
+
+// Online Bibles (YouVersion Platform). The App Key stays in this process.
+ipcMain.handle("yvp:versions", (_e, force?: boolean) => yvp().listVersions(force === true));
+ipcMain.handle("yvp:chapter", (_e, id: string, book: string, chapter: number) =>
+  yvp().getChapter(String(id), String(book), Number(chapter)),
+);
 
 ipcMain.handle("bibles:catalog", () =>
   buildLibraryView(biblesPath(), userBiblesDir(), catalogPath(), nodeFetch),

@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -9,6 +9,8 @@ import { Palette } from "lucide-react";
 import type { AppSettings, HistoryEntry, ProjectorPayload, QueueEntry } from "@shared/types";
 import { DEFAULT_SETTINGS } from "@shared/types";
 import { useBibleLoader } from "../hooks/useBibleLoader";
+import { useOnlineBibles } from "../hooks/useOnlineBibles";
+import { hasChapter, isOnlineVersionId } from "@shared/youversion";
 import { parseReference, formatRange, type VerseRange, type VerseRef } from "@shared/reference";
 import {
   fetchRangeTexts,
@@ -178,16 +180,78 @@ export function OperatorApp() {
     return `${w / g}:${h / g} · ${w}×${h}`;
   }, [projectorBounds]);
 
+  // Online Bibles (YouVersion). If the selected one cannot be read right now
+  // (offline, rate limited, license not accepted) the operator keeps working
+  // with RV1909, which ships with the app; this is derived, not persisted.
+  const onlineBibles = useOnlineBibles();
+  const primaryOnline = isOnlineVersionId(settings.primaryVersionId);
+  const primaryMeta = onlineBibles.online.versions.find((v) => v.id === settings.primaryVersionId);
+  const visibleFailure = primaryOnline
+    ? onlineBibles.failures[onlineBibles.chapterKey({ versionId: settings.primaryVersionId, book: viewBook, chapter: viewChapter })]
+    : undefined;
+  const onlineUnavailable = primaryOnline && (
+    (onlineBibles.loaded && (!primaryMeta || !!primaryMeta.locked)) ||
+    (!!visibleFailure && visibleFailure.reason !== "not-found")
+  );
+  const primaryId = onlineUnavailable ? "rv1909" : settings.primaryVersionId;
+  const onlineNotice = !onlineUnavailable ? null
+    : primaryMeta?.locked ? `${primaryMeta.lockedReason ?? "Licencia no aceptada"}. Se usa RV1909.`
+    : !visibleFailure ? "Esa Biblia en línea no está disponible. Se usa RV1909."
+    : visibleFailure.reason === "offline" ? "Sin conexión con YouVersion: se usa RV1909 (los capítulos ya consultados siguen disponibles)."
+    : visibleFailure.reason === "rate-limited" ? `YouVersion pidió esperar${visibleFailure.retryAfterSec ? ` ${Math.max(1, Math.ceil(visibleFailure.retryAfterSec / 60))} min` : ""}: se usa RV1909.`
+    : `${visibleFailure.message}. Se usa RV1909.`;
+
   const versionIds = useMemo(
     () =>
       [
-        settings.primaryVersionId,
+        primaryId,
         settings.dualView && settings.secondaryVersionId ? settings.secondaryVersionId : null,
       ].filter(Boolean) as string[],
-    [settings.primaryVersionId, settings.dualView, settings.secondaryVersionId],
+    [primaryId, settings.dualView, settings.secondaryVersionId],
   );
 
-  const { ready, versions, error: loadError } = useBibleLoader(versionIds, libraryTick);
+  const { ready, versions, error: loadError } = useBibleLoader(versionIds, libraryTick, onlineBibles.online.versions);
+  const allVersions = useMemo(() => [...versions, ...onlineBibles.online.versions], [versions, onlineBibles.online.versions]);
+
+  // Prefetch the visible chapter first, then the staged/live ones and the
+  // neighbours, one at a time (the API limit is per key). Skipped while the
+  // fallback is active so an offline church does not retry in a loop.
+  useEffect(() => {
+    if (onlineUnavailable) return;
+    const ids = [settings.primaryVersionId, settings.dualView ? settings.secondaryVersionId : null]
+      .filter((id): id is string => !!id && isOnlineVersionId(id));
+    if (ids.length === 0 || !onlineBibles.online.configured) return;
+    const neighbours = (book: string, chapter: number) => {
+      const at = BOOKS.findIndex((b) => b.code === book);
+      if (at < 0) return [];
+      const out: Array<{ book: string; chapter: number }> = [];
+      if (chapter < BOOKS[at].chapters) out.push({ book, chapter: chapter + 1 });
+      else if (BOOKS[at + 1]) out.push({ book: BOOKS[at + 1].code, chapter: 1 });
+      if (chapter > 1) out.push({ book, chapter: chapter - 1 });
+      else if (BOOKS[at - 1]) out.push({ book: BOOKS[at - 1].code, chapter: BOOKS[at - 1].chapters });
+      return out;
+    };
+    const targets: Array<{ book: string; chapter: number }> = [{ book: viewBook, chapter: viewChapter }];
+    if (staged) targets.push({ book: staged.start.book, chapter: staged.start.chapter }, { book: staged.end.book, chapter: staged.end.chapter });
+    if (liveRange) targets.push({ book: liveRange.start.book, chapter: liveRange.start.chapter });
+    targets.push(...neighbours(viewBook, viewChapter));
+    if (liveRange) targets.push(...neighbours(liveRange.start.book, liveRange.start.chapter));
+    const seen = new Set<string>();
+    let cancelled = false;
+    void (async () => {
+      for (const target of targets) {
+        for (const versionId of ids) {
+          const key = `${versionId}/${target.book}.${target.chapter}`;
+          if (seen.has(key) || cancelled) continue;
+          seen.add(key);
+          if (hasChapter(getBible(versionId), target.book, target.chapter)) continue;
+          await onlineBibles.ensureChapter({ versionId, book: target.book, chapter: target.chapter });
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onlineUnavailable, settings.primaryVersionId, settings.dualView, settings.secondaryVersionId, viewBook, viewChapter, staged, liveRange, onlineBibles.online.configured, onlineBibles.failures]);
 
   const previewContent = useMemo(() => {
     // fetchRangeTexts already returns null while the selected Bible is not in
@@ -196,11 +260,13 @@ export function OperatorApp() {
     // preview empty for the rest of that render cycle.
     if (!staged) return null;
     return fetchRangeTexts(
-      settings.primaryVersionId,
+      primaryId,
       settings.dualView ? settings.secondaryVersionId : null,
       staged,
     );
-  }, [staged, settings.primaryVersionId, settings.dualView, settings.secondaryVersionId]);
+  // chapterTick: online chapters are merged into the cached Bible in place.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [staged, primaryId, settings.dualView, settings.secondaryVersionId, onlineBibles.chapterTick]);
 
   const previewPayload = useMemo<ProjectorPayload | null>(() => {
     if (!previewContent) return null;
@@ -215,7 +281,7 @@ export function OperatorApp() {
       theme: settings.theme,
       backgroundColor: settings.backgroundColor,
       copyright: projectionCopyright(
-        settings.primaryVersionId,
+        primaryId,
         settings.dualView ? settings.secondaryVersionId : null,
         settings.showCopyright,
       ),
@@ -225,7 +291,7 @@ export function OperatorApp() {
       fadeMs: settings.fadeMs,
       backgroundFadeMs: settings.backgroundFadeMs,
     };
-  }, [previewContent, settings]);
+  }, [previewContent, settings, primaryId]);
 
   const chrome = useCallback(
     (base: ProjectorPayload): ProjectorPayload => ({
@@ -239,7 +305,7 @@ export function OperatorApp() {
       copyright:
         base.mode === "verse"
           ? projectionCopyright(
-              settings.primaryVersionId,
+              primaryId,
               settings.dualView ? settings.secondaryVersionId : null,
               settings.showCopyright,
             )
@@ -252,7 +318,7 @@ export function OperatorApp() {
       fadeMs: base.fadeMs ?? settings.fadeMs,
       backgroundFadeMs: settings.backgroundFadeMs,
     }),
-    [settings],
+    [settings, primaryId],
   );
 
   useEffect(() => {
@@ -332,11 +398,11 @@ export function OperatorApp() {
     const entry: HistoryEntry = {
       at: Date.now(),
       reference: formatRange(staged),
-      versionId: settings.primaryVersionId,
+      versionId: primaryId,
     };
     const next = await window.proyector?.addHistory(entry);
     if (next) setHistory(next);
-  }, [previewPayload, staged, send, settings.primaryVersionId]);
+  }, [previewPayload, staged, send, primaryId]);
 
   const songPayload = useCallback((_title: string, text: string): ProjectorPayload => ({
     mode: "verse",
@@ -555,7 +621,7 @@ export function OperatorApp() {
     (delta: number) => {
       const ref = staged?.start;
       if (!ref) return;
-      const bible = getBible(settings.primaryVersionId);
+      const bible = getBible(primaryId);
       if (!bible) return;
       let chapter = ref.chapter;
       let verse = ref.verse + delta;
@@ -577,7 +643,7 @@ export function OperatorApp() {
         end: { book, chapter, verse },
       });
     },
-    [staged, settings.primaryVersionId, stageRange],
+    [staged, primaryId, stageRange],
   );
 
   const projectReference = useCallback(
@@ -587,7 +653,7 @@ export function OperatorApp() {
       stageRange(parsed.range);
       if (id) setActiveId(id);
       const content = fetchRangeTexts(
-        settings.primaryVersionId,
+        primaryId,
         settings.dualView ? settings.secondaryVersionId : null,
         parsed.range,
       );
@@ -604,7 +670,7 @@ export function OperatorApp() {
         theme: settings.theme,
         backgroundColor: settings.backgroundColor,
         copyright: projectionCopyright(
-          settings.primaryVersionId,
+          primaryId,
           settings.dualView ? settings.secondaryVersionId : null,
           settings.showCopyright,
         ),
@@ -615,7 +681,7 @@ export function OperatorApp() {
         backgroundFadeMs: settings.backgroundFadeMs,
       });
     },
-    [stageRange, settings, send],
+    [stageRange, settings, primaryId, send],
   );
 
   const navigateLive = useCallback(
@@ -623,7 +689,7 @@ export function OperatorApp() {
       const base = liveRange ?? staged;
       const ref = base?.start;
       if (!ref) return;
-      const bible = getBible(settings.primaryVersionId);
+      const bible = getBible(primaryId);
       if (!bible) return;
       let chapter = ref.chapter;
       let verse = ref.verse + delta;
@@ -645,7 +711,7 @@ export function OperatorApp() {
         end: { book, chapter, verse },
       };
       const content = fetchRangeTexts(
-        settings.primaryVersionId,
+        primaryId,
         settings.dualView ? settings.secondaryVersionId : null,
         next,
       );
@@ -662,7 +728,7 @@ export function OperatorApp() {
         theme: settings.theme,
         backgroundColor: settings.backgroundColor,
         copyright: projectionCopyright(
-          settings.primaryVersionId,
+          primaryId,
           settings.dualView ? settings.secondaryVersionId : null,
           settings.showCopyright,
         ),
@@ -673,7 +739,7 @@ export function OperatorApp() {
         backgroundFadeMs: settings.backgroundFadeMs,
       });
     },
-    [liveRange, staged, settings, send],
+    [liveRange, staged, settings, primaryId, send],
   );
 
   useEffect(() => {
@@ -712,8 +778,9 @@ export function OperatorApp() {
 
   const searchResults = useMemo(() => {
     if (!keyword.trim() || !ready) return [];
-    return searchVerses(settings.primaryVersionId, keyword, 30);
-  }, [keyword, ready, settings.primaryVersionId]);
+    return searchVerses(primaryId, keyword, 30);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [keyword, ready, primaryId, onlineBibles.chapterTick]);
 
   const persistQueue = async (q: QueueEntry[]) => {
     setQueue(q);
@@ -770,7 +837,7 @@ export function OperatorApp() {
               Versión
               <Select
                 value={settings.primaryVersionId}
-                items={versions.map((v) => ({ value: v.id, label: v.abbr }))}
+                items={allVersions.map((v) => ({ value: v.id, label: v.abbr }))}
                 onValueChange={(value) => value && void applyChrome({ ...settings, primaryVersionId: value })}
               >
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -780,6 +847,16 @@ export function OperatorApp() {
                     {v.abbr}
                   </SelectItem>
                 ))}
+                {onlineBibles.online.versions.length > 0 && (
+                  <SelectGroup>
+                    <SelectLabel>En línea (YouVersion)</SelectLabel>
+                    {onlineBibles.online.versions.map((v) => (
+                      <SelectItem key={v.id} value={v.id} disabled={v.locked} title={v.lockedReason} data-testid={`version-${v.id}`}>
+                        {v.abbr}{v.locked ? " · requiere licencia" : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                )}
                 </SelectContent>
               </Select>
             </label>
@@ -841,7 +918,17 @@ export function OperatorApp() {
           onClearSelection={clearSlideSelection}
           onDeckRemoved={slideDeckRemoved}
         /> : <ChapterReader
-          versionId={settings.primaryVersionId}
+          versionId={primaryId}
+          notice={onlineNotice}
+          onRetryOnline={() => {
+            onlineBibles.resetFailures();
+            // Only re-ask for the list when it is what failed: it shares the
+            // single request queue with the chapter that is being retried.
+            if (onlineBibles.online.error || onlineBibles.online.stale || onlineBibles.online.versions.length === 0) {
+              void onlineBibles.refreshVersions(true);
+            }
+          }}
+          loadingChapter={!!onlineBibles.loading[onlineBibles.chapterKey({ versionId: primaryId, book: viewBook, chapter: viewChapter })]}
           ready={ready}
           viewBook={viewBook}
           viewChapter={viewChapter}
@@ -1137,9 +1224,11 @@ export function OperatorApp() {
           data-testid={activeOverlay === "ajustes" ? "settings-panel" : undefined}
           className={activeOverlay === "ajustes" ? "overlay-sheet settings-sheet" : "overlay-sheet wide-sheet"}
         >
-          {activeOverlay === "ajustes" && <SettingsPanel settings={settings} versions={versions} onSave={async (s) => { await applyChrome(s); setOverlay(null); }} />}
+          {activeOverlay === "ajustes" && <SettingsPanel settings={settings} versions={allVersions} onSave={async (s) => { await applyChrome(s); setOverlay(null); }} />}
           {activeOverlay === "biblias" && (
             <BiblesPanel
+              online={onlineBibles.online}
+              onRefreshOnline={() => void onlineBibles.refreshVersions(true)}
               onChanged={(next) => {
                 if (next) setSettings(mergeSettings(next));
                 setLibraryTick((tick) => tick + 1);

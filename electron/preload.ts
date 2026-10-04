@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from "electron";
+import type { ChapterResult, OnlineVersionsResult } from "../shared/youversion";
 import type { AppSettings, HistoryEntry, ProjectorPayload, QueueEntry, StoredSong, StoredSlideDeck, SlideImportResult } from "../shared/types";
 
 export interface BibleLibraryEntry {
@@ -37,6 +38,9 @@ export interface DisplayInfo {
 contextBridge.exposeInMainWorld("proyector", {
   listBibleVersions: (): Promise<unknown[]> => ipcRenderer.invoke("bibles:list"),
   loadBible: (id: string): Promise<unknown> => ipcRenderer.invoke("bibles:load", id),
+  listOnlineBibles: (force?: boolean): Promise<OnlineVersionsResult> => ipcRenderer.invoke("yvp:versions", force === true),
+  getOnlineChapter: (id: string, book: string, chapter: number): Promise<ChapterResult> =>
+    ipcRenderer.invoke("yvp:chapter", id, book, chapter),
   getBibleCatalog: (): Promise<BibleLibraryView> => ipcRenderer.invoke("bibles:catalog"),
   downloadBible: (id: string): Promise<{ id: string }> => ipcRenderer.invoke("bibles:download", id),
   removeBible: (id: string): Promise<{ settings: AppSettings }> => ipcRenderer.invoke("bibles:remove", id),
