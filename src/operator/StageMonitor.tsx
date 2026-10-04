@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import type { ProjectorPayload } from "@shared/types";
 import { DEFAULT_SETTINGS } from "@shared/types";
-import { backgroundImageUrl, isBackgroundVideo } from "@shared/background-image";
+import { FadingBackgroundMedia } from "@/components/BackgroundMedia";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface Props {
   title: string;
   payload: ProjectorPayload | null;
-  empty: string;
+  /** Hint shown only when there is truly no payload (e.g. preview with
+   *  nothing staged). The live monitor omits it: the background is
+   *  permanent, so something is always projecting. */
+  empty?: string;
   testId?: string;
   isLive?: boolean;
   /** Numeric width / height ratio matching the real projector content bounds. */
@@ -92,7 +95,6 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
   const brightness = renderPayload?.brightness ?? 1;
   const projectorFontPx = renderPayload?.fontSize ?? DEFAULT_SETTINGS.fontSize;
   const fadeMs = Math.max(0, renderPayload?.fadeMs ?? DEFAULT_SETTINGS.fadeMs);
-  const isBlank = !renderPayload || renderPayload.mode === "blank";
   const isLogo = renderPayload?.mode === "logo";
   const projecting = renderPayload?.mode === "verse" || renderPayload?.mode === "logo";
   const label = renderPayload?.referenceLabel ?? "";
@@ -101,8 +103,8 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
   const version = sep < 0 ? "" : label.slice(sep + 3);
   const referenceColor = renderPayload?.referenceColor ?? "#f6a623";
   const versionColor = renderPayload?.versionColor ?? "#f6a623";
-  const bg = backgroundImageUrl(renderPayload?.backgroundImagePath);
-  const backgroundVideo = isBackgroundVideo(renderPayload?.backgroundImagePath);
+  const backgroundPath = renderPayload?.backgroundImagePath;
+  const backgroundFadeMs = Math.max(0, renderPayload?.backgroundFadeMs ?? DEFAULT_SETTINGS.backgroundFadeMs);
   const pad = renderPayload?.padding ?? DEFAULT_SETTINGS.padding;
 
   // Scale projector px values down to the miniature screen so type, padding
@@ -194,7 +196,7 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
 
   const screenContent = (
     <>
-      {isBlank && <p className="monitor-screen-empty">{empty}</p>}
+      {!renderPayload && empty && <p className="monitor-screen-empty">{empty}</p>}
       {isLogo && <p className="monitor-screen-logo" style={{ fontSize: `${fitPx * 0.65}px` }}>{renderPayload?.churchName}</p>}
       {renderPayload?.mode === "verse" && (
         <>
@@ -245,7 +247,7 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
       <CardContent className="monitor-content">
       <div
         ref={monitorRef}
-        className={`monitor ${theme} ${isBlank ? "is-blank" : ""}`}
+        className={`monitor ${theme}`}
         data-testid={testId}
       >
         <div
@@ -261,13 +263,12 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
           <div
             className="monitor-background-layer"
             style={{
-              background: isBlank ? "#000" : renderPayload?.backgroundColor,
-              transition: `background-color ${Math.max(0, renderPayload?.backgroundFadeMs ?? DEFAULT_SETTINGS.backgroundFadeMs)}ms ease`,
-              filter: isBlank ? undefined : `brightness(${brightness})`,
+              background: renderPayload?.backgroundColor ?? (!renderPayload ? "#000" : undefined),
+              transition: `background-color ${backgroundFadeMs}ms ease`,
+              filter: `brightness(${brightness})`,
             }}
           />
-          {bg && !backgroundVideo && <img className="monitor-background-media" style={{ filter: `brightness(${brightness})` }} src={bg} alt="" aria-hidden />}
-          {backgroundVideo && <video className="monitor-background-media" style={{ filter: `brightness(${brightness})` }} src={bg} muted loop autoPlay playsInline preload="auto" onCanPlay={(event) => { void event.currentTarget.play().catch(() => undefined); }} />}
+          <FadingBackgroundMedia path={backgroundPath} brightness={brightness} fadeMs={backgroundFadeMs} className="monitor-background-media" />
           <div
             className={`monitor-screen-fade ${!isLive || visible ? "show" : ""}`}
             style={{ transitionDuration: `${fadeMs}ms` }}
