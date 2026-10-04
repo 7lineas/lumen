@@ -240,12 +240,12 @@ export function ProjectorView() {
             </section>
           ))}
         </div>
-        {(version || payload.copyright) && (
+        {(version || payload.copyright || payload.hasCopyright) && (
           <div className="projector-footer">
             {payload.copyright
               ? <footer className="projector-copyright">{payload.copyright}</footer>
               : <span aria-hidden />}
-            {version && <div className="projector-version" style={{ color: versionColor }}>{version}</div>}
+            {version && <div className="projector-version" style={{ color: versionColor }}>{version}{payload.hasCopyright && !payload.copyright ? "®" : ""}</div>}
           </div>
         )}
       </div>

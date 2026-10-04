@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { loadBible, getBible } from "./bible-service";
-import { projectionCopyright } from "./copyright-line";
+import { hasCopyrightLine, projectionCopyright } from "./copyright-line";
 import {
   buildOnlineVersions,
   emptyOnlineBible,
@@ -92,13 +92,17 @@ describe("mergeChapter", () => {
 });
 
 describe("projectionCopyright for online Bibles", () => {
-  it("cannot be hidden with showCopyright off", () => {
+  it("hides the full line with showCopyright off (a ® mark is shown instead)", () => {
     const meta = buildOnlineVersions(catalog, new Set([147]), licenses).find((v) => v.id === "yv-147")!;
     loadBible(emptyOnlineBible(meta));
     expect(getBible("yv-147")).toBeDefined();
-    expect(projectionCopyright("yv-147", null, false)).toBe("Dominio público");
+    expect(projectionCopyright("yv-147", null, false)).toBe("");
+    expect(projectionCopyright("yv-147", null, true)).toBe("Dominio público");
     expect(projectionCopyright("rv1909", null, false)).toBe("");
-    expect(projectionCopyright("rv1909", "yv-147", false)).toBe("Dominio público");
+    expect(projectionCopyright("rv1909", "yv-147", false)).toBe("");
+    expect(hasCopyrightLine("yv-147", null)).toBe(true);
+    expect(hasCopyrightLine("rv1909", null)).toBe(true);
+    expect(hasCopyrightLine("unknown-version", null)).toBe(false);
   });
 });
 

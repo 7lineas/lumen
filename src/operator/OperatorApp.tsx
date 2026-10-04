@@ -21,7 +21,7 @@ import {
 } from "@shared/bible-service";
 import { BOOKS } from "@shared/books";
 import { rangeFromVerseClick } from "@shared/stage";
-import { projectionCopyright } from "@shared/copyright-line";
+import { hasCopyrightLine, projectionCopyright } from "@shared/copyright-line";
 import { backgroundImageUrl, isBackgroundVideo } from "@shared/background-image";
 import { AboutModal } from "./AboutModal";
 import { BiblesPanel } from "./BiblesPanel";
@@ -285,6 +285,10 @@ export function OperatorApp() {
         settings.dualView ? settings.secondaryVersionId : null,
         settings.showCopyright,
       ),
+      hasCopyright: hasCopyrightLine(
+        primaryId,
+        settings.dualView ? settings.secondaryVersionId : null,
+      ),
       referenceColor: settings.accentColor,
       versionColor: settings.accentColor,
       backgroundImagePath: settings.backgroundImagePath,
@@ -310,6 +314,13 @@ export function OperatorApp() {
               settings.showCopyright,
             )
           : "",
+      hasCopyright:
+        base.mode === "verse"
+          ? hasCopyrightLine(
+              primaryId,
+              settings.dualView ? settings.secondaryVersionId : null,
+            )
+          : false,
       referenceColor: settings.accentColor,
       versionColor: settings.accentColor,
       backgroundImagePath: settings.backgroundImagePath,
@@ -603,6 +614,13 @@ export function OperatorApp() {
                 next.showCopyright,
               )
             : "",
+        hasCopyright:
+          live.mode === "verse"
+            ? hasCopyrightLine(
+                next.primaryVersionId,
+                next.dualView ? next.secondaryVersionId : null,
+              )
+            : false,
       });
     },
     [live, send],
@@ -674,6 +692,10 @@ export function OperatorApp() {
           settings.dualView ? settings.secondaryVersionId : null,
           settings.showCopyright,
         ),
+        hasCopyright: hasCopyrightLine(
+          primaryId,
+          settings.dualView ? settings.secondaryVersionId : null,
+        ),
         referenceColor: settings.accentColor,
         versionColor: settings.accentColor,
         backgroundImagePath: settings.backgroundImagePath,
@@ -731,6 +753,10 @@ export function OperatorApp() {
           primaryId,
           settings.dualView ? settings.secondaryVersionId : null,
           settings.showCopyright,
+        ),
+        hasCopyright: hasCopyrightLine(
+          primaryId,
+          settings.dualView ? settings.secondaryVersionId : null,
         ),
         referenceColor: settings.accentColor,
         versionColor: settings.accentColor,

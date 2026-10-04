@@ -1,6 +1,5 @@
 import licenses from "./bible-licenses.json";
 import { getBible } from "./bible-service";
-import { isOnlineVersionId } from "./youversion";
 
 export function copyrightLineFor(versionId: string): string {
   const fromModule = getBible(versionId)?.meta.copyright?.trim();
@@ -9,17 +8,21 @@ export function copyrightLineFor(versionId: string): string {
   return entry?.copyright?.trim() ?? "";
 }
 
+export function hasCopyrightLine(primaryId: string, secondaryId: string | null): boolean {
+  return [primaryId, secondaryId].some((id): id is string => !!id && copyrightLineFor(id) !== "");
+}
+
 export function projectionCopyright(
   primaryId: string,
   secondaryId: string | null,
   show: boolean,
 ): string {
-  // The publisher's license requires its attribution next to every online
-  // Bible text, so the operator's "show copyright" switch cannot hide it.
-  const online = [primaryId, secondaryId].filter((id): id is string => !!id && isOnlineVersionId(id));
-  if (!show && online.length === 0) return "";
+  // The full line only shows when the operator leaves the switch on. When it
+  // is off, renderers show a ® mark by the version tag instead (see
+  // hasCopyrightLine): attribution is handled outside the verse footer.
+  if (!show) return "";
   const lines = [primaryId, secondaryId]
-    .filter((id): id is string => !!id && (show || online.includes(id)))
+    .filter((id): id is string => !!id)
     .map(copyrightLineFor);
   return [...new Set(lines.filter(Boolean))].join(" · ");
 }

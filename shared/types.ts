@@ -49,6 +49,9 @@ export interface ProjectorPayload {
   backgroundColor: string;
   /** Shown in the projection footer when the operator leaves the option on. */
   copyright?: string;
+  /** The projected version(s) carry a copyright: render a ® mark by the
+   * bottom-right version tag when the full line above is hidden. */
+  hasCopyright?: boolean;
   /** Color of the top-left reference (e.g. "Juan 5:13"). */
   referenceColor?: string;
   /** Color of the bottom-right version tag (e.g. "RV1909"). */
