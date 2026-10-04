@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from "electron";
-import type { AppSettings, HistoryEntry, ProjectorPayload, QueueEntry, StoredSong, StoredSlideDeck } from "../shared/types";
+import type { AppSettings, HistoryEntry, ProjectorPayload, QueueEntry, StoredSong, StoredSlideDeck, SlideImportResult } from "../shared/types";
 
 export interface BibleLibraryEntry {
   id: string;
@@ -57,8 +57,8 @@ contextBridge.exposeInMainWorld("proyector", {
   setSongs: (songs: StoredSong[]): Promise<StoredSong[]> => ipcRenderer.invoke("songs:set", songs),
   getSlideDecks: (): Promise<StoredSlideDeck[]> => ipcRenderer.invoke("slides:get"),
   setSlideDecks: (decks: StoredSlideDeck[]): Promise<StoredSlideDeck[]> => ipcRenderer.invoke("slides:set", decks),
-  importSlideDeck: (): Promise<StoredSlideDeck | { error: string; deck?: StoredSlideDeck } | null> =>
-    ipcRenderer.invoke("slides:import"),
+  importSlideDeck: (): Promise<SlideImportResult | null> => ipcRenderer.invoke("slides:import"),
+  discardSlideSource: (file: string): Promise<boolean> => ipcRenderer.invoke("slides:discardSource", file),
   readSlideSource: (file: string): Promise<string | null> => ipcRenderer.invoke("slides:readFile", file),
   saveSlidePngs: (images: string[]): Promise<string[] | null> => ipcRenderer.invoke("slides:savePngs", images),
   convertPptx: (request: { deckId: string; file: string; total: number }): Promise<{ ok: true; images: string[] } | { ok: false; error: string }> =>

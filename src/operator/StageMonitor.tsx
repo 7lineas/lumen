@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { ProjectorPayload } from "@shared/types";
+import type { MediaFit, ProjectorPayload } from "@shared/types";
 import { DEFAULT_SETTINGS } from "@shared/types";
 import { backgroundImageUrl } from "@shared/background-image";
 import { FadingBackgroundMedia } from "@/components/BackgroundMedia";
@@ -20,6 +20,10 @@ interface Props {
   displayWidth?: number;
   /** Short label shown next to the title, e.g. "16:9 · 1920×1080". */
   ratioLabel?: string;
+  /** How background media fills the screen (settings.backgroundFit). */
+  backgroundFit?: MediaFit;
+  /** How a diapositiva image fills the screen (settings.slideFit). */
+  slideFit?: MediaFit;
 }
 
 function contentKey(p: ProjectorPayload | null): string {
@@ -28,7 +32,7 @@ function contentKey(p: ProjectorPayload | null): string {
   return `${p.mode}:${p.referenceLabel}|${p.slideImagePath ?? ""}|${p.blocks.map((b) => `${b.label ?? ""}=${b.text}`).join("|")}`;
 }
 
-export function StageMonitor({ title, payload, empty, testId, isLive, aspectRatio, displayWidth, ratioLabel }: Props) {
+export function StageMonitor({ title, payload, empty, testId, isLive, aspectRatio, displayWidth, ratioLabel, backgroundFit = DEFAULT_SETTINGS.backgroundFit, slideFit = DEFAULT_SETTINGS.slideFit }: Props) {
   // Live monitor mirrors the projector: fade out old content, swap, fade in.
   // Preview renders instantly (no fade).
   // The inner screen renders at the real projector aspect ratio so the
@@ -162,7 +166,7 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
       // Always restart from the full size so growing the window grows text back.
       let size = projectorFontPx * s;
       const el = textRef.current;
-      if (el && (renderPayload?.mode === "verse" || renderPayload?.mode === "slides")) {
+      if (el && renderPayload?.mode === "verse") {
         el.style.fontSize = `${size}px`;
         // Same rule as the projector: the body is a flex-1 box with overflow
         // hidden, so fitting to its own clientHeight keeps header/footer
@@ -201,9 +205,9 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
       {!renderPayload && empty && <p className="monitor-screen-empty">{empty}</p>}
       {isLogo && <p className="monitor-screen-logo" style={{ fontSize: `${fitPx * 0.65}px` }}>{renderPayload?.churchName}</p>}
       {slideImage && (
-        <img src={backgroundImageUrl(slideImage)} alt="" className="monitor-screen-slide" />
+        <img src={backgroundImageUrl(slideImage)} alt="" className="monitor-screen-slide" style={{ objectFit: slideFit }} />
       )}
-      {(renderPayload?.mode === "verse" || (renderPayload?.mode === "slides" && !slideImage)) && (
+      {renderPayload?.mode === "verse" && (
         <>
           {ref && <header className="monitor-screen-ref" style={{ color: referenceColor, fontSize: `${fitPx * 0.5}px` }}>{ref}</header>}
           <div
@@ -273,7 +277,7 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
               filter: `brightness(${brightness})`,
             }}
           />
-          <FadingBackgroundMedia path={backgroundPath} brightness={brightness} fadeMs={backgroundFadeMs} className="monitor-background-media" />
+          <FadingBackgroundMedia path={backgroundPath} brightness={brightness} fadeMs={backgroundFadeMs} fit={backgroundFit} className="monitor-background-media" />
           <div
             className={`monitor-screen-fade ${!isLive || visible ? "show" : ""}`}
             style={{ transitionDuration: `${fadeMs}ms` }}

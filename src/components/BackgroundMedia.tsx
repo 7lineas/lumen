@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { backgroundImageUrl, isBackgroundVideo } from "@shared/background-image";
+import type { MediaFit } from "@shared/types";
 
 interface Layer {
   src: string;
@@ -17,6 +18,8 @@ interface FadingBackgroundMediaProps {
   brightness: number;
   /** Crossfade duration in ms (backgroundFadeMs). */
   fadeMs: number;
+  /** How the media fills the screen (default: cover). */
+  fit?: MediaFit;
   className?: string;
 }
 
@@ -105,7 +108,7 @@ function BackgroundVideo({
  * `<video>` keeps playing seamlessly underneath the fade instead of
  * remounting (which would restart it from 0 and feel glitchy).
  */
-export function FadingBackgroundMedia({ path, brightness, fadeMs, className }: FadingBackgroundMediaProps) {
+export function FadingBackgroundMedia({ path, brightness, fadeMs, fit = "cover", className }: FadingBackgroundMediaProps) {
   const url = backgroundImageUrl(path);
   const duration = Math.max(0, fadeMs);
 
@@ -166,7 +169,7 @@ export function FadingBackgroundMedia({ path, brightness, fadeMs, className }: F
         // application, no rAF paint dance needed). A leaving layer fades out
         // via transition from its previously painted opacity of 1. Covered
         // layers hold full opacity underneath.
-        const style: React.CSSProperties = layer.leaving
+        const layerStyle: React.CSSProperties = layer.leaving
           ? { opacity: 0, transition: `opacity ${duration}ms ease`, filter }
           : isTop
             ? readySrc === layer.src
@@ -175,6 +178,7 @@ export function FadingBackgroundMedia({ path, brightness, fadeMs, className }: F
                 : { opacity: 1, transition: `opacity ${duration}ms ease`, filter }
               : { opacity: 0, filter }
             : { opacity: 1, filter };
+        const style: React.CSSProperties = { ...layerStyle, objectFit: fit };
         const onReady = isTop && !layer.leaving ? () => setReadySrc(layer.src) : undefined;
         if (layer.video) {
           return (

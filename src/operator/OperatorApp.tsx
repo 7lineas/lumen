@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
+import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Palette } from "lucide-react";
@@ -28,6 +29,7 @@ import { ChapterReader } from "./ChapterReader";
 import { ServiceRundown } from "./ServiceRundown";
 import { SongsWorkspace, type SongStage } from "./SongsWorkspace";
 import { SlidesWorkspace, type SlideStage } from "./SlidesWorkspace";
+import { FitToggle } from "./FitToggle";
 import { UpdateButton } from "./UpdateButton";
 import lumenLogo from "../lumen-icon.png";
 
@@ -355,12 +357,12 @@ export function OperatorApp() {
     backgroundFadeMs: settings.backgroundFadeMs,
   }), [settings]);
 
-  const slidePayload = useCallback((text: string, imagePath?: string | null): ProjectorPayload => ({
-    ...songPayload("", text),
+  const slidePayload = useCallback((imagePath: string | null): ProjectorPayload => ({
+    ...songPayload("", ""),
     mode: "slides",
-    // Image slides project the picture, not the navigation label.
-    blocks: imagePath ? [] : [{ text }],
-    slideImagePath: imagePath ?? null,
+    // A diapositiva is just its image: no text blocks.
+    blocks: [],
+    slideImagePath: imagePath,
     fadeMs: settings.songFadeMs,
   }), [songPayload, settings.songFadeMs]);
 
@@ -418,67 +420,49 @@ export function OperatorApp() {
     await send(songPayload(next.title, text));
   }, [songLive, send, songPayload]);
 
-  const selectSlideDeck = useCallback((id: string, title: string, slides: string[], images?: Array<string | null>) => {
-    if (!slides.length) {
-      setSlideSelectedId(id);
-      setSlideStaged(null);
-      return;
-    }
-    const normalized = slides.map((_, i) => images?.[i] ?? null);
+  const selectSlideDeck = useCallback((id: string, title: string, images: string[]) => {
     setSlideSelectedId(id);
-    setSlideStaged({ deckId: id, title, slides, images: normalized, index: 0 });
+    setSlideStaged(images.length ? { deckId: id, title, images, index: 0 } : null);
   }, []);
   const clearSlideSelection = useCallback(() => { setSlideSelectedId(null); setSlideStaged(null); }, []);
-  const handleSlideImagesReady = useCallback((id: string, slides: string[], images: string[]) => {
-    // Only the matching deck is touched, so no dependency on the current selection.
-    setSlideStaged((staged) => (staged && staged.deckId === id ? { ...staged, slides, images } : staged));
-    setSlideLive((live) => (live && live.deckId === id ? { ...live, slides, images } : live));
-  }, []);
   const selectSlide = useCallback((index: number) => {
     setSlideStaged((current) => {
-      if (!current || current.slides.length === 0) return current;
-      const clamped = Math.min(Math.max(index, 0), current.slides.length - 1);
+      if (!current || current.images.length === 0) return current;
+      const clamped = Math.min(Math.max(index, 0), current.images.length - 1);
       if (clamped === current.index) return current;
       const next = { ...current, index: clamped };
       if (projectOnClick) {
-        const text = next.slides[clamped] ?? "";
         const image = next.images[clamped] ?? null;
         // Defer the projection out of the state updater to avoid
         // double-sends under StrictMode double-invocation.
         queueMicrotask(() => {
           setSlideLive(next);
-          void send(slidePayload(text, image));
+          void send(slidePayload(image));
         });
       }
       return next;
     });
   }, [projectOnClick, send, slidePayload]);
   const slidePreviewPayload = useMemo<ProjectorPayload | null>(() => {
-    if (!slideStaged || slideStaged.slides.length === 0) return null;
-    const index = Math.min(Math.max(slideStaged.index, 0), slideStaged.slides.length - 1);
-    const text = slideStaged.slides[index] ?? slideStaged.slides[0];
-    if (text == null) return null;
-    return slidePayload(text, slideStaged.images[index] ?? null);
+    if (!slideStaged || slideStaged.images.length === 0) return null;
+    const index = Math.min(Math.max(slideStaged.index, 0), slideStaged.images.length - 1);
+    return slidePayload(slideStaged.images[index] ?? null);
   }, [slideStaged, slidePayload]);
   const projectSlideStaged = useCallback(async () => {
-    if (!slideStaged || slideStaged.slides.length === 0) return;
-    const index = Math.min(Math.max(slideStaged.index, 0), slideStaged.slides.length - 1);
-    const text = slideStaged.slides[index] ?? slideStaged.slides[0];
-    if (text == null) return;
+    if (!slideStaged || slideStaged.images.length === 0) return;
+    const index = Math.min(Math.max(slideStaged.index, 0), slideStaged.images.length - 1);
     setSlideLive(slideStaged);
-    await send(slidePayload(text, slideStaged.images[index] ?? null));
+    await send(slidePayload(slideStaged.images[index] ?? null));
   }, [slideStaged, send, slidePayload]);
-  const navigateSlidePreview = useCallback((delta: number) => { setSlideStaged((current) => current && current.slides.length ? { ...current, index: Math.min(Math.max(current.index + delta, 0), current.slides.length - 1) } : current); }, []);
+  const navigateSlidePreview = useCallback((delta: number) => { setSlideStaged((current) => current && current.images.length ? { ...current, index: Math.min(Math.max(current.index + delta, 0), current.images.length - 1) } : current); }, []);
   const navigateSlideLive = useCallback(async (delta: number) => {
     const current = slideLive;
-    if (!current || current.slides.length === 0) return;
-    const index = Math.min(Math.max(current.index + delta, 0), current.slides.length - 1);
+    if (!current || current.images.length === 0) return;
+    const index = Math.min(Math.max(current.index + delta, 0), current.images.length - 1);
     if (index === current.index) return;
     const next = { ...current, index };
-    const text = next.slides[index];
-    if (text == null) return;
     setSlideLive(next);
-    await send(slidePayload(text, next.images[index] ?? null));
+    await send(slidePayload(next.images[index] ?? null));
   }, [slideLive, send, slidePayload]);
 
   const showBlank = useCallback(async () => {
@@ -771,23 +755,33 @@ export function OperatorApp() {
           </div>
         </div>
         <div className="top-right">
-          <label className="version-select">
-            Versión
-            <Select
-              value={settings.primaryVersionId}
-              items={versions.map((v) => ({ value: v.id, label: v.abbr }))}
-              onValueChange={(value) => value && void applyChrome({ ...settings, primaryVersionId: value })}
-            >
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-              {versions.map((v) => (
-                <SelectItem key={v.id} value={v.id}>
-                  {v.abbr}
-                </SelectItem>
-              ))}
-              </SelectContent>
-            </Select>
-          </label>
+          {mode === "biblia" && (
+            <label className="version-select">
+              Versión
+              <Select
+                value={settings.primaryVersionId}
+                items={versions.map((v) => ({ value: v.id, label: v.abbr }))}
+                onValueChange={(value) => value && void applyChrome({ ...settings, primaryVersionId: value })}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                {versions.map((v) => (
+                  <SelectItem key={v.id} value={v.id}>
+                    {v.abbr}
+                  </SelectItem>
+                ))}
+                </SelectContent>
+              </Select>
+            </label>
+          )}
+          {mode === "diapositivas" && (
+            <FitToggle
+              label="Diapositivas"
+              testId="slide-fit"
+              value={settings.slideFit}
+              onChange={(slideFit) => void applyChrome({ ...settings, slideFit })}
+            />
+          )}
           <span className="top-sep" aria-hidden />
           <div className="tabs">
             <Button
@@ -835,7 +829,6 @@ export function OperatorApp() {
           onSelectDeck={selectSlideDeck}
           onSelectSlide={selectSlide}
           onClearSelection={clearSlideSelection}
-          onImagesReady={handleSlideImagesReady}
         /> : <ChapterReader
           versionId={settings.primaryVersionId}
           ready={ready}
@@ -886,6 +879,8 @@ export function OperatorApp() {
                 aspectRatio={projectorAspect}
                 displayWidth={projectorBounds?.width}
                 ratioLabel={projectorRatioLabel}
+                backgroundFit={settings.backgroundFit}
+                slideFit={settings.slideFit}
               />
               <div className="action-row">
                 {mode === "canciones" ? <>
@@ -924,6 +919,8 @@ export function OperatorApp() {
                 aspectRatio={projectorAspect}
                 displayWidth={projectorBounds?.width}
                 ratioLabel={projectorRatioLabel}
+                backgroundFit={settings.backgroundFit}
+                slideFit={settings.slideFit}
               />
               <div className="action-row">
                 <Button
@@ -996,6 +993,8 @@ export function OperatorApp() {
               >
                 Color sólido
               </Button>
+              {/* Colors (picker + solid) | media (add / delete / fit) */}
+              <Separator orientation="vertical" className="stage-background-sep" />
               <Button
                 type="button"
                 onClick={async () => {
@@ -1017,6 +1016,12 @@ export function OperatorApp() {
                   {deletingMedia ? "Cancelar eliminación" : "Eliminar media"}
                 </Button>
               )}
+              <FitToggle
+                label="Media de fondo"
+                testId="media-fit"
+                value={settings.backgroundFit}
+                onChange={(backgroundFit) => void applyChrome({ ...settings, backgroundFit })}
+              />
             </div>
             {(settings.backgroundImages ?? []).length > 0 && (
               <div className="background-gallery" aria-label="Imágenes de fondo guardadas">

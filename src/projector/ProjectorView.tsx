@@ -107,7 +107,7 @@ export function ProjectorView() {
 
   useEffect(() => {
     const el = textRef.current;
-    if (!el || (payload.mode !== "verse" && payload.mode !== "slides")) return;
+    if (!el || payload.mode !== "verse") return;
     let raf = 0;
     const fit = () => {
       // Always restart from the full size so growing the window grows text back.
@@ -156,7 +156,7 @@ export function ProjectorView() {
   const backgroundPath = settings.backgroundImagePath;
   const backgroundFadeMs = Math.max(0, payload.backgroundFadeMs ?? settings.backgroundFadeMs ?? DEFAULT_SETTINGS.backgroundFadeMs);
   const backgroundMedia = (
-    <FadingBackgroundMedia path={backgroundPath} brightness={brightness} fadeMs={backgroundFadeMs} className="projector-background-media" />
+    <FadingBackgroundMedia path={backgroundPath} brightness={brightness} fadeMs={backgroundFadeMs} fit={settings.backgroundFit ?? DEFAULT_SETTINGS.backgroundFit} className="projector-background-media" />
   );
   const style: React.CSSProperties = {
     fontSize: `${fitSize}px`,
@@ -207,11 +207,13 @@ export function ProjectorView() {
 
   if (slideImage && slideImageUrl) {
     return (
-      <div className={themeClass} style={style}>
+      // A diapositiva is full-bleed: no content padding / max width, so
+      // "Cubrir" and "Ajustar" are relative to the whole screen (same as the monitors).
+      <div className={themeClass} style={{ ...style, padding: 0 }}>
         <div className="projector-background-layer" style={backgroundStyle} />
         {backgroundMedia}
-        <div className={`projector-inner fade ${visible ? "show" : ""}`} style={fadeStyle}>
-          <img src={slideImageUrl} alt="" className="projector-slide" />
+        <div className={`projector-inner projector-inner-slide fade ${visible ? "show" : ""}`} style={fadeStyle}>
+          <img src={slideImageUrl} alt="" className="projector-slide" style={{ objectFit: settings.slideFit ?? DEFAULT_SETTINGS.slideFit }} />
         </div>
       </div>
     );

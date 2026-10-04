@@ -13,12 +13,12 @@ import path from "path";
 import { pathToFileURL } from "url";
 import fs from "fs";
 import Store from "electron-store";
-import { isPdfPath, isSlideTextPath, isUnsupportedPresentationPath } from "../shared/slide-deck";
+import { isPdfPath } from "../shared/slide-deck";
 import { renderPptxInWorker } from "./pptx-render";
 import {
+  countPptxSlides,
   isPptxPath,
   isSlideImagePath,
-  parsePptxBuffer,
   sanitizeSlideDecks,
   sortImagePathsNumerically,
 } from "./slides-import";
@@ -107,27 +107,26 @@ function pruneOrphanSlideImages(next: Array<{ images: Array<string | null> }>): 
   }
 }
 
-/** Delete managed PDFs whose deck no longer exists. */
-function pruneOrphanSlideSources(next: Array<{ id: string }>): void {
+/** Sources (original PPTX/PDF) are only needed while converting or retrying; drop stale leftovers. */
+const SOURCE_MAX_AGE_MS = 60 * 60 * 1000;
+
+function pruneStaleSlideSources(): void {
   try {
     const dir = path.resolve(slideDecksDir());
     if (!fs.existsSync(dir)) return;
-    const live = new Set(next.map((deck) => deck.id));
     for (const name of fs.readdirSync(dir)) {
       const full = path.join(dir, name);
-      if (!live.has(path.basename(name, path.extname(name))) && !isRecent(full)) {
-        try {
-          fs.rmSync(full, { force: true });
-        } catch {
-          // ignore single-file failures
-        }
+      try {
+        if (Date.now() - fs.statSync(full).mtimeMs > SOURCE_MAX_AGE_MS) fs.rmSync(full, { force: true });
+      } catch {
+        // ignore single-file failures
       }
     }
   } catch {
     // pruning is best-effort
   }
 }
-import type { AppSettings, ProjectorPayload, QueueEntry, HistoryEntry, StoredSong, StoredSlideDeck } from "../shared/types";
+import type { AppSettings, ProjectorPayload, QueueEntry, HistoryEntry, StoredSong, StoredSlideDeck, SlideImportResult } from "../shared/types";
 import { DEFAULT_SETTINGS } from "../shared/types";
 import { buildBibleDataCandidates, resolveBibleDataDir } from "./bible-data-path";
 import { initAutoUpdater, registerUpdaterHandlers } from "./updater";
@@ -581,13 +580,19 @@ ipcMain.handle("songs:set", (_e, songs: StoredSong[]) => {
   return next;
 });
 
-ipcMain.handle("slides:get", () => store.get("slideDecks"));
+ipcMain.handle("slides:get", () => {
+  // Older versions stored slide text (and text-only decks): migrate to images-only.
+  const saved = store.get("slideDecks");
+  const migrated = sanitizeSlideDecks(saved);
+  if (JSON.stringify(saved) !== JSON.stringify(migrated)) store.set("slideDecks", migrated);
+  return migrated;
+});
 
 ipcMain.handle("slides:set", (_e, decks: StoredSlideDeck[]) => {
   const next = sanitizeSlideDecks(decks);
   store.set("slideDecks", next);
   pruneOrphanSlideImages(next);
-  pruneOrphanSlideSources(next);
+  pruneStaleSlideSources();
   return next;
 });
 
@@ -595,11 +600,13 @@ function newDeckId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-ipcMain.handle("slides:import", async () => {
+const importError = (error: string): SlideImportResult => ({ kind: "error", error });
+
+ipcMain.handle("slides:import", async (): Promise<SlideImportResult | null> => {
   const result = await dialog.showOpenDialog({
     properties: ["openFile", "multiSelections"],
     filters: [
-      { name: "Presentaciones", extensions: ["pptx", "ppsx", "pdf", "png", "jpg", "jpeg", "webp", "json", "txt", "md"] },
+      { name: "Presentaciones", extensions: ["pptx", "ppsx", "pdf", "png", "jpg", "jpeg", "webp"] },
       { name: "PowerPoint/PDF", extensions: ["pptx", "ppsx", "pdf"] },
       { name: "Imágenes", extensions: ["png", "jpg", "jpeg", "webp"] },
       // Lets the user pick Keynote/.ppt/.odp to get a clear "export to PDF" hint instead of a greyed-out file.
@@ -622,109 +629,58 @@ ipcMain.handle("slides:import", async () => {
           }
         }
       }
-      return { error: "read-failed" };
+      return importError("read-failed");
     }
     const firstDir = path.basename(path.dirname(ordered[0]!));
     const title = firstDir && firstDir !== "." ? firstDir : path.basename(ordered[0]!, path.extname(ordered[0]!));
-    const images = stored as string[];
     return {
-      id: newDeckId(),
-      title,
-      slides: images.map((_, i) => `Diapositiva ${i + 1}`),
-      images,
-      updatedAt: Date.now(),
-      pinned: false,
-    } satisfies StoredSlideDeck;
+      kind: "ready",
+      deck: { id: newDeckId(), title, images: stored as string[], updatedAt: Date.now(), pinned: false },
+    };
   }
   const filePath = result.filePaths[0]!;
   const title = path.basename(filePath, path.extname(filePath));
   if (isSlideImagePath(filePath)) {
     const storedPath = copyToSlideImages(filePath);
-    if (!storedPath) return { error: "read-failed" };
-    return {
-      id: newDeckId(),
-      title,
-      slides: ["Diapositiva 1"],
-      images: [storedPath],
-      updatedAt: Date.now(),
-      pinned: false,
-    } satisfies StoredSlideDeck;
+    if (!storedPath) return importError("read-failed");
+    return { kind: "ready", deck: { id: newDeckId(), title, images: [storedPath], updatedAt: Date.now(), pinned: false } };
   }
   if (isPptxPath(filePath)) {
-    // Screenshots are rendered later by "slides:convert" (pptx-glimpse in a
-    // utilityProcess, no extra apps). Here we keep the original plus the
-    // extracted texts (used as labels / fallback).
-    let slides: string[];
+    // The PNGs are generated by "slides:convertPptx" (pptx-glimpse in a
+    // utilityProcess). Only the slide count is read here (progress); no text
+    // is extracted or stored.
+    let total: number;
     try {
-      const data = fs.readFileSync(filePath);
-      // One entry per slide (empty -> label) so text order matches the PNG order.
-      const rawSlides = await parsePptxBuffer(data, { keepEmpty: true });
-      slides = rawSlides.map((slide, i) => slide.trim() || `Diapositiva ${i + 1}`);
+      total = await countPptxSlides(fs.readFileSync(filePath));
     } catch (error) {
       console.error("[slides] could not read pptx", error);
-      return { error: "invalid-pptx" };
+      return importError("invalid-pptx");
     }
-    if (!slides.length) return { error: "empty-presentation" };
+    if (total === 0) return importError("empty-presentation");
     const deckId = newDeckId();
     const sourceFile = copyPptxToSlideDecks(deckId, filePath);
-    if (!sourceFile) return { error: "read-failed" };
-    return {
-      id: deckId,
-      title,
-      slides,
-      images: slides.map(() => null),
-      source: { kind: "pptx" as const, file: sourceFile },
-      updatedAt: Date.now(),
-      pinned: false,
-    } satisfies StoredSlideDeck;
+    if (!sourceFile) return importError("read-failed");
+    return { kind: "pending", pending: { id: deckId, title, source: { kind: "pptx", file: sourceFile }, total } };
   }
   if (isPdfPath(filePath)) {
     const deckId = newDeckId();
     const sourceFile = copyPdfToSlideDecks(deckId, filePath);
-    if (!sourceFile) return { error: "read-failed" };
-    return {
-      id: deckId,
-      title,
-      slides: ["Diapositiva 1"],
-      images: [null],
-      source: { kind: "pdf" as const, file: sourceFile },
-      updatedAt: Date.now(),
-      pinned: false,
-    } satisfies StoredSlideDeck;
+    if (!sourceFile) return importError("read-failed");
+    return { kind: "pending", pending: { id: deckId, title, source: { kind: "pdf", file: sourceFile }, total: 0 } };
   }
-  if (isUnsupportedPresentationPath(filePath) || !isSlideTextPath(filePath)) {
-    // No visual renderer exists in JS for Keynote/.ppt/.odp: don't fake it.
-    return { error: "unsupported-format" };
-  }
-  let slides: string[] = [];
-  let deckTitle = title;
+  // Keynote/.ppt/.odp have no JS renderer, and anything else is not a presentation: don't fake it.
+  return importError("unsupported-format");
+});
+
+/** Remove a managed source file once its slides were converted (or the import was abandoned). */
+ipcMain.handle("slides:discardSource", (_e, file: string): boolean => {
   try {
-    const raw = fs.readFileSync(filePath, "utf8");
-    try {
-      const parsed = JSON.parse(raw) as unknown;
-      if (Array.isArray(parsed)) slides = parsed.filter((value): value is string => typeof value === "string");
-      else if (parsed && typeof parsed === "object") {
-        const value = parsed as { title?: unknown; slides?: unknown };
-        if (typeof value.title === "string" && value.title.trim()) deckTitle = value.title.trim();
-        if (Array.isArray(value.slides)) slides = value.slides.filter((slide): slide is string => typeof slide === "string");
-      }
-    } catch {
-      slides = raw.split(/\n\s*\n/);
-    }
-  } catch (error) {
-    console.error("[slides] could not read text deck", error);
-    return { error: "read-failed" };
+    if (!isManagedSlideSource(file)) return false;
+    fs.rmSync(path.resolve(file), { force: true });
+    return true;
+  } catch {
+    return false;
   }
-  slides = slides.map((slide) => slide.trim()).filter(Boolean);
-  if (!slides.length) return { error: "empty-presentation" };
-  return {
-    id: newDeckId(),
-    title: deckTitle,
-    slides,
-    images: slides.map(() => null),
-    updatedAt: Date.now(),
-    pinned: false,
-  } satisfies StoredSlideDeck;
 });
 
 const MAX_SLIDE_PNGS = 300;

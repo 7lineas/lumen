@@ -19,6 +19,9 @@ export interface BibleData {
   searchIndex: Array<{ key: string; book: string; chapter: number; verse: number; text: string }>;
 }
 
+/** How an image/video fills the projector: crop to fill ("cover") or show it whole ("contain"). */
+export type MediaFit = "cover" | "contain";
+
 export type ProjectorMode = "verse" | "slides" | "blank" | "logo";
 
 export interface ProjectorPayload {
@@ -45,7 +48,7 @@ export interface ProjectorPayload {
    * Managed background media path. Kept optional so blank/logo payloads stay lean.
    */
   backgroundImagePath?: string | null;
-  /** Managed per-slide image for diapositivas. Null/text-only when absent. */
+  /** Managed per-slide image (PNG) for diapositivas. */
   slideImagePath?: string | null;
 }
 
@@ -59,6 +62,10 @@ export interface AppSettings {
   backgroundImagePath: string | null;
   /** Images copied into this user's app data folder for reuse. */
   backgroundImages: string[];
+  /** How background media (image/video) fills the screen. Default: cover. */
+  backgroundFit: MediaFit;
+  /** How a diapositiva image fills the screen. Default: contain (whole slide visible). */
+  slideFit: MediaFit;
   projectorDisplayId: number | null;
   /** Bible text transition duration in ms. */
   fadeMs: number;
@@ -86,6 +93,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   backgroundColor: "#0f1419",
   backgroundImagePath: null,
   backgroundImages: [],
+  backgroundFit: "cover",
+  slideFit: "contain",
   projectorDisplayId: null,
   fadeMs: 400,
   songFadeMs: 100,
@@ -118,16 +127,26 @@ export interface StoredSong {
   pinned: boolean;
 }
 
-/** User-created slide deck saved in the application's persistent user data. */
+/** Slide deck saved in the application's persistent user data: images only, one PNG per slide. */
 export interface StoredSlideDeck {
   id: string;
   title: string;
-  /** Slide texts (navigation labels/fallback when a slide has no image). */
-  slides: string[];
-  /** Managed image per slide (copied into app data), parallel to slides. Null = text-only. */
-  images: Array<string | null>;
-  /** Print-ready PDF kept in app data for silent screenshot conversion. */
-  source?: { kind: "pptx" | "pdf"; file: string } | null;
+  /** Managed PNG per slide (copied into app data), in presentation order. */
+  images: string[];
   updatedAt: number;
   pinned: boolean;
 }
+
+/** An import whose PNGs are still to be generated (never persisted). */
+export interface PendingSlideImport {
+  id: string;
+  title: string;
+  source: { kind: "pptx" | "pdf"; file: string };
+  /** Expected slide count (0 = unknown until rasterized). */
+  total: number;
+}
+
+export type SlideImportResult =
+  | { kind: "ready"; deck: StoredSlideDeck }
+  | { kind: "pending"; pending: PendingSlideImport }
+  | { kind: "error"; error: string };

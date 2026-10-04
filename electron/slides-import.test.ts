@@ -1,90 +1,67 @@
 import JSZip from "jszip";
 import { describe, expect, it } from "vitest";
-import {
-  extractSlideText,
-  naturalCompare,
-  orderSlideFiles,
-  parsePptxBuffer,
-  sanitizeSlideDecks,
-  sortImagePathsNumerically,
-} from "./slides-import";
-
-function slideXml(paragraphs: string[][]): string {
-  const body = paragraphs
-    .map((runs) => `<a:p>${runs.map((t) => `<a:r><a:t>${t}</a:t></a:r>`).join("")}</a:p>`)
-    .join("");
-  return `<?xml version="1.0"?><p:sld><p:cSld><p:spTree><p:sp><p:txBody><a:bodyPr/>${body}</p:txBody></p:sp></p:spTree></p:cSld></p:sld>`;
-}
-
-async function buildPptx(): Promise<Buffer> {
-  const zip = new JSZip();
-  zip.file(
-    "ppt/presentation.xml",
-    `<?xml version="1.0"?><p:presentation xmlns:p="x" xmlns:r="y"><p:sldIdLst>` +
-      `<p:sldId id="256" r:id="rId3"/><p:sldId id="257" r:id="rId2"/>` +
-      `</p:sldIdLst></p:presentation>`,
-  );
-  zip.file(
-    "ppt/_rels/presentation.xml.rels",
-    `<?xml version="1.0"?><Relationships>` +
-      `<Relationship Id="rId2" Type="slide" Target="slides/slide1.xml"/>` +
-      `<Relationship Id="rId3" Type="slide" Target="slides/slide2.xml"/>` +
-      `</Relationships>`,
-  );
-  zip.file("ppt/slides/slide1.xml", slideXml([["Hola &amp; bienvenidos"], ["Juan 3:16"]]));
-  zip.file("ppt/slides/slide2.xml", slideXml([["Segunda", " diapositiva"]]));
-  return zip.generateAsync({ type: "nodebuffer" });
-}
+import { countPptxSlides, naturalCompare, sanitizeSlideDecks, sortImagePathsNumerically } from "./slides-import";
 
 describe("slides-import", () => {
-  it("extracts runs joined per paragraph", () => {
-    expect(extractSlideText(slideXml([["Hola ", "mundo"], ["Amén"]]))).toBe("Hola mundo\nAmén");
+  it("counts the slides of a pptx buffer", async () => {
+    const zip = new JSZip();
+    zip.file("ppt/slides/slide1.xml", "<p:sld/>");
+    zip.file("ppt/slides/slide2.xml", "<p:sld/>");
+    zip.file("ppt/slides/_rels/slide1.xml.rels", "<Relationships/>");
+    zip.file("ppt/presentation.xml", "<p:presentation/>");
+    expect(await countPptxSlides(await zip.generateAsync({ type: "nodebuffer" }))).toBe(2);
   });
 
-  it("decodes entities", () => {
-    expect(extractSlideText(slideXml([["A &amp; B", " &lt;3"]]))).toBe("A & B <3");
-  });
-
-  it("orders slides by presentation manifest, not filename", () => {
-    const ordered = orderSlideFiles(
-      `<p:presentation><p:sldIdLst><p:sldId r:id="rId3"/><p:sldId r:id="rId2"/></p:sldIdLst></p:presentation>`,
-      `<Relationships><Relationship Id="rId2" Target="slides/slide1.xml"/><Relationship Id="rId3" Target="slides/slide2.xml"/></Relationships>`,
-      ["ppt/slides/slide1.xml", "ppt/slides/slide2.xml"],
-    );
-    expect(ordered).toEqual(["ppt/slides/slide2.xml", "ppt/slides/slide1.xml"]);
-  });
-
-  it("parses a pptx buffer in presentation order", async () => {
-    const data = await buildPptx();
-    // slide2 is first per the manifest above
-    await expect(parsePptxBuffer(data)).resolves.toEqual([
-      "Segunda diapositiva",
-      "Hola & bienvenidos\nJuan 3:16",
-    ]);
-  });
-
-  it("returns [] when no slides exist", async () => {
+  it("returns 0 when there are no slides and throws on non-zip data", async () => {
     const zip = new JSZip();
     zip.file("ppt/presentation.xml", "<p:presentation/>");
-    const data = await zip.generateAsync({ type: "nodebuffer" });
-    await expect(parsePptxBuffer(data)).resolves.toEqual([]);
+    expect(await countPptxSlides(await zip.generateAsync({ type: "nodebuffer" }))).toBe(0);
+    await expect(countPptxSlides(Buffer.from("not a zip"))).rejects.toThrow();
   });
 
   it("sorts exported slide images naturally", () => {
-    expect(
-      sortImagePathsNumerically(["/x/Diapositiva10.PNG", "/x/Diapositiva2.PNG", "/x/Diapositiva1.PNG"]),
-    ).toEqual(["/x/Diapositiva1.PNG", "/x/Diapositiva2.PNG", "/x/Diapositiva10.PNG"]);
-    expect(naturalCompare("a2", "a10")).toBeLessThan(0);
+    expect(naturalCompare("Slide2.png", "Slide10.png")).toBeLessThan(0);
+    expect(sortImagePathsNumerically(["/a/Slide10.png", "/a/Slide2.png", "/a/Slide1.png"])).toEqual([
+      "/a/Slide1.png",
+      "/a/Slide2.png",
+      "/a/Slide10.png",
+    ]);
   });
 
-  it("sanitizes decks keeping images parallel to slides", () => {
-    const decks = sanitizeSlideDecks([
-      { id: "1", title: "T", slides: [" a ", "", "b"], images: ["/img/a.png", "/img/b.png", 42], updatedAt: 7, pinned: 1 },
-      { id: "2", title: "Empty", slides: ["  "], images: [] },
-      null,
+  it("keeps image-only decks", () => {
+    const [deck] = sanitizeSlideDecks([
+      { id: "a", title: "Culto", images: ["/x/1.png", "/x/2.png"], updatedAt: 5, pinned: true },
     ]);
-    expect(decks).toEqual([
-      { id: "1", title: "T", slides: ["a", "b"], images: ["/img/a.png", "/img/b.png"], updatedAt: 7, pinned: true },
+    expect(deck).toEqual({ id: "a", title: "Culto", images: ["/x/1.png", "/x/2.png"], updatedAt: 5, pinned: true });
+  });
+
+  it("migrates legacy decks: drops stored text/source and null images", () => {
+    const [deck] = sanitizeSlideDecks([
+      {
+        id: "legacy",
+        title: "Antiguo",
+        slides: ["Texto uno", "Texto dos"],
+        images: ["/x/1.png", null],
+        source: { kind: "pptx", file: "/x/legacy.pptx" },
+        updatedAt: 1,
+        pinned: false,
+      },
     ]);
+    expect(deck).toEqual({ id: "legacy", title: "Antiguo", images: ["/x/1.png"], updatedAt: 1, pinned: false });
+    expect(deck).not.toHaveProperty("slides");
+    expect(deck).not.toHaveProperty("source");
+  });
+
+  it("discards legacy text-only decks and malformed input", () => {
+    expect(
+      sanitizeSlideDecks([
+        { id: "t", title: "Solo texto", slides: ["a"], images: [null], updatedAt: 1, pinned: false },
+        { id: "u", title: "Sin imágenes", slides: ["a"], updatedAt: 1, pinned: false },
+        null,
+        "x",
+        { id: 3, title: "bad", images: ["/x.png"] },
+      ]),
+    ).toEqual([]);
+    expect(sanitizeSlideDecks("nope")).toEqual([]);
   });
 });

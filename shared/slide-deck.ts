@@ -9,15 +9,7 @@ export function isUnsupportedPresentationPath(filePath: string): boolean {
   return /\.(key|ppt|pot|pps|odp|otp)$/i.test(filePath);
 }
 
-/** Plain-text decks (TXT/MD/JSON) that are split into text slides. */
-export function isSlideTextPath(filePath: string): boolean {
-  return /\.(txt|md|json)$/i.test(filePath);
-}
-
-/**
- * Reconcile extracted texts with the rasterized page count: keep each
- * slide's text when present, fill the rest with navigation labels.
- */
-export function reconcileSlides(texts: string[], pageCount: number): string[] {
-  return Array.from({ length: pageCount }, (_, i) => texts[i]?.trim() || `Diapositiva ${i + 1}`);
+/** Label for a slide in navigation lists (slides carry no text, only an image). */
+export function slideLabel(index: number): string {
+  return `Diapositiva ${index + 1}`;
 }

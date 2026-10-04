@@ -362,6 +362,8 @@ button.primary {
   transition: opacity 0.35s ease;
 }
 
+.projector-inner-slide { max-width: none; }
+
 .projector-inner.show {
   opacity: 1;
 }
@@ -1335,7 +1337,11 @@ button.song-part.selected, button.song-part.selected:hover { background: #1e3a5f
 .song-slides { display: flex; flex-wrap: wrap; gap: 0.3rem; margin: 0.65rem 0; }
 .song-project-toggle { display: flex; align-items: center; gap: 0.5rem; color: var(--muted); font-size: 0.8rem; margin-top: 0.6rem; cursor: pointer; }
 .stage-background { display: flex; flex-direction: column; gap: 0.45rem; color: var(--muted); font-size: 0.8rem; border-top: 1px solid #292d34; padding-top: 0.65rem; }
-.stage-background-row { display: flex; gap: 0.5rem; align-items: center; }
+.stage-background-row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+.stage-background-sep { width: 1px; flex: none; align-self: stretch; min-height: 1.75rem; margin-inline: 0.15rem; background: #4a515c; }
+.fit-toggle button { border-color: #3a404a; color: var(--muted); background: transparent; }
+.fit-toggle button[data-pressed] { background: var(--accent); border-color: var(--accent); color: #061018; }
+.top-right .fit-toggle { margin-left: 0; }
 .background-gallery { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .background-choice-wrap { position: relative; display: flex; flex-direction: column; gap: 0.25rem; align-items: stretch; }
 .background-choice { width: 5.5rem; height: 3.4rem; padding: 0; overflow: hidden; border: 1px solid #3a404a; border-radius: 4px; background: transparent; cursor: pointer; }
