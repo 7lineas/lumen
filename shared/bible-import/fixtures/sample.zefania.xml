@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<XMLBIBLE xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" biblename="Muestra Zefania" type="x-bible">
+  <INFORMATION>
+    <title>Muestra Zefania</title>
+    <identifier>MZEF</identifier>
+    <language>SPA</language>
+    <rights>Dominio público</rights>
+  </INFORMATION>
+  <BIBLEBOOK bnumber="1" bname="Genesis" bsname="Gen">
+    <CHAPTER cnumber="1">
+      <VERS vnumber="1">EN el principio crió Dios los cielos y la tierra.<NOTE type="x-studynote">nota que no es texto</NOTE></VERS>
+      <VERS vnumber="2">Y la tierra estaba <STYLE css="font-style:italic">desordenada</STYLE> y vacía.</VERS>
+    </CHAPTER>
+  </BIBLEBOOK>
+  <BIBLEBOOK bnumber="43" bname="John">
+    <CHAPTER cnumber="3">
+      <VERS vnumber="16">Porque de tal manera amó Dios al mundo.</VERS>
+      <VERS vnumber="17">Porque no envió Dios á su Hijo al mundo.</VERS>
+    </CHAPTER>
+  </BIBLEBOOK>
+  <BIBLEBOOK bnumber="90" bname="Tobit"><CHAPTER cnumber="1"><VERS vnumber="1">libro que no está en el canon protestante</VERS></CHAPTER></BIBLEBOOK>
+</XMLBIBLE>

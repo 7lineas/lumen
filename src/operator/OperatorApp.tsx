@@ -842,11 +842,21 @@ export function OperatorApp() {
               >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                {versions.map((v) => (
+                {versions.filter((v) => !v.custom).map((v) => (
                   <SelectItem key={v.id} value={v.id}>
                     {v.abbr}
                   </SelectItem>
                 ))}
+                {versions.some((v) => v.custom) && (
+                  <SelectGroup>
+                    <SelectLabel>Mis biblias</SelectLabel>
+                    {versions.filter((v) => v.custom).map((v) => (
+                      <SelectItem key={v.id} value={v.id} data-testid={`version-${v.id}`}>
+                        {v.abbr}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                )}
                 {onlineBibles.online.versions.length > 0 && (
                   <SelectGroup>
                     <SelectLabel>En línea (YouVersion)</SelectLabel>
@@ -1227,6 +1237,7 @@ export function OperatorApp() {
           {activeOverlay === "ajustes" && <SettingsPanel settings={settings} versions={allVersions} onSave={async (s) => { await applyChrome(s); setOverlay(null); }} />}
           {activeOverlay === "biblias" && (
             <BiblesPanel
+              customVersions={versions.filter((v) => v.custom)}
               online={onlineBibles.online}
               onRefreshOnline={() => void onlineBibles.refreshVersions(true)}
               onChanged={(next) => {

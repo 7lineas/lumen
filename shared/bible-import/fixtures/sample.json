@@ -1,0 +1,7 @@
+{
+  "meta": { "name": "Muestra JSON", "abbr": "MJSON", "language": "es", "copyright": "Dominio público" },
+  "verses": {
+    "GEN": { "1": { "1": "EN el principio crió Dios los cielos y la tierra.", "2": "Y la tierra estaba desordenada y vacía." } },
+    "Juan": { "3": { "16": "Porque de tal manera amó Dios al mundo.", "17": "Porque no envió Dios á su Hijo al mundo." } }
+  }
+}

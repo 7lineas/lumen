@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<osis xmlns="http://www.bibletechnologies.net/2003/OSIS/namespace">
+  <osisText osisIDWork="MOSIS" osisRefWork="Bible" xml:lang="es">
+    <header>
+      <work osisWork="MOSIS">
+        <title>Muestra OSIS</title>
+        <rights>Dominio público</rights>
+        <language>es</language>
+      </work>
+    </header>
+    <div type="book" osisID="Gen">
+      <chapter osisID="Gen.1">
+        <title>Encabezado que no es versículo</title>
+        <verse osisID="Gen.1.1">EN el principio crió <w lemma="strong:H430">Dios</w> los cielos y la tierra.<note>nota</note></verse>
+        <verse sID="Gen.1.2" osisID="Gen.1.2"/>Y la tierra estaba desordenada y vacía.<verse eID="Gen.1.2"/>
+      </chapter>
+    </div>
+    <div type="book" osisID="John">
+      <chapter osisID="John.3">
+        <verse osisID="John.3.16">Porque de tal manera amó Dios al mundo.</verse>
+        <verse osisID="John.3.17">Porque no envió Dios á su Hijo al mundo.</verse>
+      </chapter>
+    </div>
+  </osisText>
+</osis>

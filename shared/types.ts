@@ -9,6 +9,12 @@ export interface BibleVersionMeta {
   copyright?: string;
   draft?: boolean;
   bundled?: boolean;
+  /** Imported by the user from a file (id is `custom-<abbr>`). */
+  custom?: boolean;
+  /** Size of an imported Bible, shown in the Biblias panel. */
+  stats?: { books: number; verses: number };
+  /** Epoch ms when the user imported it. */
+  importedAt?: number;
   /** Served on demand by YouVersion Platform (id is `yv-<number>`). */
   online?: boolean;
   /** Online version whose publisher license the app has not accepted yet (content answers 403). */

@@ -1,4 +1,6 @@
 import { contextBridge, ipcRenderer } from "electron";
+import type { BibleImportPickResult, BibleImportCommitResult } from "../shared/bible-import/types";
+import type { ImportMetaInput } from "../shared/bible-import/build";
 import type { ChapterResult, OnlineVersionsResult } from "../shared/youversion";
 import type { AppSettings, HistoryEntry, ProjectorPayload, QueueEntry, StoredSong, StoredSlideDeck, SlideImportResult } from "../shared/types";
 
@@ -44,6 +46,10 @@ contextBridge.exposeInMainWorld("proyector", {
   getBibleCatalog: (): Promise<BibleLibraryView> => ipcRenderer.invoke("bibles:catalog"),
   downloadBible: (id: string): Promise<{ id: string }> => ipcRenderer.invoke("bibles:download", id),
   removeBible: (id: string): Promise<{ settings: AppSettings }> => ipcRenderer.invoke("bibles:remove", id),
+  pickBibleImport: (): Promise<BibleImportPickResult> => ipcRenderer.invoke("bibles:import-pick"),
+  commitBibleImport: (previewId: string, input: ImportMetaInput): Promise<BibleImportCommitResult> =>
+    ipcRenderer.invoke("bibles:import-commit", previewId, input),
+  cancelBibleImport: (): Promise<void> => ipcRenderer.invoke("bibles:import-cancel"),
   getSettings: (): Promise<AppSettings> => ipcRenderer.invoke("settings:get"),
   setSettings: (s: AppSettings): Promise<boolean> => ipcRenderer.invoke("settings:set", s),
   onSettingsUpdate: (cb: (s: AppSettings) => void): (() => void) => {
