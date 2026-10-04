@@ -105,3 +105,12 @@ export interface QueueEntry {
   reference: string;
   label?: string;
 }
+
+/** User-created song saved in the application's persistent user data. */
+export interface StoredSong {
+  id: string;
+  title: string;
+  lyrics: string;
+  updatedAt: number;
+  pinned: boolean;
+}

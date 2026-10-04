@@ -13,7 +13,7 @@ import path from "path";
 import { pathToFileURL } from "url";
 import fs from "fs";
 import Store from "electron-store";
-import type { AppSettings, ProjectorPayload, QueueEntry, HistoryEntry } from "../shared/types";
+import type { AppSettings, ProjectorPayload, QueueEntry, HistoryEntry, StoredSong } from "../shared/types";
 import { DEFAULT_SETTINGS } from "../shared/types";
 import { buildBibleDataCandidates, resolveBibleDataDir } from "./bible-data-path";
 import { initAutoUpdater, registerUpdaterHandlers } from "./updater";
@@ -36,12 +36,14 @@ const store = new Store<{
   history: HistoryEntry[];
   queue: QueueEntry[];
   favorites: QueueEntry[];
+  songs: StoredSong[];
 }>({
   defaults: {
     settings: DEFAULT_SETTINGS,
     history: [],
     queue: [],
     favorites: [],
+    songs: [],
   },
 });
 
@@ -442,6 +444,22 @@ ipcMain.handle("favorites:get", () => store.get("favorites"));
 ipcMain.handle("favorites:set", (_e, favorites: QueueEntry[]) => {
   store.set("favorites", favorites);
   return favorites;
+});
+
+ipcMain.handle("songs:get", () => store.get("songs"));
+
+ipcMain.handle("songs:set", (_e, songs: StoredSong[]) => {
+  const next = Array.isArray(songs)
+    ? songs.filter((song) => song && typeof song.id === "string" && typeof song.title === "string" && typeof song.lyrics === "string").map((song) => ({
+        id: song.id,
+        title: song.title,
+        lyrics: song.lyrics,
+        updatedAt: Number.isFinite(song.updatedAt) ? song.updatedAt : Date.now(),
+        pinned: Boolean(song.pinned),
+      }))
+    : [];
+  store.set("songs", next);
+  return next;
 });
 
 ipcMain.handle("displays:list", () => {

@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 
-import type { AppSettings, HistoryEntry, ProjectorPayload, QueueEntry } from "../shared/types";
+import type { AppSettings, HistoryEntry, ProjectorPayload, QueueEntry, StoredSong } from "../shared/types";
 
 export interface DisplayInfo {
   id: number;
@@ -72,6 +72,8 @@ export interface ProyectorApi {
   setQueue: (q: QueueEntry[]) => Promise<QueueEntry[]>;
   getFavorites: () => Promise<QueueEntry[]>;
   setFavorites: (f: QueueEntry[]) => Promise<QueueEntry[]>;
+  getSongs: () => Promise<StoredSong[]>;
+  setSongs: (songs: StoredSong[]) => Promise<StoredSong[]>;
   listDisplays: () => Promise<DisplayInfo[]>;
   openProjector: () => Promise<boolean>;
   getProjectorBounds: () => Promise<{ width: number; height: number } | null>;
