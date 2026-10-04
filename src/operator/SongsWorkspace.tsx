@@ -152,8 +152,8 @@ export function SongsWorkspace({ staged, selectedId, projectOnClick, onTogglePro
           <ol className="song-parts-list">
             {slides.map((text, index) => (
               <li key={`${index}-${text}`}>
-                <Button type="button" className={index === slide ? "song-part selected" : "song-part"} onClick={() => onSelectPart(index)}>
-                  <span className="song-part-number">{index + 1}</span><span>{text}</span>
+                <Button type="button" variant="ghost" className={index === slide ? "song-part selected" : "song-part"} onClick={() => onSelectPart(index)}>
+                  <span className="song-part-number">{index + 1}</span><span className="song-part-text">{text}</span>
                 </Button>
               </li>
             ))}

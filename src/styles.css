@@ -1119,10 +1119,13 @@ button.song-row-main:hover { border: 0; }
 .song-row-main small { color: var(--muted); font-size: 0.72rem; }
 .song-row-actions { display: flex; gap: 0.25rem; flex: none; }
 .song-icon-btn.pinned { color: var(--accent); }
-.song-parts-list { list-style: none; margin: 0.85rem 0; padding: 0; }
-.song-part { align-items: flex-start; display: flex; gap: 0.65rem; line-height: 1.35; text-align: left; width: 100%; }
+.song-parts-list { list-style: none; margin: 0.85rem 0; padding: 0; display: flex; flex-direction: column; gap: 0.25rem; }
+.song-parts-list li { margin: 0; min-width: 0; }
+button.song-part { align-items: flex-start; display: flex; gap: 0.65rem; line-height: 1.35; text-align: left; width: 100%; height: auto; min-height: 2.5rem; padding: 0.6rem 0.65rem; justify-content: flex-start; white-space: normal; flex-shrink: 1; border: 1px solid transparent; border-radius: 0.5rem; background: transparent; color: inherit; }
+button.song-part:hover { background: var(--surface2); border-color: transparent; }
 .song-part-number { color: var(--accent); flex: none; font-variant-numeric: tabular-nums; }
-.song-part.selected { background: #1e3a5f; border-color: var(--accent-dim); }
+.song-part-text { min-width: 0; flex: 1 1 auto; white-space: pre-line; overflow-wrap: break-word; }
+button.song-part.selected, button.song-part.selected:hover { background: #1e3a5f; border-color: var(--accent-dim); }
 .song-edit-box { margin-top: 0; padding-top: 0; }
 .song-edit-actions { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
 .song-edit-actions > * { flex: 1 1 0; min-width: 0; }
