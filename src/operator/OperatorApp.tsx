@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Palette } from "lucide-react";
 import type { AppSettings, HistoryEntry, ProjectorPayload, QueueEntry } from "@shared/types";
 import { DEFAULT_SETTINGS } from "@shared/types";
 import { useBibleLoader } from "../hooks/useBibleLoader";
@@ -839,6 +840,34 @@ export function OperatorApp() {
               <span>Fondo</span>
             </span>
             <div className="stage-background-row">
+              <span className="background-color-wrap" title="Color de fondo">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="background-color-btn"
+                  aria-label="Elegir color de fondo"
+                >
+                  <Palette />
+                  <div
+                    className="background-color-ring"
+                    aria-hidden
+                    style={{ borderColor: settings.backgroundColor }}
+                  />
+                </Button>
+                <input
+                  type="color"
+                  className="background-color-input"
+                  aria-label="Elegir color de fondo"
+                  value={settings.backgroundColor}
+                  onChange={(e) =>
+                    void applyChrome({
+                      ...settings,
+                      backgroundColor: e.target.value,
+                    })
+                  }
+                />
+              </span>
               <Button
                 type="button"
                 className={!settings.backgroundImagePath ? "background-solid active" : "background-solid"}

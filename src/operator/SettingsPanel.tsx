@@ -109,15 +109,6 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
       </label>
 
       <label className="field">
-        <span>Color de fondo</span>
-        <Input
-          type="color"
-          value={local.backgroundColor}
-          onChange={(e) => setLocal({ ...local, backgroundColor: e.target.value })}
-        />
-      </label>
-
-      <label className="field">
         <span>Color de la referencia (arriba a la izquierda)</span>
         <Input
           type="color"
