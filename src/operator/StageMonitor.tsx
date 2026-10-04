@@ -132,7 +132,7 @@ export function StageMonitor({ title, payload, empty, testId, isLive }: Props) {
             filter: isBlank ? undefined : `brightness(${brightness})`,
           }}
         />
-        {isBackgroundVideo(renderPayload?.backgroundImagePath) && <video className="monitor-background-video" style={{ filter: `brightness(${brightness})` }} src={bg} muted loop autoPlay playsInline />}
+        {isBackgroundVideo(renderPayload?.backgroundImagePath) && <video className="monitor-background-video" style={{ filter: `brightness(${brightness})` }} src={bg} muted loop autoPlay playsInline preload="auto" onCanPlay={(event) => { void event.currentTarget.play().catch(() => undefined); }} />}
         {isLive ? (
           <div
             className={`monitor-fade ${visible ? "show" : ""}`}

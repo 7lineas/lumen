@@ -149,7 +149,7 @@ export function ProjectorView() {
     return (
       <div className={themeClass} style={style}>
         <div className="projector-background-layer" style={backgroundStyle} />
-        {isBackgroundVideo(payload.backgroundImagePath ?? settings.backgroundImagePath) && <video className="projector-background-video" style={{ filter: `brightness(${brightness})` }} src={bg} muted loop autoPlay playsInline />}
+        {isBackgroundVideo(payload.backgroundImagePath ?? settings.backgroundImagePath) && <video className="projector-background-video" style={{ filter: `brightness(${brightness})` }} src={bg} muted loop autoPlay playsInline preload="auto" onCanPlay={(event) => { void event.currentTarget.play().catch(() => undefined); }} />}
         <div className={`projector-inner fade ${visible ? "show" : ""}`} style={fadeStyle}>
           <p className="projector-logo">{payload.churchName || settings.churchName}</p>
         </div>
@@ -164,7 +164,7 @@ export function ProjectorView() {
   return (
     <div className={themeClass} style={style}>
       <div className="projector-background-layer" style={backgroundStyle} />
-      {isBackgroundVideo(payload.backgroundImagePath ?? settings.backgroundImagePath) && <video className="projector-background-video" style={{ filter: `brightness(${brightness})` }} src={bg} muted loop autoPlay playsInline />}
+      {isBackgroundVideo(payload.backgroundImagePath ?? settings.backgroundImagePath) && <video className="projector-background-video" style={{ filter: `brightness(${brightness})` }} src={bg} muted loop autoPlay playsInline preload="auto" onCanPlay={(event) => { void event.currentTarget.play().catch(() => undefined); }} />}
       <div className={`projector-inner fade ${visible ? "show" : ""}`} style={fadeStyle}>
         {ref && <header className="projector-ref" style={{ color: referenceColor }}>{ref}</header>}
         <div ref={textRef} className={`projector-body ${payload.blocks.length > 1 ? "dual" : ""}`}>

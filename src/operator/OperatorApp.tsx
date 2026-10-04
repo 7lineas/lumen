@@ -732,6 +732,7 @@ export function OperatorApp() {
                   if (path) void applyChrome({
                     ...settings,
                     backgroundImages: [...(settings.backgroundImages ?? []), path],
+                    backgroundImagePath: path,
                   });
                 }}
               >
@@ -748,7 +749,7 @@ export function OperatorApp() {
                 {settings.backgroundImages.map((imagePath, index) => (
                   <div key={`${imagePath}-${index}`} className="background-choice-wrap">
                     <button type="button" className={`background-choice${settings.backgroundImagePath === imagePath ? " active" : ""}`} aria-label={deletingMedia ? `Eliminar media ${index + 1}` : `Usar media ${index + 1}`} aria-pressed={settings.backgroundImagePath === imagePath} onClick={() => { if (!deletingMedia) void applyChrome({ ...settings, backgroundImagePath: imagePath }); }}>
-                      {isBackgroundVideo(imagePath) ? <video src={backgroundImageUrl(imagePath)} muted loop autoPlay playsInline /> : <img src={backgroundImageUrl(imagePath)} alt="" />}
+                      {isBackgroundVideo(imagePath) ? <video src={backgroundImageUrl(imagePath)} muted loop autoPlay playsInline preload="auto" onCanPlay={(event) => { void event.currentTarget.play().catch(() => undefined); }} /> : <img src={backgroundImageUrl(imagePath)} alt="" />}
                     </button>
                     {deletingMedia && <AlertDialog>
                       <AlertDialogTrigger render={<Button type="button" variant="destructive" className="background-delete">Eliminar</Button>} />
