@@ -268,14 +268,12 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
           />
           {bg && !backgroundVideo && <img className="monitor-background-media" style={{ filter: `brightness(${brightness})` }} src={bg} alt="" aria-hidden />}
           {backgroundVideo && <video className="monitor-background-media" style={{ filter: `brightness(${brightness})` }} src={bg} muted loop autoPlay playsInline preload="auto" onCanPlay={(event) => { void event.currentTarget.play().catch(() => undefined); }} />}
-          {isLive ? (
-            <div
-              className={`monitor-screen-fade ${visible ? "show" : ""}`}
-              style={{ transitionDuration: `${fadeMs}ms` }}
-            >
-              {screenContent}
-            </div>
-          ) : screenContent}
+          <div
+            className={`monitor-screen-fade ${!isLive || visible ? "show" : ""}`}
+            style={{ transitionDuration: `${fadeMs}ms` }}
+          >
+            {screenContent}
+          </div>
         </div>
       </div>
       </CardContent>
