@@ -62,6 +62,10 @@ describe("buildOnlineVersions", () => {
     expect(rves.online).toBe(true);
   });
 
+  it("shows PDT instead of the API abbreviation spaPdDpt", () => {
+    expect(versions.find((v) => v.id === "yv-3365")!.abbr).toBe("PDT");
+  });
+
   it("unquotes the API copyright", () => {
     expect(versions.find((v) => v.id === "yv-147")!.copyright).toBe("Dominio público");
   });
@@ -111,5 +115,17 @@ describe("parseChapterContent", () => {
   it("returns nothing when there are no verse markers", () => {
     expect(parseChapterContent("<p>sin marcas</p>")).toEqual({});
     expect(parseChapterContent("")).toEqual({});
+  });
+
+  it("parses the real shape returned by the API for RVES JHN.3 (public domain excerpt)", () => {
+    const real =
+      '<div><div class="p"><span class="yv-v" v="1"></span><span class="yv-vlbl">1</span>Y HABIA un hombre de los Fariseos que se llamaba Nicodemo, príncipe de los Judíos. ' +
+      '<span class="yv-v" v="2"></span><span class="yv-vlbl">2</span>Este vino á Jesús de noche, y díjole: Rabbí, sabemos que has venido de Dios por maestro. ' +
+      '<span class="yv-v" v="16"></span><span class="yv-vlbl">16</span>Porque de tal manera amó Dios al mundo, que ha dado á su Hijo unigénito, para que todo aquel que en él cree, no se pierda, mas tenga vida eterna.</div></div>';
+    expect(parseChapterContent(real)).toEqual({
+      1: "Y HABIA un hombre de los Fariseos que se llamaba Nicodemo, príncipe de los Judíos.",
+      2: "Este vino á Jesús de noche, y díjole: Rabbí, sabemos que has venido de Dios por maestro.",
+      16: "Porque de tal manera amó Dios al mundo, que ha dado á su Hijo unigénito, para que todo aquel que en él cree, no se pierda, mas tenga vida eterna.",
+    });
   });
 });

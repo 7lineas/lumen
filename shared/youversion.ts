@@ -39,6 +39,9 @@ export interface YvLicense {
 /** Popularity in Colombia, most used first. Only affects ordering. */
 export const COLOMBIA_PRIORITY = [128, 2664, 103, 89, 147, 3291, 3365];
 
+/** The API abbreviates "Palabla de Dios para ti" as spaPdDpt. */
+const ABBR_OVERRIDES: Record<number, string> = { 3365: "PDT" };
+
 function clean(value: unknown): string {
   if (typeof value !== "string") return "";
   const trimmed = value.trim();
@@ -48,6 +51,13 @@ function clean(value: unknown): string {
 
 export function attributionFor(bible: YvBible): string {
   return clean(bible.copyright) || clean(bible.promotional_content);
+}
+
+/** Used only when the publisher gave neither `copyright` nor `promotional_content`. */
+export function fallbackAttribution(bible: YvBible): string {
+  const title = clean(bible.title) || clean(bible.localized_title);
+  const abbr = clean(bible.abbreviation);
+  return `${title || abbr}${title && abbr ? ` (${abbr})` : ""} · YouVersion Platform`;
 }
 
 function yearOf(title: string): string {
@@ -77,7 +87,7 @@ export function buildOnlineVersions(
     .sort((a, b) => rank(a.id) - rank(b.id) || clean(a.abbreviation).localeCompare(clean(b.abbreviation)))
     .map((bible) => {
       const title = clean(bible.title) || clean(bible.localized_title) || `Biblia ${bible.id}`;
-      let abbr = clean(bible.abbreviation) || title;
+      let abbr = ABBR_OVERRIDES[bible.id] ?? (clean(bible.abbreviation) || title);
       // Two editions share "NVI-S": tell them apart by year.
       if ((abbrCount.get(clean(bible.abbreviation)) ?? 0) > 1) {
         abbr = `${abbr.replace(/-S$/, "")} ${yearOf(title)}`.trim();
@@ -133,7 +143,7 @@ export function hasChapter(bible: BibleData | undefined, book: string, chapter: 
 
 /** A chapter result as sent over IPC. */
 export type ChapterResult =
-  | { ok: true; verses: Record<string, string>; fromCache: boolean; stale: boolean }
+  | { ok: true; verses: Record<string, string>; fromCache: boolean; stale: boolean; /** Publisher attribution to show with the text. */ copyright: string }
   | { ok: false; reason: "no-key" | "locked" | "offline" | "rate-limited" | "not-found" | "error"; message: string; retryAfterSec?: number };
 
 export interface OnlineVersionsResult {

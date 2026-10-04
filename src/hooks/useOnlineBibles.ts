@@ -83,6 +83,9 @@ export function useOnlineBibles() {
         bible = emptyOnlineBible(meta);
         loadBible(bible);
       }
+      // The publisher's attribution travels with every chapter and is what the
+      // projector footer prints for this Bible.
+      if (result.copyright) bible.meta.copyright = result.copyright;
       mergeChapter(bible, ref.book, ref.chapter, result.verses);
       setFailures((prev) => {
         if (!(key in prev)) return prev;

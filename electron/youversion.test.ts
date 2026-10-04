@@ -10,6 +10,8 @@ const JHN3 =
   '<div class="p"><span class="yv-v" v="1"></span><span class="yv-vlbl">1</span>Había un hombre.</div>' +
   '<div class="p"><span class="yv-v" v="2"></span><span class="yv-vlbl">2</span>Este vino a Jesús.</div>';
 
+const INFO: Reply = { status: 200, body: { id: 147, abbreviation: "RVES", title: "Reina-Valera Antigua", copyright: "© Test" } };
+
 let dir: string;
 let clock: number;
 let sleeps: number[];
@@ -65,29 +67,36 @@ describe("resolveAppKey", () => {
 
 describe("getChapter", () => {
   it("fetches html, parses verses, sends the key and caches on disk", async () => {
-    replies = [{ status: 200, body: { id: 147, content: JHN3, reference: "Juan 3" } }];
+    replies = [{ status: 200, body: { id: 147, content: JHN3, reference: "Juan 3" } }, INFO];
     const result = await client().getChapter("yv-147", "JHN", 3);
-    expect(result).toEqual({ ok: true, verses: { "1": "Había un hombre.", "2": "Este vino a Jesús." }, fromCache: false, stale: false });
+    expect(result).toEqual({
+      ok: true,
+      verses: { "1": "Había un hombre.", "2": "Este vino a Jesús." },
+      fromCache: false,
+      stale: false,
+      copyright: "© Test",
+    });
+    expect(calls[1].url).toBe("https://api.youversion.com/v1/bibles/147");
     expect(calls[0].url).toBe("https://api.youversion.com/v1/bibles/147/passages/JHN.3?format=html");
     expect(calls[0].key).toBe("test-key");
     expect(fs.existsSync(path.join(dir, "147", "JHN.3.json"))).toBe(true);
   });
 
   it("serves a fresh cache without touching the network (also with another client)", async () => {
-    replies = [{ status: 200, body: { content: JHN3 } }];
+    replies = [{ status: 200, body: { content: JHN3 } }, INFO];
     await client().getChapter("yv-147", "JHN", 3);
     const again = await client().getChapter("yv-147", "JHN", 3);
-    expect(again).toMatchObject({ ok: true, fromCache: true, stale: false });
-    expect(calls).toHaveLength(1);
+    expect(again).toMatchObject({ ok: true, fromCache: true, stale: false, copyright: "© Test" });
+    expect(calls).toHaveLength(2);
   });
 
   it("refreshes an expired cache and falls back to it when offline", async () => {
-    replies = [{ status: 200, body: { content: JHN3 } }];
+    replies = [{ status: 200, body: { content: JHN3 } }, INFO];
     await client().getChapter("yv-147", "JHN", 3);
     clock += CHAPTER_TTL_MS + 1;
-    replies = [new TypeError("fetch failed"), new TypeError("fetch failed"), new TypeError("fetch failed")];
+    replies = Array.from({ length: 6 }, () => new TypeError("fetch failed"));
     const result = await client().getChapter("yv-147", "JHN", 3);
-    expect(result).toMatchObject({ ok: true, fromCache: true, stale: true });
+    expect(result).toMatchObject({ ok: true, fromCache: true, stale: true, copyright: "© Test" });
     expect(result.ok && result.verses["1"]).toBe("Había un hombre.");
   });
 
@@ -100,10 +109,10 @@ describe("getChapter", () => {
   });
 
   it("retries 5xx and then succeeds", async () => {
-    replies = [{ status: 503 }, { status: 502 }, { status: 200, body: { content: JHN3 } }];
+    replies = [{ status: 503 }, { status: 502 }, { status: 200, body: { content: JHN3 } }, INFO];
     const result = await client().getChapter("yv-147", "JHN", 3);
     expect(result.ok).toBe(true);
-    expect(calls).toHaveLength(3);
+    expect(calls).toHaveLength(4);
     expect(sleeps).toEqual([100, 200]);
   });
 
@@ -113,7 +122,7 @@ describe("getChapter", () => {
   });
 
   it("waits a short Retry-After and retries", async () => {
-    replies = [{ status: 429, headers: { "retry-after": "2" } }, { status: 200, body: { content: JHN3 } }];
+    replies = [{ status: 429, headers: { "retry-after": "2" } }, { status: 200, body: { content: JHN3 } }, INFO];
     const result = await client().getChapter("yv-147", "JHN", 3);
     expect(result.ok).toBe(true);
     expect(sleeps).toEqual([2000]);
@@ -129,7 +138,7 @@ describe("getChapter", () => {
     expect(second).toMatchObject({ ok: false, reason: "rate-limited" });
     expect(calls).toHaveLength(1);
     clock += 301_000;
-    replies = [{ status: 200, body: { content: JHN3 } }];
+    replies = [{ status: 200, body: { content: JHN3 } }, INFO];
     expect((await yv.getChapter("yv-147", "JHN", 4)).ok).toBe(true);
   });
 
@@ -150,12 +159,12 @@ describe("getChapter", () => {
   });
 
   it("without a key it never calls the API but still serves the cache", async () => {
-    replies = [{ status: 200, body: { content: JHN3 } }];
+    replies = [{ status: 200, body: { content: JHN3 } }, INFO];
     await client().getChapter("yv-147", "JHN", 3);
     const keyless = client({ appKey: "" });
     expect(await keyless.getChapter("yv-147", "JHN", 4)).toMatchObject({ ok: false, reason: "no-key" });
     expect(await keyless.getChapter("yv-147", "JHN", 3)).toMatchObject({ ok: true, fromCache: true });
-    expect(calls).toHaveLength(1);
+    expect(calls).toHaveLength(2);
   });
 
   it("treats a chapter without verse markers as an error and does not cache it", async () => {
@@ -164,12 +173,29 @@ describe("getChapter", () => {
     expect(fs.existsSync(path.join(dir, "147", "JHN.3.json"))).toBe(false);
   });
 
+  it("uses a generic attribution when the publisher gave none (public domain RVES)", async () => {
+    replies = [
+      { status: 200, body: { content: JHN3 } },
+      { status: 200, body: { id: 147, abbreviation: "RVES", title: "Reina-Valera Antigua", copyright: null, promotional_content: null } },
+    ];
+    const result = await client().getChapter("yv-147", "JHN", 3);
+    expect(result).toMatchObject({ ok: true, copyright: "Reina-Valera Antigua (RVES) · YouVersion Platform" });
+  });
+
+  it("does not return text without attribution, but keeps the chapter on disk for the retry", async () => {
+    replies = [{ status: 200, body: { content: JHN3 } }, { status: 403 }];
+    expect(await client().getChapter("yv-147", "JHN", 3)).toMatchObject({ ok: false, reason: "locked" });
+    expect(fs.existsSync(path.join(dir, "147", "JHN.3.json"))).toBe(true);
+    replies = [INFO];
+    expect(await client().getChapter("yv-147", "JHN", 3)).toMatchObject({ ok: true, fromCache: true, copyright: "© Test" });
+  });
+
   it("shares one request between concurrent calls for the same chapter", async () => {
-    replies = [{ status: 200, body: { content: JHN3 } }];
+    replies = [{ status: 200, body: { content: JHN3 } }, INFO];
     const yv = client();
     const [a, b] = await Promise.all([yv.getChapter("yv-147", "JHN", 3), yv.getChapter("yv-147", "JHN", 3)]);
     expect(a.ok && b.ok).toBe(true);
-    expect(calls).toHaveLength(1);
+    expect(calls).toHaveLength(2);
   });
 });
 

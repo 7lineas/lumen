@@ -1,7 +1,9 @@
 import fs from "fs";
 import path from "path";
 import {
+  attributionFor,
   buildOnlineVersions,
+  fallbackAttribution,
   parseYvVersionId,
   type ChapterResult,
   type OnlineVersionsResult,
@@ -65,6 +67,11 @@ export interface YouVersionOptions {
 interface CachedChapter {
   fetchedAt: number;
   verses: Record<string, string>;
+}
+
+interface CachedAttribution {
+  fetchedAt: number;
+  copyright: string;
 }
 
 interface CachedVersions {
@@ -230,7 +237,49 @@ export class YouVersionClient {
     return task;
   }
 
+  /** Verses plus the publisher's attribution, which must be shown with the text. */
   private async loadChapter(lumenVersionId: string, book: string, chapter: number): Promise<ChapterResult> {
+    const verses = await this.loadVerses(lumenVersionId, book, chapter);
+    if (!verses.ok) return verses;
+    try {
+      const copyright = await this.attribution(parseYvVersionId(lumenVersionId) as number);
+      return { ...verses, copyright };
+    } catch (error) {
+      // The chapter is already on disk; without attribution it must not be shown.
+      return this.failure(error);
+    }
+  }
+
+  private failure(error: unknown): ChapterResult {
+    if (error instanceof YvError) {
+      return { ok: false, reason: error.reason, message: error.message, retryAfterSec: error.retryAfterSec };
+    }
+    return { ok: false, reason: "error", message: error instanceof Error ? error.message : "Error de YouVersion" };
+  }
+
+  /**
+   * Attribution of one version (`copyright`, else `promotional_content`, else a
+   * generic line naming the version when the publisher gave none, as for
+   * public-domain RVES). Cached 7 days; a stale copy is used when offline.
+   */
+  async attribution(numeric: number): Promise<string> {
+    const file = path.join(this.options.cacheDir, String(numeric), "version.json");
+    const cached = readJson<CachedAttribution>(file);
+    if (cached && (this.now() - cached.fetchedAt < VERSIONS_TTL_MS || !this.configured)) return cached.copyright;
+    if (!this.configured) throw new YvError("Esta compilación no incluye la clave de YouVersion", "error");
+    try {
+      const text = await this.request(`/bibles/${numeric}`);
+      const info = JSON.parse(text) as YvBible;
+      const copyright = attributionFor(info) || fallbackAttribution(info);
+      writeJsonAtomic(file, { fetchedAt: this.now(), copyright } satisfies CachedAttribution);
+      return copyright;
+    } catch (error) {
+      if (cached) return cached.copyright;
+      throw error;
+    }
+  }
+
+  private async loadVerses(lumenVersionId: string, book: string, chapter: number): Promise<ChapterResult> {
     const numeric = parseYvVersionId(lumenVersionId);
     if (numeric === null || !/^[1-3A-Z]{3}$/.test(book) || !Number.isInteger(chapter) || chapter < 1 || chapter > 150) {
       return { ok: false, reason: "error", message: "Referencia no válida" };
@@ -238,10 +287,10 @@ export class YouVersionClient {
     const file = this.chapterFile(numeric, book, chapter);
     const cached = readJson<CachedChapter>(file);
     if (cached && this.now() - cached.fetchedAt < CHAPTER_TTL_MS) {
-      return { ok: true, verses: cached.verses, fromCache: true, stale: false };
+      return { ok: true, verses: cached.verses, fromCache: true, stale: false, copyright: "" };
     }
     if (!this.configured) {
-      if (cached) return { ok: true, verses: cached.verses, fromCache: true, stale: true };
+      if (cached) return { ok: true, verses: cached.verses, fromCache: true, stale: true, copyright: "" };
       return { ok: false, reason: "no-key", message: "Esta compilación no incluye la clave de YouVersion" };
     }
     try {
@@ -252,13 +301,10 @@ export class YouVersionClient {
         throw new YvError("YouVersion devolvió un capítulo vacío", "error");
       }
       writeJsonAtomic(file, { fetchedAt: this.now(), verses } satisfies CachedChapter);
-      return { ok: true, verses, fromCache: false, stale: false };
+      return { ok: true, verses, fromCache: false, stale: false, copyright: "" };
     } catch (error) {
-      if (cached) return { ok: true, verses: cached.verses, fromCache: true, stale: true };
-      if (error instanceof YvError) {
-        return { ok: false, reason: error.reason, message: error.message, retryAfterSec: error.retryAfterSec };
-      }
-      return { ok: false, reason: "error", message: error instanceof Error ? error.message : "Error de YouVersion" };
+      if (cached) return { ok: true, verses: cached.verses, fromCache: true, stale: true, copyright: "" };
+      return this.failure(error);
     }
   }
 }

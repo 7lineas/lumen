@@ -920,7 +920,14 @@ export function OperatorApp() {
         /> : <ChapterReader
           versionId={primaryId}
           notice={onlineNotice}
-          onRetryOnline={() => { onlineBibles.resetFailures(); void onlineBibles.refreshVersions(true); }}
+          onRetryOnline={() => {
+            onlineBibles.resetFailures();
+            // Only re-ask for the list when it is what failed: it shares the
+            // single request queue with the chapter that is being retried.
+            if (onlineBibles.online.error || onlineBibles.online.stale || onlineBibles.online.versions.length === 0) {
+              void onlineBibles.refreshVersions(true);
+            }
+          }}
           loadingChapter={!!onlineBibles.loading[onlineBibles.chapterKey({ versionId: primaryId, book: viewBook, chapter: viewChapter })]}
           ready={ready}
           viewBook={viewBook}
