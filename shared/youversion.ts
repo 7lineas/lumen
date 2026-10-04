@@ -46,7 +46,8 @@ function clean(value: unknown): string {
   if (typeof value !== "string") return "";
   const trimmed = value.trim();
   // The API sometimes returns the text wrapped in literal quotes.
-  return trimmed.replace(/^"(.*)"$/s, "$1").trim();
+  // Some publishers send multi-line notices; the footer shows them on one line.
+  return trimmed.replace(/^"(.*)"$/s, "$1").replace(/\s*\n+\s*/g, " · ").trim();
 }
 
 export function attributionFor(bible: YvBible): string {

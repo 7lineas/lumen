@@ -29,6 +29,8 @@ export function resolveAppKey(env: NodeJS.ProcessEnv = process.env): string {
 export const YVP_BASE_URL = "https://api.youversion.com/v1";
 export const CHAPTER_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 export const VERSIONS_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+/** While some version is still locked the list is re-read soon: the user may have accepted a license since. */
+export const LOCKED_VERSIONS_TTL_MS = 30 * 60 * 1000;
 /** Retry-After above this is not waited for: the call fails fast and the UI says when to retry. */
 const MAX_INLINE_WAIT_SEC = 10;
 
@@ -208,7 +210,8 @@ export class YouVersionClient {
   async listVersions(force = false): Promise<OnlineVersionsResult> {
     if (!this.configured) return { configured: false, versions: [], stale: false };
     const cached = readJson<CachedVersions>(this.versionsFile());
-    if (!force && cached && this.now() - cached.fetchedAt < VERSIONS_TTL_MS) {
+    const ttl = cached?.versions.some((version) => version.locked) ? LOCKED_VERSIONS_TTL_MS : VERSIONS_TTL_MS;
+    if (!force && cached && this.now() - cached.fetchedAt < ttl) {
       return { configured: true, versions: cached.versions, stale: false };
     }
     try {

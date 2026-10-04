@@ -66,6 +66,11 @@ describe("buildOnlineVersions", () => {
     expect(versions.find((v) => v.id === "yv-3365")!.abbr).toBe("PDT");
   });
 
+  it("puts multi-line publisher notices on one line", () => {
+    const [nvi] = buildOnlineVersions([{ id: 2664, abbreviation: "NVI-S", title: "NVI 2015", copyright: "Línea uno\n© 2019 Biblica\nTodos los derechos" }], new Set([2664]), []);
+    expect(nvi.copyright).toBe("Línea uno · © 2019 Biblica · Todos los derechos");
+  });
+
   it("unquotes the API copyright", () => {
     expect(versions.find((v) => v.id === "yv-147")!.copyright).toBe("Dominio público");
   });
@@ -127,5 +132,12 @@ describe("parseChapterContent", () => {
       2: "Este vino á Jesús de noche, y díjole: Rabbí, sabemos que has venido de Dios por maestro.",
       16: "Porque de tal manera amó Dios al mundo, que ha dado á su Hijo unigénito, para que todo aquel que en él cree, no se pierda, mas tenga vida eterna.",
     });
+  });
+
+  it("keeps words of Jesus and italics (NVI/NBLA/LBLA markup) as plain text", () => {
+    const html =
+      '<div><div class="p"><span class="yv-v" v="16"></span><span class="yv-vlbl">16</span><span class="wj">»Porque tanto amó Dios al mundo </span>' +
+      '<span class="it">que</span> dio a su Hijo único.</div></div>';
+    expect(parseChapterContent(html)).toEqual({ 16: "»Porque tanto amó Dios al mundo que dio a su Hijo único." });
   });
 });

@@ -122,6 +122,7 @@ export function BiblesPanel({ onChanged, online, onRefreshOnline }: Props) {
             Se consultan al elegirlas y cada capítulo se guarda en este equipo por 30 días: lo ya consultado funciona sin
             internet. El texto lleva siempre el copyright de la editorial.
           </p>
+          <Button type="button" onClick={onRefreshOnline} data-testid="online-refresh">Actualizar lista</Button>
           {online.stale && <p className="bible-banner">Sin conexión: se muestra la lista guardada.{online.error ? ` (${online.error})` : ""}</p>}
           {!online.stale && online.error && online.versions.length === 0 && (
             <p className="error">{online.error}{" "}<Button type="button" onClick={onRefreshOnline}>Reintentar</Button></p>

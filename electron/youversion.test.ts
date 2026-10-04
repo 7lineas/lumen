@@ -227,6 +227,29 @@ describe("listVersions", () => {
     expect(calls.length).toBe(4);
   });
 
+  it("re-reads the list after 30 minutes while a version is locked, but not when all are open", async () => {
+    const answers = (lockedToo: boolean) => (url: string) => {
+      if (url.includes("/licenses")) return page([{ id: 2, name: "Biblica", bible_ids: [128] }]);
+      if (url.includes("all_available=true")) return page(lockedToo ? [bible(128, "NVI-S"), bible(147, "RVES")] : [bible(147, "RVES")]);
+      return page([bible(147, "RVES")]);
+    };
+    router = answers(true);
+    await client().listVersions();
+    const before = calls.length;
+    clock += 10 * 60 * 1000;
+    await client().listVersions();
+    expect(calls.length).toBe(before);
+    clock += 25 * 60 * 1000;
+    router = answers(false);
+    const refreshed = await client().listVersions();
+    expect(calls.length).toBeGreaterThan(before);
+    expect(refreshed.versions.map((v) => v.id)).toEqual(["yv-147"]);
+    const after = calls.length;
+    clock += 60 * 60 * 1000;
+    await client().listVersions();
+    expect(calls.length).toBe(after);
+  });
+
   it("serves the stale list when the network fails", async () => {
     router = (url) => (url.includes("/licenses") ? page([]) : page([bible(147, "RVES")]));
     await client().listVersions();
