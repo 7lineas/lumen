@@ -191,10 +191,30 @@ function createProjectorWindow(): void {
     projectorWindow = null;
     projectorReady = false;
   });
+
+  projectorWindow.on("resize", emitProjectorBounds);
+  // Content bounds are known once the window is shown; push them so the
+  // operator live/preview screens can match the real window ratio.
+  projectorWindow.once("show", emitProjectorBounds);
+  projectorWindow.once("ready-to-show", emitProjectorBounds);
 }
 
 function displaysCount(): number {
   return screen.getAllDisplays().length;
+}
+
+function projectorContentBounds(): { width: number; height: number } | null {
+  if (!projectorWindow || projectorWindow.isDestroyed()) return null;
+  const { width, height } = projectorWindow.getContentBounds();
+  if (width <= 0 || height <= 0) return null;
+  return { width, height };
+}
+
+function emitProjectorBounds(): void {
+  const bounds = projectorContentBounds();
+  if (bounds && operatorWindow && !operatorWindow.isDestroyed()) {
+    operatorWindow.webContents.send("projector:bounds", bounds);
+  }
 }
 
 function sendToProjector(payload: ProjectorPayload): void {
@@ -434,6 +454,8 @@ ipcMain.handle("projector:open", () => {
   createProjectorWindow();
   return true;
 });
+
+ipcMain.handle("projector:bounds", () => projectorContentBounds());
 
 ipcMain.handle("projector:show", (_e, payload: ProjectorPayload) => {
   sendToProjector(payload);

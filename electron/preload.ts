@@ -50,6 +50,13 @@ contextBridge.exposeInMainWorld("proyector", {
   setFavorites: (f: QueueEntry[]): Promise<QueueEntry[]> => ipcRenderer.invoke("favorites:set", f),
   listDisplays: (): Promise<DisplayInfo[]> => ipcRenderer.invoke("displays:list"),
   openProjector: (): Promise<boolean> => ipcRenderer.invoke("projector:open"),
+  getProjectorBounds: (): Promise<{ width: number; height: number } | null> =>
+    ipcRenderer.invoke("projector:bounds"),
+  onProjectorBounds: (cb: (bounds: { width: number; height: number }) => void): (() => void) => {
+    const handler = (_: Electron.IpcRendererEvent, bounds: { width: number; height: number }) => cb(bounds);
+    ipcRenderer.on("projector:bounds", handler);
+    return () => ipcRenderer.removeListener("projector:bounds", handler);
+  },
   showOnProjector: (p: ProjectorPayload): Promise<boolean> => ipcRenderer.invoke("projector:show", p),
   pickBackgroundImage: (): Promise<string | null> => ipcRenderer.invoke("dialog:openImage"),
   deleteBackgroundMedia: (filePath: string): Promise<boolean> => ipcRenderer.invoke("background:delete", filePath),

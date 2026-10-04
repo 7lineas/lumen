@@ -82,8 +82,67 @@ export function OperatorApp() {
   }, [overlay]);
   const activeOverlay = overlay ?? lastOverlay;
   const [libraryTick, setLibraryTick] = useState(0);
+  const [projectorBounds, setProjectorBounds] = useState<{ width: number; height: number } | null>(null);
   const lastVerse = useRef<ProjectorPayload | null>(null);
   const booted = useRef(false);
+
+  // Track the real projector window size so the live/preview monitors
+  // render at the same ratio as the congregation screen, live.
+  // Source of truth is the projector window content bounds (main pushes
+  // updates on resize); the target display is only a fallback.
+  useEffect(() => {
+    let cancelled = false;
+    const applyBounds = (b: { width: number; height: number } | null) => {
+      if (!b || b.width <= 0 || b.height <= 0 || cancelled) return;
+      setProjectorBounds((prev) => (
+        prev?.width === b.width && prev?.height === b.height
+          ? prev
+          : { width: b.width, height: b.height }
+      ));
+    };
+    const api = window.proyector;
+    if (!api) return;
+    // Live window bounds first; fall back to the target display.
+    void api.getProjectorBounds?.().then(applyBounds).catch(() => undefined);
+    const pickDisplay = (displays: Array<{ id: number; primary: boolean; bounds: { width: number; height: number } }>) => {
+      if (displays.length === 0) return;
+      const explicit = settings.projectorDisplayId != null
+        ? displays.find((d) => d.id === settings.projectorDisplayId)
+        : undefined;
+      const target = explicit
+        ?? displays.find((d) => !d.primary)
+        ?? displays.find((d) => d.primary)
+        ?? displays[0];
+      if (target && !cancelled) {
+        setProjectorBounds((prev) => (
+          prev !== null ? prev : { width: target.bounds.width, height: target.bounds.height }
+        ));
+      }
+    };
+    void api.listDisplays().then((d) => { if (!cancelled) pickDisplay(d); }).catch(() => undefined);
+    const off = api.onProjectorBounds?.(applyBounds);
+    // Belt and braces: re-read the window size periodically so the panels
+    // follow resizes even if a resize event is ever missed.
+    const poll = window.setInterval(() => {
+      if (cancelled || typeof api.getProjectorBounds !== "function") return;
+      void api.getProjectorBounds().then(applyBounds).catch(() => undefined);
+    }, 1000);
+    return () => { cancelled = true; off?.(); window.clearInterval(poll); };
+  }, [settings.projectorDisplayId]);
+
+  const projectorAspect = useMemo(() => {
+    if (!projectorBounds || projectorBounds.height <= 0) return "16 / 9";
+    return `${projectorBounds.width} / ${projectorBounds.height}`;
+  }, [projectorBounds]);
+
+  const projectorRatioLabel = useMemo(() => {
+    if (!projectorBounds) return "16:9";
+    const w = projectorBounds.width;
+    const h = projectorBounds.height;
+    const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
+    const g = gcd(w, h) || 1;
+    return `${w / g}:${h / g} · ${w}×${h}`;
+  }, [projectorBounds]);
 
   const versionIds = useMemo(
     () =>
@@ -652,6 +711,10 @@ export function OperatorApp() {
                 payload={mode === "canciones" ? songPreviewPayload : previewPayload}
                 empty={mode === "canciones" ? "Elija una parte de la canción" : "Elija un versículo"}
                 testId="preview-box"
+                aspectRatio={projectorAspect}
+                displayWidth={projectorBounds?.width}
+                displayHeight={projectorBounds?.height}
+                ratioLabel={projectorRatioLabel}
               />
               <div className="action-row">
                 {mode === "canciones" ? <>
@@ -684,6 +747,10 @@ export function OperatorApp() {
                 empty="Todavía no se proyecta"
                 testId="live-box"
                 isLive
+                aspectRatio={projectorAspect}
+                displayWidth={projectorBounds?.width}
+                displayHeight={projectorBounds?.height}
+                ratioLabel={projectorRatioLabel}
               />
               <div className="action-row">
                 <Button

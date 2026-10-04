@@ -655,12 +655,137 @@ button.primary {
   position: relative;
   min-height: 210px;
   border-radius: 12px;
-  padding: 1.4rem 0.9rem 0.9rem;
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
-  overflow: auto;
+  overflow: hidden;
+}
+
+.monitor-screen {
+  position: relative;
+  width: 100%;
+  flex: none;
+  aspect-ratio: 16 / 9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  overflow: hidden;
+  padding: 5%;
+  border: 0;
+  border-radius: 0;
+  background: #000;
+}
+
+.monitor-screen-fade {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.monitor-screen-fade.show {
+  opacity: 1;
+}
+
+.monitor-screen-ref {
+  position: absolute;
+  top: 4%;
+  left: 5%;
+  right: 5%;
+  text-align: start;
+  margin: 0;
+  font-weight: 700;
+  line-height: 1.25;
+  pointer-events: none;
+}
+
+.monitor-screen-body {
+  width: 100%;
+  text-align: center;
+  line-height: 1.35;
+  font-weight: 500;
+  margin: 0;
+}
+
+.monitor-screen-body.dual {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5em;
+  text-align: left;
+  font-size: 0.85em;
+}
+
+.monitor-screen-text {
+  white-space: pre-wrap;
+  margin: 0;
+  overflow-wrap: break-word;
+}
+
+.monitor-screen-col-label {
+  font-size: 0.35em;
+  opacity: 0.7;
+  margin-bottom: 0.5em;
+}
+
+.monitor-screen-logo {
+  margin: 0;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.25;
+}
+
+.monitor-screen-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  position: relative;
+  z-index: 1;
+}
+
+.monitor-screen-version {
+  position: absolute;
+  bottom: 4%;
+  right: 5%;
+  left: 30%;
+  margin: 0;
+  text-align: end;
+  line-height: 1.35;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.monitor-screen-copyright {
+  position: absolute;
+  bottom: 4%;
+  left: 5%;
+  max-width: 55%;
+  margin: 0;
+  text-align: start;
+  line-height: 1.35;
+  font-weight: 400;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.monitor-ratio {
+  margin-left: auto;
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--muted);
+  border: 1px solid #292d34;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  white-space: nowrap;
 }
 
 .monitor-card {
@@ -703,7 +828,7 @@ button.primary {
 .projector-background-video,
 .monitor-background-layer,
 .monitor-background-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; z-index: 0; }
-.projector-inner, .monitor-fade { position: relative; z-index: 1; }
+.projector-inner, .monitor-fade, .monitor-screen-fade { position: relative; z-index: 1; }
 
 .monitor-fade.show {
   opacity: 1;
@@ -711,7 +836,8 @@ button.primary {
 
 @media (prefers-reduced-motion: reduce) {
   .projector-inner,
-  .monitor-fade {
+  .monitor-fade,
+  .monitor-screen-fade {
     transition: none;
   }
 }

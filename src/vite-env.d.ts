@@ -73,6 +73,8 @@ export interface ProyectorApi {
   setFavorites: (f: QueueEntry[]) => Promise<QueueEntry[]>;
   listDisplays: () => Promise<DisplayInfo[]>;
   openProjector: () => Promise<boolean>;
+  getProjectorBounds: () => Promise<{ width: number; height: number } | null>;
+  onProjectorBounds: (cb: (bounds: { width: number; height: number }) => void) => () => void;
   showOnProjector: (p: ProjectorPayload) => Promise<boolean>;
   pickBackgroundImage: () => Promise<string | null>;
   deleteBackgroundMedia: (path: string) => Promise<boolean>;
