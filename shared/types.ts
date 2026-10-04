@@ -9,6 +9,12 @@ export interface BibleVersionMeta {
   copyright?: string;
   draft?: boolean;
   bundled?: boolean;
+  /** Served on demand by YouVersion Platform (id is `yv-<number>`). */
+  online?: boolean;
+  /** Online version whose publisher license the app has not accepted yet (content answers 403). */
+  locked?: boolean;
+  /** Why a locked version cannot be used, e.g. "Acepta la licencia Biblica Fast-track en el portal de YouVersion". */
+  lockedReason?: string;
 }
 
 export interface BibleData {

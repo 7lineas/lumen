@@ -1,5 +1,6 @@
 /// <reference types="vite/client" />
 
+import type { ChapterResult, OnlineVersionsResult } from "../shared/youversion";
 import type { AppSettings, HistoryEntry, ProjectorPayload, QueueEntry, StoredSong, StoredSlideDeck, SlideImportResult } from "../shared/types";
 
 export interface DisplayInfo {
@@ -60,6 +61,8 @@ export interface AppUpdateEvent {
 export interface ProyectorApi {
   listBibleVersions: () => Promise<Array<{ id: string; name: string; abbr: string; language: string }>>;
   loadBible: (id: string) => Promise<unknown>;
+  listOnlineBibles: (force?: boolean) => Promise<OnlineVersionsResult>;
+  getOnlineChapter: (id: string, book: string, chapter: number) => Promise<ChapterResult>;
   getBibleCatalog: () => Promise<BibleLibraryView>;
   downloadBible: (id: string) => Promise<{ id: string }>;
   removeBible: (id: string) => Promise<{ settings: AppSettings }>;
