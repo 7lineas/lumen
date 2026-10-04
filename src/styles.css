@@ -1308,6 +1308,10 @@ button.song-part.selected, button.song-part.selected:hover { background: #1e3a5f
 .background-choice img, .background-choice video { width: 100%; height: 100%; object-fit: cover; display: block; }
 .background-choice.active { outline: 2px solid var(--accent); outline-offset: 1px; }
 .background-solid.active { border-color: var(--accent); color: var(--accent); }
+.background-color-wrap { position: relative; display: inline-flex; margin: 2px; }
+.background-color-btn { position: relative; }
+.background-color-ring { position: absolute; top: 50%; left: 50%; width: 1.45rem; height: 1.45rem; transform: translate(-50%, -50%); border: 2px solid; border-radius: 9999px; aspect-ratio: 1 / 1; pointer-events: none; }
+.background-color-wrap > .background-color-input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; padding: 0; border: 0; }
 .background-delete { position: absolute; top: 50%; left: 50%; min-height: 1.6rem; padding: 0.15rem 0.35rem; font-size: 0.7rem; opacity: 0; transform: translate(-50%, -50%); transition: opacity 120ms ease; }
 .background-choice-wrap:hover .background-delete, .background-choice-wrap:focus-within .background-delete { opacity: 1; }
 
