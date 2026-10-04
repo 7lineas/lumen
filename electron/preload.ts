@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from "electron";
-import type { AppSettings, HistoryEntry, ProjectorPayload, QueueEntry } from "../shared/types";
+import type { AppSettings, HistoryEntry, ProjectorPayload, QueueEntry, StoredSong } from "../shared/types";
 
 export interface BibleLibraryEntry {
   id: string;
@@ -53,6 +53,8 @@ contextBridge.exposeInMainWorld("proyector", {
   setQueue: (q: QueueEntry[]): Promise<QueueEntry[]> => ipcRenderer.invoke("queue:set", q),
   getFavorites: (): Promise<QueueEntry[]> => ipcRenderer.invoke("favorites:get"),
   setFavorites: (f: QueueEntry[]): Promise<QueueEntry[]> => ipcRenderer.invoke("favorites:set", f),
+  getSongs: (): Promise<StoredSong[]> => ipcRenderer.invoke("songs:get"),
+  setSongs: (songs: StoredSong[]): Promise<StoredSong[]> => ipcRenderer.invoke("songs:set", songs),
   listDisplays: (): Promise<DisplayInfo[]> => ipcRenderer.invoke("displays:list"),
   openProjector: (): Promise<boolean> => ipcRenderer.invoke("projector:open"),
   getProjectorBounds: (): Promise<{ width: number; height: number } | null> =>

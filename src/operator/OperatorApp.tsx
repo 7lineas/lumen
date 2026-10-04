@@ -57,20 +57,7 @@ export function OperatorApp() {
   const [songStaged, setSongStaged] = useState<SongStage | null>(null);
   const [songSelectedId, setSongSelectedId] = useState<string | null>(null);
   const [songLive, setSongLive] = useState<SongStage | null>(null);
-  const [projectOnClick, setProjectOnClick] = useState(() => {
-    try {
-      return localStorage.getItem("lumen.canciones.projectOnClick") === "1";
-    } catch {
-      return false;
-    }
-  });
-  useEffect(() => {
-    try {
-      localStorage.setItem("lumen.canciones.projectOnClick", projectOnClick ? "1" : "0");
-    } catch {
-      // ignore
-    }
-  }, [projectOnClick]);
+  const [projectOnClick, setProjectOnClick] = useState(false);
   const [overlay, setOverlay] = useState<"ajustes" | "acerca" | "biblias" | null>(null);
   // Keep rendering the last non-null overlay while the sheet plays its
   // close animation. Clearing children/className synchronously on ESC makes

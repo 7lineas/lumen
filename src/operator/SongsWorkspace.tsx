@@ -15,14 +15,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import type { StoredSong } from "@shared/types";
 
-export interface Song {
-  id: string;
-  title: string;
-  lyrics: string;
-  updatedAt: number;
-  pinned: boolean;
-}
+export type Song = StoredSong;
 
 export interface SongStage {
   title: string;
@@ -39,8 +34,6 @@ interface Props {
   onSelectPart: (index: number) => void;
 }
 
-const STORAGE_KEY = "lumen.canciones";
-
 function id() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -54,22 +47,35 @@ export function slidesForLyrics(lyrics: string) {
 }
 
 export function SongsWorkspace({ staged, selectedId, projectOnClick, onToggleProjectOnClick, onSelectSong, onSelectPart }: Props) {
-  const [songs, setSongs] = useState<Song[]>(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]") as Song[];
-      if (!Array.isArray(saved)) return [];
-      return saved.map((song) => ({ ...song, pinned: song.pinned ?? false }));
-    } catch {
-      return [];
-    }
-  });
+  const [songs, setSongs] = useState<Song[]>([]);
+  const [songsLoaded, setSongsLoaded] = useState(false);
   const [query, setQuery] = useState("");
   const [draft, setDraft] = useState<Song | null>(null);
   const [rightTab, setRightTab] = useState<"library" | "creation">("library");
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(songs));
-  }, [songs]);
+    let cancelled = false;
+    const api = window.proyector;
+    if (!api) {
+      setSongs([]);
+      setSongsLoaded(true);
+      return () => { cancelled = true; };
+    }
+    void api.getSongs().then((saved) => {
+      if (cancelled) return;
+      if (saved.length > 0) {
+        setSongs(saved);
+      } else {
+        setSongs([]);
+      }
+      setSongsLoaded(true);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (songsLoaded) void window.proyector?.setSongs(songs);
+  }, [songs, songsLoaded]);
 
   const visibleSongs = useMemo(
     () =>
