@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { AppSettings, ProjectorPayload } from "@shared/types";
 import { DEFAULT_SETTINGS } from "@shared/types";
-import { backgroundImageUrl, isBackgroundVideo } from "@shared/background-image";
+import { FadingBackgroundMedia } from "@/components/BackgroundMedia";
 
 const EMPTY: ProjectorPayload = {
   mode: "blank",
@@ -12,7 +12,7 @@ const EMPTY: ProjectorPayload = {
   brightness: 1,
   padding: DEFAULT_SETTINGS.padding,
   theme: "dark",
-  backgroundColor: "#000000",
+  backgroundColor: DEFAULT_SETTINGS.backgroundColor,
   copyright: "",
 };
 
@@ -153,28 +153,36 @@ export function ProjectorView() {
   // the operator's preview/live monitors even when the last payload was sent
   // before the user changed the selected image or video.
   const backgroundPath = settings.backgroundImagePath;
-  const bg = backgroundImageUrl(backgroundPath);
-  const backgroundVideo = isBackgroundVideo(backgroundPath);
+  const backgroundFadeMs = Math.max(0, payload.backgroundFadeMs ?? settings.backgroundFadeMs ?? DEFAULT_SETTINGS.backgroundFadeMs);
+  const backgroundMedia = (
+    <FadingBackgroundMedia path={backgroundPath} brightness={brightness} fadeMs={backgroundFadeMs} className="projector-background-media" />
+  );
   const style: React.CSSProperties = {
     fontSize: `${fitSize}px`,
     padding: `${payload.padding ?? settings.padding ?? DEFAULT_SETTINGS.padding}vw`,
   };
   const backgroundStyle: React.CSSProperties = {
     backgroundColor: payload.backgroundColor || settings.backgroundColor,
-    transition: `background-color ${Math.max(0, payload.backgroundFadeMs ?? settings.backgroundFadeMs ?? DEFAULT_SETTINGS.backgroundFadeMs)}ms ease`,
-    filter: payload.mode === "blank" ? undefined : `brightness(${brightness})`,
+    transition: `background-color ${backgroundFadeMs}ms ease`,
+    filter: `brightness(${brightness})`,
   };
 
   if (payload.mode === "blank") {
-    return <div className={`${themeClass} blank`} style={{ backgroundColor: "#000" }} />;
+    // "Limpiar" clears text only: keep the background color and media
+    // visible behind an empty screen.
+    return (
+      <div className={themeClass} style={style}>
+        <div className="projector-background-layer" style={backgroundStyle} />
+        {backgroundMedia}
+      </div>
+    );
   }
 
   if (payload.mode === "logo") {
     return (
       <div className={themeClass} style={style}>
         <div className="projector-background-layer" style={backgroundStyle} />
-        {bg && !backgroundVideo && <img className="projector-background-media" style={{ filter: `brightness(${brightness})` }} src={bg} alt="" aria-hidden />}
-        {backgroundVideo && <video className="projector-background-media" style={{ filter: `brightness(${brightness})` }} src={bg} muted loop autoPlay playsInline preload="auto" onCanPlay={(event) => { void event.currentTarget.play().catch(() => undefined); }} />}
+        {backgroundMedia}
         <div className={`projector-inner fade ${visible ? "show" : ""}`} style={fadeStyle}>
           <p className="projector-logo">{payload.churchName || settings.churchName}</p>
         </div>
@@ -189,8 +197,7 @@ export function ProjectorView() {
   return (
       <div className={themeClass} style={style}>
         <div className="projector-background-layer" style={backgroundStyle} />
-      {bg && !backgroundVideo && <img className="projector-background-media" style={{ filter: `brightness(${brightness})` }} src={bg} alt="" aria-hidden />}
-      {backgroundVideo && <video className="projector-background-media" style={{ filter: `brightness(${brightness})` }} src={bg} muted loop autoPlay playsInline preload="auto" onCanPlay={(event) => { void event.currentTarget.play().catch(() => undefined); }} />}
+        {backgroundMedia}
       <div className={`projector-inner fade ${visible ? "show" : ""}`} style={fadeStyle}>
         {ref && <header className="projector-ref" style={{ color: referenceColor }}>{ref}</header>}
         <div ref={textRef} className={`projector-body ${payload.blocks.length > 1 ? "dual" : ""}`}>

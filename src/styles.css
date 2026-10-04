@@ -847,10 +847,6 @@ button.primary {
   background: #f4f1ea;
 }
 
-.monitor.is-blank {
-  background: #000;
-}
-
 .monitor-fade {
   width: 100%;
   opacity: 0;
@@ -864,6 +860,15 @@ button.primary {
 .monitor-background-video,
 .monitor-background-media { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; pointer-events: none; z-index: 0; }
 .projector-inner, .monitor-fade, .monitor-screen-fade { position: relative; z-index: 1; }
+
+/* Entering background media fades in over the outgoing layer (see
+   FadingBackgroundMedia). Keyframes start on mount/style change, so no
+   rAF paint dance is needed — and the outgoing <video> is never remounted,
+   so it keeps playing instead of restarting. */
+@keyframes lumen-bg-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
 
 .monitor-fade.show {
   opacity: 1;

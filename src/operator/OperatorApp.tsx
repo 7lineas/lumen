@@ -37,6 +37,31 @@ function mergeSettings(s: AppSettings): AppSettings {
   return { ...DEFAULT_SETTINGS, ...s };
 }
 
+/**
+ * The background (color/media) is permanent: it is projected from the moment
+ * the app opens. Clearing ("Limpiar") only removes the text, so a blank
+ * payload is just the background with empty content.
+ */
+function blankPayload(s: AppSettings): ProjectorPayload {
+  return {
+    mode: "blank",
+    referenceLabel: "",
+    blocks: [],
+    churchName: s.churchName,
+    fontSize: s.fontSize,
+    brightness: s.brightness,
+    padding: s.padding,
+    theme: s.theme,
+    backgroundColor: s.backgroundColor,
+    copyright: "",
+    referenceColor: s.referenceColor,
+    versionColor: s.versionColor,
+    fadeMs: s.fadeMs,
+    backgroundFadeMs: s.backgroundFadeMs,
+    backgroundImagePath: s.backgroundImagePath,
+  };
+}
+
 export function OperatorApp() {
   const [deletingMedia, setDeletingMedia] = useState(false);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
@@ -209,7 +234,15 @@ export function OperatorApp() {
   useEffect(() => {
     const api = window.proyector;
     if (!api) return;
-    void api.getSettings().then((s) => setSettings(mergeSettings(s)));
+    void api.getSettings().then((s) => {
+      const merged = mergeSettings(s);
+      setSettings(merged);
+      // Project the permanent background right away so the congregation
+      // screen never sits black: color/media from the start, text empty.
+      const initial = blankPayload(merged);
+      setLive(initial);
+      void api.showOnProjector(initial);
+    });
     void api.getHistory().then(setHistory);
     void api.getQueue().then(setQueue);
     void api.openProjector();
@@ -252,9 +285,14 @@ export function OperatorApp() {
     if (parsed.ok) stageRange(parsed.range);
   }, [ready, stageRange]);
 
+  const [hasLiveContent, setHasLiveContent] = useState(false);
+
   const send = useCallback(async (payload: ProjectorPayload) => {
     setLive(payload);
-    if (payload.mode === "verse") lastVerse.current = payload;
+    if (payload.mode === "verse") {
+      lastVerse.current = payload;
+      setHasLiveContent(true);
+    }
     await window.proyector?.showOnProjector(payload);
   }, []);
 
@@ -345,20 +383,9 @@ export function OperatorApp() {
   }, [songLive, send, songPayload]);
 
   const showBlank = useCallback(async () => {
-    await send({
-      mode: "blank",
-      referenceLabel: "",
-      blocks: [],
-      churchName: settings.churchName,
-      fontSize: settings.fontSize,
-      brightness: settings.brightness,
-      padding: settings.padding,
-      theme: settings.theme,
-      backgroundColor: "#000000",
-      copyright: "",
-      fadeMs: settings.fadeMs,
-      backgroundFadeMs: settings.backgroundFadeMs,
-    });
+    // "Limpiar" clears only the text (verse/song). Background color and
+    // media stay so the projector keeps showing them behind empty content.
+    await send(blankPayload(settings));
   }, [send, settings]);
 
   const toggleBlank = useCallback(async () => {
@@ -373,7 +400,26 @@ export function OperatorApp() {
     async (next: AppSettings) => {
       setSettings(next);
       await window.proyector?.setSettings(next);
-      if (!live || live.mode === "blank") return;
+      if (!live) return;
+      if (live.mode === "blank") {
+        // Keep a cleared screen in sync with background/theme tweaks so
+        // changing the fondo or media while "Limpiar" is active still shows.
+        await send({
+          ...live,
+          churchName: next.churchName,
+          fontSize: next.fontSize,
+          brightness: next.brightness,
+          padding: next.padding,
+          theme: next.theme,
+          backgroundColor: next.backgroundColor,
+          backgroundImagePath: next.backgroundImagePath,
+          referenceColor: next.referenceColor,
+          versionColor: next.versionColor,
+          fadeMs: next.fadeMs,
+          backgroundFadeMs: next.backgroundFadeMs,
+        });
+        return;
+      }
       await send({
         ...live,
         churchName: next.churchName,
@@ -755,7 +801,6 @@ export function OperatorApp() {
               <StageMonitor
                 title="En vivo"
                 payload={live}
-                empty="Todavía no se proyecta"
                 testId="live-box"
                 isLive
                 aspectRatio={projectorAspect}
@@ -769,7 +814,7 @@ export function OperatorApp() {
                   data-testid="btn-clear"
                   onClick={() => void toggleBlank()}
                 >
-                  {live?.mode === "blank" ? "Restaurar" : "Limpiar"}
+                  {live?.mode === "blank" && hasLiveContent ? "Restaurar" : "Limpiar"}
                 </Button>
                 {mode === "canciones" ? <>
                   <Button type="button" data-testid="btn-live-prev" onClick={() => void navigateSongLive(-1)}>
@@ -806,10 +851,13 @@ export function OperatorApp() {
                 type="button"
                 onClick={async () => {
                   const path = await window.proyector?.pickBackgroundImage();
-                  if (path) void applyChrome({
+                  if (!path) return;
+                  // New uploads join the library but never auto-project: the
+                  // operator picks explicitly from the gallery.
+                  if ((settings.backgroundImages ?? []).includes(path)) return;
+                  void applyChrome({
                     ...settings,
                     backgroundImages: [...(settings.backgroundImages ?? []), path],
-                    backgroundImagePath: path,
                   });
                 }}
               >
@@ -924,7 +972,7 @@ export function OperatorApp() {
           data-testid={activeOverlay === "ajustes" ? "settings-panel" : undefined}
           className={activeOverlay === "ajustes" ? "overlay-sheet settings-sheet" : "overlay-sheet wide-sheet"}
         >
-          {activeOverlay === "ajustes" && <SettingsPanel settings={settings} versions={versions} onSave={applyChrome} />}
+          {activeOverlay === "ajustes" && <SettingsPanel settings={settings} versions={versions} onSave={async (s) => { await applyChrome(s); setOverlay(null); }} />}
           {activeOverlay === "biblias" && (
             <BiblesPanel
               onChanged={(next) => {
