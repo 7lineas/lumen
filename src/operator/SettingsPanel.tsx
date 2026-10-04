@@ -88,8 +88,8 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
             {versions
               .filter((v) => v.id !== local.primaryVersionId)
               .map((v) => (
-                <SelectItem key={v.id} value={v.id}>
-                  {v.name}
+                <SelectItem key={v.id} value={v.id} disabled={v.locked} title={v.lockedReason}>
+                  {v.name}{v.online ? " (en línea)" : ""}{v.locked ? " · requiere licencia" : ""}
                 </SelectItem>
               ))}
             </SelectContent>

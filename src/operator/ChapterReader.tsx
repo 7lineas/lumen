@@ -28,6 +28,10 @@ interface Props {
   refInput: string;
   onRefInput: (value: string) => void;
   onRefSubmit: () => void;
+  /** Online Bible status (offline / license / rate limit) shown above the reader. */
+  notice?: string | null;
+  onRetryOnline?: () => void;
+  loadingChapter?: boolean;
   parseError: string | null;
   keyword: string;
   onKeyword: (value: string) => void;
@@ -71,6 +75,12 @@ export function ChapterReader(props: Props) {
 
   return (
     <section className="reader">
+      {props.notice && (
+        <p className="bible-banner" role="status" data-testid="online-notice">
+          {props.notice}{" "}
+          {props.onRetryOnline && <Button type="button" onClick={props.onRetryOnline}>Reintentar en línea</Button>}
+        </p>
+      )}
       <div className="ref-row">
         <Input
           data-role="ref"
@@ -140,7 +150,7 @@ export function ChapterReader(props: Props) {
       </div>
 
       <div className="verse-head">
-        <p className="section-label">Versículos</p>
+        <p className="section-label">Versículos{props.loadingChapter ? " · cargando…" : ""}</p>
         <Button
           type="button"
           className={showText ? "chip selected" : "chip"}
