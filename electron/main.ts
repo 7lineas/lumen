@@ -145,6 +145,8 @@ import {
   resolveCatalogPath,
   resolveModulePath,
 } from "./bible-library";
+import { ImportSession } from "./bible-import";
+import type { ImportMetaInput } from "../shared/bible-import/build";
 
 const store = new Store<{
   settings: AppSettings;
@@ -528,6 +530,35 @@ ipcMain.handle("yvp:versions", (_e, force?: boolean) => yvp().listVersions(force
 ipcMain.handle("yvp:chapter", (_e, id: string, book: string, chapter: number) =>
   yvp().getChapter(String(id), String(book), Number(chapter)),
 );
+
+// Importing the user's own Bible files (JSON, Zefania, OSIS, USFM, CSV/TSV).
+const bibleImports = new ImportSession();
+
+ipcMain.handle("bibles:import-pick", async () => {
+  const result = await dialog.showOpenDialog(operatorWindow!, {
+    title: "Importar Biblia",
+    properties: ["openFile", "multiSelections"],
+    filters: [
+      { name: "Biblias (JSON, XML, USFM, CSV, TSV)", extensions: ["json", "xml", "usfm", "sfm", "ptx", "csv", "tsv", "txt"] },
+      { name: "Todos los archivos", extensions: ["*"] },
+    ],
+  });
+  if (result.canceled || result.filePaths.length === 0) return { ok: false, canceled: true };
+  return bibleImports.preview(result.filePaths);
+});
+
+ipcMain.handle("bibles:import-commit", (_e, previewId: string, input: ImportMetaInput) => {
+  const existing = listSelectableVersions(biblesPath(), userBiblesDir());
+  const safe: ImportMetaInput = {
+    name: String(input?.name ?? ""),
+    abbr: String(input?.abbr ?? ""),
+    language: String(input?.language ?? ""),
+    copyright: String(input?.copyright ?? ""),
+  };
+  return bibleImports.commit(String(previewId), safe, userBiblesDir(), existing);
+});
+
+ipcMain.handle("bibles:import-cancel", () => bibleImports.discard());
 
 ipcMain.handle("bibles:catalog", () =>
   buildLibraryView(biblesPath(), userBiblesDir(), catalogPath(), nodeFetch),
