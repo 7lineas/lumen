@@ -36,6 +36,20 @@ Aplicación de escritorio **offline** para proyectar versículos de la Biblia en
 - **Ajustes**: pantalla, dos versiones lado a lado, tema, fuente, fondo.
 - **Acerca de**: versiones de la Biblia incluidas y licencias.
 
+## Diapositivas
+
+Pestaña **Diapositivas**: importa presentaciones y proyéctalas como imágenes.
+
+| Formato | Cómo se muestra |
+| --- | --- |
+| `.pptx` / `.ppsx` | Se renderiza a PNG dentro de la app (pptx-glimpse + resvg WASM, en un proceso aparte de Electron). Usa las **fuentes instaladas en el equipo**: si falta una (p. ej. Calibri en macOS) se sustituye por otra. |
+| `.pdf` | Se rasteriza con pdf.js (build *legacy*, compatible con el Chromium de Electron 34). |
+| `.png` / `.jpg` / `.webp` | Tal cual. Varias imágenes a la vez forman una sola presentación, en orden natural (Diapositiva2 antes que Diapositiva10). |
+| `.txt` / `.md` / `.json` | Diapositivas de solo texto. |
+| Keynote (`.key`), `.ppt`, `.odp` | No se pueden renderizar sin otra aplicación: la app pide exportar a **PDF o PPTX**. |
+
+Los originales se guardan en `userData/slide-decks` y las imágenes en `userData/slide-images`; solo `slide-images` (y `background-images`) se sirven por el protocolo `lumen-media`. No hace falta instalar nada extra ni copiar archivos WASM: el renderizado de PPTX no usa `vendor/`.
+
 ## Atajos de teclado
 
 | Tecla | Acción |
