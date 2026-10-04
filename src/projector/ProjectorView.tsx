@@ -46,6 +46,7 @@ export function ProjectorView() {
     const api = window.proyector;
     if (!api) return;
     void api.getSettings().then((s) => setSettings({ ...DEFAULT_SETTINGS, ...s }));
+    const offSettings = api.onSettingsUpdate?.((s) => setSettings({ ...DEFAULT_SETTINGS, ...s }));
     const show = (v: boolean) => {
       visibleRef.current = v;
       setVisible(v);
@@ -97,46 +98,69 @@ export function ProjectorView() {
     return () => {
       if (timerRef.current !== null) clearTimeout(timerRef.current);
       off?.();
+      offSettings?.();
     };
   }, []);
 
   const fontSize = payload.fontSize || settings.fontSize;
 
   useEffect(() => {
-    setFitSize(fontSize);
-  }, [fontSize, payload]);
-
-  useEffect(() => {
     const el = textRef.current;
     if (!el || payload.mode !== "verse") return;
-    let size = fontSize;
+    let raf = 0;
     const fit = () => {
+      // Always restart from the full size so growing the window grows text back.
+      let size = fontSize;
       el.style.fontSize = `${size}px`;
-      while (size > 28 && el.scrollHeight > window.innerHeight * 0.72) {
+      // The body is a flex-1 box with overflow hidden, so fitting to its own
+      // clientHeight keeps header/footer clear at any window ratio.
+      let guard = 500;
+      while (guard-- > 0 && size > 28 && el.scrollHeight > el.clientHeight) {
         size -= 2;
         el.style.fontSize = `${size}px`;
       }
       setFitSize(size);
     };
     fit();
-    window.addEventListener("resize", fit);
-    return () => window.removeEventListener("resize", fit);
+    const onResize = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(fit);
+    };
+    window.addEventListener("resize", onResize);
+    // Webfonts arriving late change metrics; refit once they're ready.
+    let fontsDone = false;
+    try {
+      void document.fonts?.ready.then(() => {
+        if (!fontsDone) {
+          fontsDone = true;
+          fit();
+        }
+      }).catch(() => undefined);
+    } catch {
+      // ignore
+    }
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", onResize);
+    };
   }, [payload, fontSize]);
 
   const themeClass = (payload.theme ?? settings.theme) === "light" ? "projector light" : "projector dark";
   const brightness = payload.brightness ?? settings.brightness ?? 1;
   const fadeMs = payload.fadeMs ?? settings.fadeMs ?? DEFAULT_SETTINGS.fadeMs;
   const fadeStyle: React.CSSProperties = { transitionDuration: `${Math.max(0, fadeMs)}ms` };
-  const bg = backgroundImageUrl(payload.backgroundImagePath ?? settings.backgroundImagePath);
+  // Background media is an application setting, so it must stay identical to
+  // the operator's preview/live monitors even when the last payload was sent
+  // before the user changed the selected image or video.
+  const backgroundPath = settings.backgroundImagePath;
+  const bg = backgroundImageUrl(backgroundPath);
+  const backgroundVideo = isBackgroundVideo(backgroundPath);
   const style: React.CSSProperties = {
     fontSize: `${fitSize}px`,
     padding: `${payload.padding ?? settings.padding ?? DEFAULT_SETTINGS.padding}vw`,
   };
   const backgroundStyle: React.CSSProperties = {
-    backgroundColor: bg ? undefined : payload.backgroundColor || settings.backgroundColor,
-    backgroundImage: bg ? `url("${bg}")` : undefined,
-    backgroundSize: "cover",
-    backgroundPosition: "center",
+    backgroundColor: payload.backgroundColor || settings.backgroundColor,
     transition: `background-color ${Math.max(0, payload.backgroundFadeMs ?? settings.backgroundFadeMs ?? DEFAULT_SETTINGS.backgroundFadeMs)}ms ease`,
     filter: payload.mode === "blank" ? undefined : `brightness(${brightness})`,
   };
@@ -149,7 +173,8 @@ export function ProjectorView() {
     return (
       <div className={themeClass} style={style}>
         <div className="projector-background-layer" style={backgroundStyle} />
-        {isBackgroundVideo(payload.backgroundImagePath ?? settings.backgroundImagePath) && <video className="projector-background-video" style={{ filter: `brightness(${brightness})` }} src={bg} muted loop autoPlay playsInline preload="auto" onCanPlay={(event) => { void event.currentTarget.play().catch(() => undefined); }} />}
+        {bg && !backgroundVideo && <img className="projector-background-media" style={{ filter: `brightness(${brightness})` }} src={bg} alt="" aria-hidden />}
+        {backgroundVideo && <video className="projector-background-media" style={{ filter: `brightness(${brightness})` }} src={bg} muted loop autoPlay playsInline preload="auto" onCanPlay={(event) => { void event.currentTarget.play().catch(() => undefined); }} />}
         <div className={`projector-inner fade ${visible ? "show" : ""}`} style={fadeStyle}>
           <p className="projector-logo">{payload.churchName || settings.churchName}</p>
         </div>
@@ -162,9 +187,10 @@ export function ProjectorView() {
   const versionColor = payload.versionColor ?? settings.versionColor ?? "#f6a623";
 
   return (
-    <div className={themeClass} style={style}>
-      <div className="projector-background-layer" style={backgroundStyle} />
-      {isBackgroundVideo(payload.backgroundImagePath ?? settings.backgroundImagePath) && <video className="projector-background-video" style={{ filter: `brightness(${brightness})` }} src={bg} muted loop autoPlay playsInline preload="auto" onCanPlay={(event) => { void event.currentTarget.play().catch(() => undefined); }} />}
+      <div className={themeClass} style={style}>
+        <div className="projector-background-layer" style={backgroundStyle} />
+      {bg && !backgroundVideo && <img className="projector-background-media" style={{ filter: `brightness(${brightness})` }} src={bg} alt="" aria-hidden />}
+      {backgroundVideo && <video className="projector-background-media" style={{ filter: `brightness(${brightness})` }} src={bg} muted loop autoPlay playsInline preload="auto" onCanPlay={(event) => { void event.currentTarget.play().catch(() => undefined); }} />}
       <div className={`projector-inner fade ${visible ? "show" : ""}`} style={fadeStyle}>
         {ref && <header className="projector-ref" style={{ color: referenceColor }}>{ref}</header>}
         <div ref={textRef} className={`projector-body ${payload.blocks.length > 1 ? "dual" : ""}`}>
@@ -175,8 +201,14 @@ export function ProjectorView() {
             </section>
           ))}
         </div>
-        {version && <div className="projector-version" style={{ color: versionColor }}>{version}</div>}
-        {payload.copyright && <footer className="projector-copyright">{payload.copyright}</footer>}
+        {(version || payload.copyright) && (
+          <div className="projector-footer">
+            {payload.copyright
+              ? <footer className="projector-copyright">{payload.copyright}</footer>
+              : <span aria-hidden />}
+            {version && <div className="projector-version" style={{ color: versionColor }}>{version}</div>}
+          </div>
+        )}
       </div>
     </div>
   );

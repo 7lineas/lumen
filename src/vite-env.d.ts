@@ -65,6 +65,7 @@ export interface ProyectorApi {
   removeBible: (id: string) => Promise<{ settings: AppSettings }>;
   getSettings: () => Promise<AppSettings>;
   setSettings: (s: AppSettings) => Promise<boolean>;
+  onSettingsUpdate: (cb: (s: AppSettings) => void) => () => void;
   getHistory: () => Promise<HistoryEntry[]>;
   addHistory: (e: HistoryEntry) => Promise<HistoryEntry[]>;
   getQueue: () => Promise<QueueEntry[]>;
