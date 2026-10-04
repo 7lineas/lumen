@@ -150,6 +150,10 @@ pnpm publish:release -- --dir release
 
 Dentro de la app, la pantalla Biblias baja versiones libres a la carpeta de datos del usuario (`userData/bibles`). RV1909 sigue dentro del instalador. El catálogo remoto es `https://downloads.7lineas.com/bibles/bibles-catalog.json`. Si no hay internet, se usa la copia que va con el programa y las versiones ya descargadas.
 
+### Sus propias Biblias
+
+Biblias → Mis biblias → Importar Biblia… permite cargar un archivo JSON de Lumen, Zefania, OSIS, USFM o CSV/TSV, con nombre, abreviatura y copyright obligatorio. Formatos y ejemplos en [`docs/IMPORTAR-BIBLIAS.md`](docs/IMPORTAR-BIBLIAS.md).
+
 Cada módulo es un JSON con metadatos (nombre, copyright, licencia), libros y versículos: el mismo formato que `data/bibles`. No se usa SQLite. La app ya lee ese JSON sin conexión, y un addon nativo complicaría el instalador de Windows.
 
 `pnpm build:bible-modules` descarga el VPL de eBible, escribe los módulos y calcula el SHA-256. Los `{id}.json` grandes no van al repositorio. El catálogo sí: `data/bible-modules/bibles-catalog.json`. Hay que subir el catálogo y los módulos juntos. Si se vuelve a generar y eBible cambió, los hashes cambian y hay que publicar ambos de nuevo.

@@ -2,7 +2,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useEffect, useState } from "react";
-import type { AppSettings } from "@shared/types";
+import type { AppSettings, BibleVersionMeta } from "@shared/types";
+import { ImportBibleCard } from "./ImportBibleCard";
 import type { OnlineVersionsResult } from "@shared/youversion";
 import type { BibleDownloadProgress, BibleLibraryEntry, BibleLibraryView } from "../vite-env.d";
 
@@ -10,6 +11,8 @@ interface Props {
   onChanged: (settings?: AppSettings) => void;
   online?: OnlineVersionsResult;
   onRefreshOnline?: () => void;
+  /** Bibles the user imported from files. */
+  customVersions?: BibleVersionMeta[];
 }
 
 function formatByteSize(bytes: number | null): string {
@@ -18,7 +21,7 @@ function formatByteSize(bytes: number | null): string {
   return `${mb.toLocaleString("es-ES", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} MB`;
 }
 
-export function BiblesPanel({ onChanged, online, onRefreshOnline }: Props) {
+export function BiblesPanel({ onChanged, online, onRefreshOnline, customVersions = [] }: Props) {
   const [library, setLibrary] = useState<BibleLibraryView | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -112,6 +115,15 @@ export function BiblesPanel({ onChanged, online, onRefreshOnline }: Props) {
           />
         ))}
       </div>
+      <ImportBibleCard
+        customVersions={customVersions}
+        onChanged={() => onChanged()}
+        onRemove={async (id) => {
+          const result = await window.proyector?.removeBible(id);
+          await reload();
+          onChanged(result?.settings);
+        }}
+      />
       <h2>En línea (YouVersion)</h2>
       {!online?.configured && (
         <p className="muted">Esta compilación no incluye la clave de YouVersion Platform, así que las Biblias en línea no están disponibles.</p>

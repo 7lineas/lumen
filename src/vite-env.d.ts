@@ -1,5 +1,7 @@
 /// <reference types="vite/client" />
 
+import type { BibleImportPickResult, BibleImportCommitResult } from "../shared/bible-import/types";
+import type { ImportMetaInput } from "../shared/bible-import/build";
 import type { ChapterResult, OnlineVersionsResult } from "../shared/youversion";
 import type { AppSettings, HistoryEntry, ProjectorPayload, QueueEntry, StoredSong, StoredSlideDeck, SlideImportResult } from "../shared/types";
 
@@ -66,6 +68,9 @@ export interface ProyectorApi {
   getBibleCatalog: () => Promise<BibleLibraryView>;
   downloadBible: (id: string) => Promise<{ id: string }>;
   removeBible: (id: string) => Promise<{ settings: AppSettings }>;
+  pickBibleImport: () => Promise<BibleImportPickResult>;
+  commitBibleImport: (previewId: string, input: ImportMetaInput) => Promise<BibleImportCommitResult>;
+  cancelBibleImport: () => Promise<void>;
   getSettings: () => Promise<AppSettings>;
   setSettings: (s: AppSettings) => Promise<boolean>;
   onSettingsUpdate: (cb: (s: AppSettings) => void) => () => void;

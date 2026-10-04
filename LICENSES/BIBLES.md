@@ -18,6 +18,7 @@ en el catálogo. Para generarla con el script, añada la ficha en
 `shared/bible-licenses.json`. Reina Valera Gómez, RVR1960, NVI, NTV, DHH, TLA,
 RVC, LBLA y otras con copyright no se incluyen hasta que David tenga permiso.
 Las versiones en línea (NVI, NBLA, LBLA, RVES, VBL, PDT…) no se distribuyen con la app: se consultan a YouVersion Platform, se guardan en caché en el equipo del operador y se muestran siempre con el copyright que entrega la API. Cada una requiere aceptar su licencia en el portal de YouVersion Platform. RVR1960 no está disponible en Platform.
+Las Biblias que el usuario importa desde sus propios archivos (Biblias → Mis biblias, ver `docs/IMPORTAR-BIBLIAS.md`) se guardan solo en su equipo, no se distribuyen con Lumen y llevan el copyright que el usuario declara.
 
 ## Reina-Valera 1909 (id: `rv1909`, abrev: RV1909)
 
