@@ -7,6 +7,7 @@ import {
   dialog,
   Menu,
   net,
+  nativeImage,
   protocol,
 } from "electron";
 import path from "path";
@@ -215,13 +216,27 @@ function currentSettings(): AppSettings {
   return { ...DEFAULT_SETTINGS, ...store.get("settings") };
 }
 
+/**
+ * Window/taskbar/dock icon. Windows needs the multi-size .ico (the taskbar
+ * picks 24/32/48/256 from it); it ships both inside the asar and as a loose
+ * file in resources. Elsewhere the PNG is used.
+ */
+function appIconPath(): string {
+  if (process.platform === "win32") {
+    const loose = path.join(process.resourcesPath, "icon.ico");
+    if (app.isPackaged && fs.existsSync(loose)) return loose;
+    return path.join(app.getAppPath(), "build/icon.ico");
+  }
+  return path.join(app.getAppPath(), "build/icon.png");
+}
+
 function createOperatorWindow(): void {
   operatorWindow = new BrowserWindow({
     width: 1280,
     height: 800,
     minWidth: 1024,
     minHeight: 680,
-    icon: path.join(app.getAppPath(), "build/icon.png"),
+    icon: appIconPath(),
     title: "Lumen",
     autoHideMenuBar: true,
     webPreferences: {
@@ -279,7 +294,7 @@ function createProjectorWindow(): void {
     height,
     fullscreen: displaysCount() > 1,
     frame: displaysCount() <= 1,
-    icon: path.join(app.getAppPath(), "build/icon.png"),
+    icon: appIconPath(),
     title: "Lumen — Proyección",
     backgroundColor: "#000000",
     autoHideMenuBar: true,
@@ -461,8 +476,8 @@ app.whenReady().then(() => {
   registerUpdaterHandlers();
   initAutoUpdater();
   if (process.platform === "darwin" && app.dock) {
-    const iconPath = path.join(app.getAppPath(), "build/icon.png");
-    if (fs.existsSync(iconPath)) app.dock.setIcon(iconPath);
+    const dockIcon = nativeImage.createFromPath(appIconPath());
+    if (!dockIcon.isEmpty()) app.dock.setIcon(dockIcon);
   }
 
   if (process.env.PROYECTOR_SCREENSHOT === "1") {

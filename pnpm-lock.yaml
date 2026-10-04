@@ -117,6 +117,9 @@ importers:
       pptxgenjs:
         specifier: ^4.0.1
         version: 4.0.1
+      resedit:
+        specifier: ^1.7.2
+        version: 1.7.2
       sharp:
         specifier: ^0.35.5
         version: 0.35.5(@types/node@22.20.4)
