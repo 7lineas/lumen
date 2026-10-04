@@ -291,6 +291,10 @@ button.primary {
   margin-top: 0.5rem;
 }
 
+.settings h2 {
+  margin-bottom: 1rem;
+}
+
 .settings .field {
   display: flex;
   flex-direction: column;

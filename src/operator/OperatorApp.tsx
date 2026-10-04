@@ -34,8 +34,22 @@ function newId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-function mergeSettings(s: AppSettings): AppSettings {
-  return { ...DEFAULT_SETTINGS, ...s };
+/** Settings persisted before the accent/song-fade split. */
+type StoredSettings = Partial<AppSettings> & {
+  referenceColor?: string;
+  versionColor?: string;
+};
+
+function mergeSettings(s: StoredSettings): AppSettings {
+  const fadeMs = s.fadeMs ?? DEFAULT_SETTINGS.fadeMs;
+  return {
+    ...DEFAULT_SETTINGS,
+    ...s,
+    accentColor:
+      s.accentColor ?? s.referenceColor ?? s.versionColor ?? DEFAULT_SETTINGS.accentColor,
+    fadeMs,
+    songFadeMs: s.songFadeMs ?? fadeMs,
+  };
 }
 
 /**
@@ -43,7 +57,7 @@ function mergeSettings(s: AppSettings): AppSettings {
  * the app opens. Clearing ("Limpiar") only removes the text, so a blank
  * payload is just the background with empty content.
  */
-function blankPayload(s: AppSettings): ProjectorPayload {
+function blankPayload(s: AppSettings, fadeMs?: number): ProjectorPayload {
   return {
     mode: "blank",
     referenceLabel: "",
@@ -55,9 +69,9 @@ function blankPayload(s: AppSettings): ProjectorPayload {
     theme: s.theme,
     backgroundColor: s.backgroundColor,
     copyright: "",
-    referenceColor: s.referenceColor,
-    versionColor: s.versionColor,
-    fadeMs: s.fadeMs,
+    referenceColor: s.accentColor,
+    versionColor: s.accentColor,
+    fadeMs: fadeMs ?? s.fadeMs,
     backgroundFadeMs: s.backgroundFadeMs,
     backgroundImagePath: s.backgroundImagePath,
   };
@@ -198,8 +212,8 @@ export function OperatorApp() {
         settings.dualView ? settings.secondaryVersionId : null,
         settings.showCopyright,
       ),
-      referenceColor: settings.referenceColor,
-      versionColor: settings.versionColor,
+      referenceColor: settings.accentColor,
+      versionColor: settings.accentColor,
       backgroundImagePath: settings.backgroundImagePath,
       fadeMs: settings.fadeMs,
       backgroundFadeMs: settings.backgroundFadeMs,
@@ -223,10 +237,12 @@ export function OperatorApp() {
               settings.showCopyright,
             )
           : "",
-      referenceColor: settings.referenceColor,
-      versionColor: settings.versionColor,
+      referenceColor: settings.accentColor,
+      versionColor: settings.accentColor,
       backgroundImagePath: settings.backgroundImagePath,
-      fadeMs: settings.fadeMs,
+      // Keep the fade the content was projected with: bible and songs have
+      // separate transition settings.
+      fadeMs: base.fadeMs ?? settings.fadeMs,
       backgroundFadeMs: settings.backgroundFadeMs,
     }),
     [settings],
@@ -322,10 +338,10 @@ export function OperatorApp() {
     theme: settings.theme,
     backgroundColor: settings.backgroundColor,
     copyright: "",
-    referenceColor: settings.referenceColor,
-    versionColor: settings.versionColor,
+    referenceColor: settings.accentColor,
+    versionColor: settings.accentColor,
     backgroundImagePath: settings.backgroundImagePath,
-    fadeMs: settings.fadeMs,
+    fadeMs: settings.songFadeMs,
     backgroundFadeMs: settings.backgroundFadeMs,
   }), [settings]);
 
@@ -386,8 +402,9 @@ export function OperatorApp() {
   const showBlank = useCallback(async () => {
     // "Limpiar" clears only the text (verse/song). Background color and
     // media stay so the projector keeps showing them behind empty content.
-    await send(blankPayload(settings));
-  }, [send, settings]);
+    // The blank transition uses the current workspace's fade setting.
+    await send(blankPayload(settings, mode === "canciones" ? settings.songFadeMs : settings.fadeMs));
+  }, [send, settings, mode]);
 
   const toggleBlank = useCallback(async () => {
     if (live?.mode === "blank") {
@@ -414,9 +431,11 @@ export function OperatorApp() {
           theme: next.theme,
           backgroundColor: next.backgroundColor,
           backgroundImagePath: next.backgroundImagePath,
-          referenceColor: next.referenceColor,
-          versionColor: next.versionColor,
-          fadeMs: next.fadeMs,
+          referenceColor: next.accentColor,
+          versionColor: next.accentColor,
+          // Style-only resync of the cleared screen: keep the fade it was
+          // cleared with so the next content swap still uses its own timing.
+          fadeMs: live.fadeMs ?? next.fadeMs,
           backgroundFadeMs: next.backgroundFadeMs,
         });
         return;
@@ -430,9 +449,9 @@ export function OperatorApp() {
         theme: next.theme,
         backgroundColor: next.backgroundColor,
         backgroundImagePath: next.backgroundImagePath,
-        referenceColor: next.referenceColor,
-        versionColor: next.versionColor,
-        fadeMs: next.fadeMs,
+        referenceColor: next.accentColor,
+        versionColor: next.accentColor,
+        fadeMs: live.fadeMs ?? next.fadeMs,
         backgroundFadeMs: next.backgroundFadeMs,
         copyright:
           live.mode === "verse"
@@ -513,8 +532,8 @@ export function OperatorApp() {
           settings.dualView ? settings.secondaryVersionId : null,
           settings.showCopyright,
         ),
-        referenceColor: settings.referenceColor,
-        versionColor: settings.versionColor,
+        referenceColor: settings.accentColor,
+        versionColor: settings.accentColor,
         backgroundImagePath: settings.backgroundImagePath,
         fadeMs: settings.fadeMs,
         backgroundFadeMs: settings.backgroundFadeMs,
@@ -571,8 +590,8 @@ export function OperatorApp() {
           settings.dualView ? settings.secondaryVersionId : null,
           settings.showCopyright,
         ),
-        referenceColor: settings.referenceColor,
-        versionColor: settings.versionColor,
+        referenceColor: settings.accentColor,
+        versionColor: settings.accentColor,
         backgroundImagePath: settings.backgroundImagePath,
         fadeMs: settings.fadeMs,
         backgroundFadeMs: settings.backgroundFadeMs,
