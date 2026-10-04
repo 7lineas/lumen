@@ -83,6 +83,7 @@
     "globals": "^16.0.0",
     "portless": "^0.13.1",
     "pptxgenjs": "^4.0.1",
+    "resedit": "^1.7.2",
     "sharp": "^0.35.5",
     "typescript": "^5.8.2",
     "typescript-eslint": "^8.26.0",
@@ -97,6 +98,7 @@
     "directories": {
       "output": "release"
     },
+    "afterPack": "scripts/after-pack.cjs",
     "files": [
       "dist/**/*",
       "dist-electron/**/*",
@@ -104,6 +106,10 @@
       "build/icon.png"
     ],
     "extraResources": [
+      {
+        "from": "build/icon.ico",
+        "to": "icon.ico"
+      },
       {
         "from": "data/bibles",
         "to": "data/bibles",
@@ -139,6 +145,9 @@
       "artifactName": "${productName}-${version}-${os}-${arch}.${ext}"
     },
     "nsis": {
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico",
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "installerLanguages": [
