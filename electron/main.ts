@@ -51,6 +51,16 @@ let projectorReady = false;
 let pendingProjectorPayload: ProjectorPayload | null = null;
 const isDev = !app.isPackaged && process.env.PROYECTOR_SCREENSHOT !== "1";
 
+// Video and audio elements need the stream privilege when served through a
+// custom protocol. Without it Chromium can load an image but leaves videos
+// black because media range/stream requests are rejected.
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: "lumen-media",
+    privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true },
+  },
+]);
+
 function devServerUrl(): string {
   const fromPlugin = process.env.VITE_DEV_SERVER_URL;
   if (fromPlugin) return fromPlugin.endsWith("/") ? fromPlugin : `${fromPlugin}/`;

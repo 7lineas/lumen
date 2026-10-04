@@ -1143,7 +1143,7 @@ button.song-row-main:hover { border: 0; }
 .background-gallery { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .background-choice-wrap { position: relative; display: flex; flex-direction: column; gap: 0.25rem; align-items: stretch; }
 .background-choice { width: 5.5rem; height: 3.4rem; padding: 0; overflow: hidden; border: 1px solid #3a404a; border-radius: 4px; background: transparent; cursor: pointer; }
-.background-choice img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.background-choice img, .background-choice video { width: 100%; height: 100%; object-fit: cover; display: block; }
 .background-choice.active { outline: 2px solid var(--accent); outline-offset: 1px; }
 .background-solid.active { border-color: var(--accent); color: var(--accent); }
 .background-delete { position: absolute; top: 50%; left: 50%; min-height: 1.6rem; padding: 0.15rem 0.35rem; font-size: 0.7rem; opacity: 0; transform: translate(-50%, -50%); transition: opacity 120ms ease; }
