@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 
-import type { AppSettings, HistoryEntry, ProjectorPayload, QueueEntry, StoredSong } from "../shared/types";
+import type { AppSettings, HistoryEntry, ProjectorPayload, QueueEntry, StoredSong, StoredSlideDeck, SlideImportResult } from "../shared/types";
 
 export interface DisplayInfo {
   id: number;
@@ -74,6 +74,14 @@ export interface ProyectorApi {
   setFavorites: (f: QueueEntry[]) => Promise<QueueEntry[]>;
   getSongs: () => Promise<StoredSong[]>;
   setSongs: (songs: StoredSong[]) => Promise<StoredSong[]>;
+  getSlideDecks: () => Promise<StoredSlideDeck[]>;
+  setSlideDecks: (decks: StoredSlideDeck[]) => Promise<StoredSlideDeck[]>;
+  importSlideDeck: () => Promise<SlideImportResult | null>;
+  discardSlideSource: (file: string) => Promise<boolean>;
+  readSlideSource: (file: string) => Promise<string | null>;
+  saveSlidePngs: (images: string[]) => Promise<string[] | null>;
+  convertPptx: (request: { deckId: string; file: string; total: number }) => Promise<{ ok: true; images: string[] } | { ok: false; error: string }>;
+  onSlideProgress: (callback: (progress: { deckId: string; done: number; total: number }) => void) => () => void;
   listDisplays: () => Promise<DisplayInfo[]>;
   openProjector: () => Promise<boolean>;
   getProjectorBounds: () => Promise<{ width: number; height: number } | null>;

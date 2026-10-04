@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import type { ProjectorPayload } from "@shared/types";
+import type { MediaFit, ProjectorPayload } from "@shared/types";
 import { DEFAULT_SETTINGS } from "@shared/types";
+import { backgroundImageUrl } from "@shared/background-image";
 import { FadingBackgroundMedia } from "@/components/BackgroundMedia";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -19,15 +20,19 @@ interface Props {
   displayWidth?: number;
   /** Short label shown next to the title, e.g. "16:9 · 1920×1080". */
   ratioLabel?: string;
+  /** How background media fills the screen (settings.backgroundFit). */
+  backgroundFit?: MediaFit;
+  /** How a diapositiva image fills the screen (settings.slideFit). */
+  slideFit?: MediaFit;
 }
 
 function contentKey(p: ProjectorPayload | null): string {
   if (!p || p.mode === "blank") return "blank";
   if (p.mode === "logo") return `logo:${p.churchName}`;
-  return `verse:${p.referenceLabel}|${p.blocks.map((b) => `${b.label ?? ""}=${b.text}`).join("|")}`;
+  return `${p.mode}:${p.referenceLabel}|${p.slideImagePath ?? ""}|${p.blocks.map((b) => `${b.label ?? ""}=${b.text}`).join("|")}`;
 }
 
-export function StageMonitor({ title, payload, empty, testId, isLive, aspectRatio, displayWidth, ratioLabel }: Props) {
+export function StageMonitor({ title, payload, empty, testId, isLive, aspectRatio, displayWidth, ratioLabel, backgroundFit = DEFAULT_SETTINGS.backgroundFit, slideFit = DEFAULT_SETTINGS.slideFit }: Props) {
   // Live monitor mirrors the projector: fade out old content, swap, fade in.
   // Preview renders instantly (no fade).
   // The inner screen renders at the real projector aspect ratio so the
@@ -96,14 +101,18 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
   const projectorFontPx = renderPayload?.fontSize ?? DEFAULT_SETTINGS.fontSize;
   const fadeMs = Math.max(0, renderPayload?.fadeMs ?? DEFAULT_SETTINGS.fadeMs);
   const isLogo = renderPayload?.mode === "logo";
-  const projecting = renderPayload?.mode === "verse" || renderPayload?.mode === "logo";
+  const projecting = renderPayload?.mode === "verse" || renderPayload?.mode === "slides" || renderPayload?.mode === "logo";
   const label = renderPayload?.referenceLabel ?? "";
   const sep = label.lastIndexOf(" — ");
   const ref = sep < 0 ? label : label.slice(0, sep);
   const version = sep < 0 ? "" : label.slice(sep + 3);
   const referenceColor = renderPayload?.referenceColor ?? "#f6a623";
   const versionColor = renderPayload?.versionColor ?? "#f6a623";
-  const backgroundPath = renderPayload?.backgroundImagePath;
+  // Same rule as the projector: slides => solid color background, switched
+  // from the incoming payload (not the lagging displayed one) so it fades in
+  // parallel with the slide.
+  const slidesActive = (isLive ? payload : renderPayload)?.mode === "slides";
+  const backgroundPath = slidesActive ? undefined : renderPayload?.backgroundImagePath;
   const backgroundFadeMs = Math.max(0, renderPayload?.backgroundFadeMs ?? DEFAULT_SETTINGS.backgroundFadeMs);
   const pad = renderPayload?.padding ?? DEFAULT_SETTINGS.padding;
 
@@ -194,10 +203,14 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
   // line breaks match after the screen is reduced into the fixed card.
   const bodyFitPx = fitPx * 0.84;
 
+  const slideImage = renderPayload?.mode === "slides" ? renderPayload.slideImagePath ?? null : null;
   const screenContent = (
     <>
       {!renderPayload && empty && <p className="monitor-screen-empty">{empty}</p>}
       {isLogo && <p className="monitor-screen-logo" style={{ fontSize: `${fitPx * 0.65}px` }}>{renderPayload?.churchName}</p>}
+      {slideImage && (
+        <img src={backgroundImageUrl(slideImage)} alt="" className="monitor-screen-slide" style={{ objectFit: slideFit }} />
+      )}
       {renderPayload?.mode === "verse" && (
         <>
           {ref && <header className="monitor-screen-ref" style={{ color: referenceColor, fontSize: `${fitPx * 0.5}px` }}>{ref}</header>}
@@ -257,7 +270,8 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
             width: screenSize ? `${screenSize.width}px` : "100%",
             height: screenSize ? `${screenSize.height}px` : "auto",
             aspectRatio: screenAspect,
-            padding: `${pad}%`,
+            // A diapositiva image is full-bleed: the text padding must not shrink it.
+            padding: slideImage ? 0 : `${pad}%`,
           }}
         >
           <div
@@ -268,7 +282,7 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
               filter: `brightness(${brightness})`,
             }}
           />
-          <FadingBackgroundMedia path={backgroundPath} brightness={brightness} fadeMs={backgroundFadeMs} className="monitor-background-media" />
+          <FadingBackgroundMedia path={backgroundPath} brightness={brightness} fadeMs={backgroundFadeMs} fit={backgroundFit} className="monitor-background-media" />
           <div
             className={`monitor-screen-fade ${!isLive || visible ? "show" : ""}`}
             style={{ transitionDuration: `${fadeMs}ms` }}

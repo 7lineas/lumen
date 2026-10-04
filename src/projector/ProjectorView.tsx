@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { AppSettings, ProjectorPayload } from "@shared/types";
 import { DEFAULT_SETTINGS } from "@shared/types";
+import { backgroundImageUrl } from "@shared/background-image";
 import { FadingBackgroundMedia } from "@/components/BackgroundMedia";
 
 const EMPTY: ProjectorPayload = {
@@ -25,7 +26,7 @@ function splitReference(label: string): { ref: string; version: string } {
 function contentKey(p: ProjectorPayload): string {
   if (p.mode === "blank") return "blank";
   if (p.mode === "logo") return `logo:${p.churchName}`;
-  return `verse:${p.referenceLabel}|${p.blocks.map((b) => `${b.label ?? ""}=${b.text}`).join("|")}`;
+  return `${p.mode}:${p.referenceLabel}|${p.slideImagePath ?? ""}|${p.blocks.map((b) => `${b.label ?? ""}=${b.text}`).join("|")}`;
 }
 
 export function ProjectorView() {
@@ -34,6 +35,10 @@ export function ProjectorView() {
   const [payload, setPayload] = useState<ProjectorPayload>(EMPTY);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [visible, setVisible] = useState(false);
+  // True as soon as a slides payload arrives (and false as soon as anything
+  // else does), without waiting for the content fade: the background must
+  // change to solid color / back to media in parallel with the slide fade.
+  const [slidesActive, setSlidesActive] = useState(false);
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
   const displayedRef = useRef<ProjectorPayload>(EMPTY);
@@ -59,6 +64,7 @@ export function ProjectorView() {
       });
     };
     const off = api.onProjectorUpdate((p) => {
+      setSlidesActive(p.mode === "slides");
       const ms = Math.max(0, p.fadeMs ?? settingsRef.current.fadeMs ?? DEFAULT_SETTINGS.fadeMs);
       if (timerRef.current !== null) {
         clearTimeout(timerRef.current);
@@ -152,10 +158,12 @@ export function ProjectorView() {
   // Background media is an application setting, so it must stay identical to
   // the operator's preview/live monitors even when the last payload was sent
   // before the user changed the selected image or video.
-  const backgroundPath = settings.backgroundImagePath;
+  // While slides are shown the background is always the solid color (the
+  // media fades out over backgroundFadeMs and fades back in when they hide).
+  const backgroundPath = slidesActive ? undefined : settings.backgroundImagePath;
   const backgroundFadeMs = Math.max(0, payload.backgroundFadeMs ?? settings.backgroundFadeMs ?? DEFAULT_SETTINGS.backgroundFadeMs);
   const backgroundMedia = (
-    <FadingBackgroundMedia path={backgroundPath} brightness={brightness} fadeMs={backgroundFadeMs} className="projector-background-media" />
+    <FadingBackgroundMedia path={backgroundPath} brightness={brightness} fadeMs={backgroundFadeMs} fit={settings.backgroundFit ?? DEFAULT_SETTINGS.backgroundFit} className="projector-background-media" />
   );
   const style: React.CSSProperties = {
     fontSize: `${fitSize}px`,
@@ -200,6 +208,23 @@ export function ProjectorView() {
     payload.referenceColor ?? settings.accentColor ?? legacyColors.referenceColor ?? "#f6a623";
   const versionColor =
     payload.versionColor ?? settings.accentColor ?? legacyColors.versionColor ?? "#f6a623";
+
+  const slideImage = payload.mode === "slides" ? payload.slideImagePath ?? null : null;
+  const slideImageUrl = slideImage ? backgroundImageUrl(slideImage) ?? undefined : undefined;
+
+  if (slideImage && slideImageUrl) {
+    return (
+      // A diapositiva is full-bleed: no content padding / max width, so
+      // "Cubrir" and "Ajustar" are relative to the whole screen (same as the monitors).
+      <div className={themeClass} style={{ ...style, padding: 0 }}>
+        <div className="projector-background-layer" style={backgroundStyle} />
+        {backgroundMedia}
+        <div className={`projector-inner projector-inner-slide fade ${visible ? "show" : ""}`} style={fadeStyle}>
+          <img src={slideImageUrl} alt="" className="projector-slide" style={{ objectFit: settings.slideFit ?? DEFAULT_SETTINGS.slideFit }} />
+        </div>
+      </div>
+    );
+  }
 
   return (
       <div className={themeClass} style={style}>

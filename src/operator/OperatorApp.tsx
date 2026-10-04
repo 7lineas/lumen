@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
+import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Palette } from "lucide-react";
@@ -27,6 +28,8 @@ import { StageMonitor } from "./StageMonitor";
 import { ChapterReader } from "./ChapterReader";
 import { ServiceRundown } from "./ServiceRundown";
 import { SongsWorkspace, type SongStage } from "./SongsWorkspace";
+import { SlidesWorkspace, type SlideStage } from "./SlidesWorkspace";
+import { FitToggle } from "./FitToggle";
 import { UpdateButton } from "./UpdateButton";
 import lumenLogo from "../lumen-icon.png";
 
@@ -93,10 +96,13 @@ export function OperatorApp() {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [queue, setQueue] = useState<QueueEntry[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [mode, setMode] = useState<"biblia" | "canciones">("biblia");
+  const [mode, setMode] = useState<"biblia" | "canciones" | "diapositivas">("biblia");
   const [songStaged, setSongStaged] = useState<SongStage | null>(null);
   const [songSelectedId, setSongSelectedId] = useState<string | null>(null);
   const [songLive, setSongLive] = useState<SongStage | null>(null);
+  const [slideStaged, setSlideStaged] = useState<SlideStage | null>(null);
+  const [slideSelectedId, setSlideSelectedId] = useState<string | null>(null);
+  const [slideLive, setSlideLive] = useState<SlideStage | null>(null);
   const [projectOnClick, setProjectOnClick] = useState(false);
   const [overlay, setOverlay] = useState<"ajustes" | "acerca" | "biblias" | null>(null);
   // Keep rendering the last non-null overlay while the sheet plays its
@@ -111,6 +117,7 @@ export function OperatorApp() {
   const [libraryTick, setLibraryTick] = useState(0);
   const [projectorBounds, setProjectorBounds] = useState<{ width: number; height: number } | null>(null);
   const lastVerse = useRef<ProjectorPayload | null>(null);
+  const lastContent = useRef<ProjectorPayload | null>(null);
   const booted = useRef(false);
 
   // Track the real projector window size so the live/preview monitors
@@ -282,7 +289,7 @@ export function OperatorApp() {
     stageRange(liveRange);
   }, [mode, staged, liveRange, stageRange]);
 
-  const switchMode = useCallback((next: "biblia" | "canciones") => {
+  const switchMode = useCallback((next: "biblia" | "canciones" | "diapositivas") => {
     setMode(next);
     if (next !== "biblia" || staged) return;
     if (liveRange) {
@@ -308,6 +315,11 @@ export function OperatorApp() {
     setLive(payload);
     if (payload.mode === "verse") {
       lastVerse.current = payload;
+    }
+    // Any projected content (verse/song/slide) is restorable: "Limpiar"
+    // only removes the text above the permanent background.
+    if (payload.mode !== "blank") {
+      lastContent.current = payload;
       setHasLiveContent(true);
     }
     await window.proyector?.showOnProjector(payload);
@@ -344,6 +356,18 @@ export function OperatorApp() {
     fadeMs: settings.songFadeMs,
     backgroundFadeMs: settings.backgroundFadeMs,
   }), [settings]);
+
+  const slidePayload = useCallback((imagePath: string | null): ProjectorPayload => ({
+    ...songPayload("", ""),
+    mode: "slides",
+    // A diapositiva is just its image: no text blocks.
+    blocks: [],
+    slideImagePath: imagePath,
+    // Slides fade in/out/between with the same backgroundFadeMs as the
+    // background media (no separate setting), and the background switches to
+    // the solid color while they are shown (see ProjectorView / StageMonitor).
+    fadeMs: settings.backgroundFadeMs,
+  }), [songPayload, settings.backgroundFadeMs]);
 
   const songPreviewPayload = useMemo<ProjectorPayload | null>(() => {
     if (!songStaged || songStaged.slides.length === 0) return null;
@@ -399,16 +423,68 @@ export function OperatorApp() {
     await send(songPayload(next.title, text));
   }, [songLive, send, songPayload]);
 
+  const selectSlideDeck = useCallback((id: string, title: string, images: string[]) => {
+    setSlideSelectedId(id);
+    setSlideStaged(images.length ? { deckId: id, title, images, index: 0 } : null);
+  }, []);
+  const clearSlideSelection = useCallback(() => { setSlideSelectedId(null); setSlideStaged(null); }, []);
+  // Removing the deck that is on screen stops showing it: the projector fades
+  // the slide out (backgroundFadeMs) and the normal background returns.
+  const slideDeckRemoved = useCallback((id: string) => {
+    if (slideLive?.deckId !== id) return;
+    setSlideLive(null);
+    void send(blankPayload(settings, settings.backgroundFadeMs));
+  }, [slideLive, send, settings]);
+  const selectSlide = useCallback((index: number) => {
+    setSlideStaged((current) => {
+      if (!current || current.images.length === 0) return current;
+      const clamped = Math.min(Math.max(index, 0), current.images.length - 1);
+      if (clamped === current.index) return current;
+      const next = { ...current, index: clamped };
+      if (projectOnClick) {
+        const image = next.images[clamped] ?? null;
+        // Defer the projection out of the state updater to avoid
+        // double-sends under StrictMode double-invocation.
+        queueMicrotask(() => {
+          setSlideLive(next);
+          void send(slidePayload(image));
+        });
+      }
+      return next;
+    });
+  }, [projectOnClick, send, slidePayload]);
+  const slidePreviewPayload = useMemo<ProjectorPayload | null>(() => {
+    if (!slideStaged || slideStaged.images.length === 0) return null;
+    const index = Math.min(Math.max(slideStaged.index, 0), slideStaged.images.length - 1);
+    return slidePayload(slideStaged.images[index] ?? null);
+  }, [slideStaged, slidePayload]);
+  const projectSlideStaged = useCallback(async () => {
+    if (!slideStaged || slideStaged.images.length === 0) return;
+    const index = Math.min(Math.max(slideStaged.index, 0), slideStaged.images.length - 1);
+    setSlideLive(slideStaged);
+    await send(slidePayload(slideStaged.images[index] ?? null));
+  }, [slideStaged, send, slidePayload]);
+  const navigateSlidePreview = useCallback((delta: number) => { setSlideStaged((current) => current && current.images.length ? { ...current, index: Math.min(Math.max(current.index + delta, 0), current.images.length - 1) } : current); }, []);
+  const navigateSlideLive = useCallback(async (delta: number) => {
+    const current = slideLive;
+    if (!current || current.images.length === 0) return;
+    const index = Math.min(Math.max(current.index + delta, 0), current.images.length - 1);
+    if (index === current.index) return;
+    const next = { ...current, index };
+    setSlideLive(next);
+    await send(slidePayload(next.images[index] ?? null));
+  }, [slideLive, send, slidePayload]);
+
   const showBlank = useCallback(async () => {
-    // "Limpiar" clears only the text (verse/song). Background color and
+    // "Limpiar" clears only the text (verse/song/slide). Background color and
     // media stay so the projector keeps showing them behind empty content.
     // The blank transition uses the current workspace's fade setting.
-    await send(blankPayload(settings, mode === "canciones" ? settings.songFadeMs : settings.fadeMs));
+    await send(blankPayload(settings, mode === "diapositivas" ? settings.backgroundFadeMs : mode === "canciones" ? settings.songFadeMs : settings.fadeMs));
   }, [send, settings, mode]);
 
   const toggleBlank = useCallback(async () => {
     if (live?.mode === "blank") {
-      if (lastVerse.current) await send(chrome(lastVerse.current));
+      if (lastContent.current) await send(chrome(lastContent.current));
       return;
     }
     await showBlank();
@@ -681,28 +757,41 @@ export function OperatorApp() {
             <Button type="button" data-testid="mode-canciones" className={mode === "canciones" ? "active" : ""} onClick={() => switchMode("canciones")}>
               Canciones
             </Button>
+            <Button type="button" data-testid="mode-diapositivas" className={mode === "diapositivas" ? "active" : ""} onClick={() => switchMode("diapositivas")}>
+              Diapositivas
+            </Button>
             <span className="top-sep" aria-hidden />
             <UpdateButton />
           </div>
         </div>
         <div className="top-right">
-          <label className="version-select">
-            Versión
-            <Select
-              value={settings.primaryVersionId}
-              items={versions.map((v) => ({ value: v.id, label: v.abbr }))}
-              onValueChange={(value) => value && void applyChrome({ ...settings, primaryVersionId: value })}
-            >
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-              {versions.map((v) => (
-                <SelectItem key={v.id} value={v.id}>
-                  {v.abbr}
-                </SelectItem>
-              ))}
-              </SelectContent>
-            </Select>
-          </label>
+          {mode === "biblia" && (
+            <label className="version-select">
+              Versión
+              <Select
+                value={settings.primaryVersionId}
+                items={versions.map((v) => ({ value: v.id, label: v.abbr }))}
+                onValueChange={(value) => value && void applyChrome({ ...settings, primaryVersionId: value })}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                {versions.map((v) => (
+                  <SelectItem key={v.id} value={v.id}>
+                    {v.abbr}
+                  </SelectItem>
+                ))}
+                </SelectContent>
+              </Select>
+            </label>
+          )}
+          {mode === "diapositivas" && (
+            <FitToggle
+              label="Diapositivas"
+              testId="slide-fit"
+              value={settings.slideFit}
+              onChange={(slideFit) => void applyChrome({ ...settings, slideFit })}
+            />
+          )}
           <span className="top-sep" aria-hidden />
           <div className="tabs">
             <Button
@@ -732,7 +821,7 @@ export function OperatorApp() {
         </div>
       </header>
 
-      <div className={`workspace ${mode === "canciones" ? "songs-mode" : ""}`}>
+      <div className={`workspace ${mode !== "biblia" ? "songs-mode" : ""}`}>
         {mode === "canciones" ? (
           <SongsWorkspace
             staged={songStaged}
@@ -742,7 +831,16 @@ export function OperatorApp() {
             onSelectSong={selectSong}
             onSelectPart={selectSongPart}
           />
-        ) : <ChapterReader
+        ) : mode === "diapositivas" ? <SlidesWorkspace
+          staged={slideStaged}
+          selectedId={slideSelectedId}
+          projectOnClick={projectOnClick}
+          onToggleProjectOnClick={setProjectOnClick}
+          onSelectDeck={selectSlideDeck}
+          onSelectSlide={selectSlide}
+          onClearSelection={clearSlideSelection}
+          onDeckRemoved={slideDeckRemoved}
+        /> : <ChapterReader
           versionId={settings.primaryVersionId}
           ready={ready}
           viewBook={viewBook}
@@ -786,12 +884,14 @@ export function OperatorApp() {
             <div className="monitor-col">
               <StageMonitor
                 title="Vista previa"
-                payload={mode === "canciones" ? songPreviewPayload : previewPayload}
-                empty={mode === "canciones" ? "Elija una parte de la canción" : "Elija un versículo"}
+                payload={mode === "canciones" ? songPreviewPayload : mode === "diapositivas" ? slidePreviewPayload : previewPayload}
+                empty={mode === "canciones" ? "Elija una parte de la canción" : mode === "diapositivas" ? "Elija una diapositiva" : "Elija un versículo"}
                 testId="preview-box"
                 aspectRatio={projectorAspect}
                 displayWidth={projectorBounds?.width}
                 ratioLabel={projectorRatioLabel}
+                backgroundFit={settings.backgroundFit}
+                slideFit={settings.slideFit}
               />
               <div className="action-row">
                 {mode === "canciones" ? <>
@@ -804,6 +904,10 @@ export function OperatorApp() {
                   <Button type="button" onClick={() => navigateSongPreview(1)}>
                     Siguiente ▶
                   </Button>
+                </> : mode === "diapositivas" ? <>
+                  <Button type="button" className="primary" data-testid="btn-project" onClick={() => void projectSlideStaged()}>Proyectar</Button>
+                  <Button type="button" onClick={() => navigateSlidePreview(-1)}>◀ Anterior</Button>
+                  <Button type="button" onClick={() => navigateSlidePreview(1)}>Siguiente ▶</Button>
                 </> : <>
                   <Button type="button" className="primary" data-testid="btn-project" onClick={() => void projectStaged()}>
                     Proyectar
@@ -826,6 +930,8 @@ export function OperatorApp() {
                 aspectRatio={projectorAspect}
                 displayWidth={projectorBounds?.width}
                 ratioLabel={projectorRatioLabel}
+                backgroundFit={settings.backgroundFit}
+                slideFit={settings.slideFit}
               />
               <div className="action-row">
                 <Button
@@ -843,6 +949,9 @@ export function OperatorApp() {
                   <Button type="button" data-testid="btn-live-next" onClick={() => void navigateSongLive(1)}>
                     Siguiente ▶
                   </Button>
+                </> : mode === "diapositivas" ? <>
+                  <Button type="button" data-testid="btn-live-prev" onClick={() => void navigateSlideLive(-1)}>◀ Anterior</Button>
+                  <Button type="button" data-testid="btn-live-next" onClick={() => void navigateSlideLive(1)}>Siguiente ▶</Button>
                 </> : <>
                   <Button type="button" data-testid="btn-live-prev" onClick={() => void navigateLive(-1)}>
                     ◀ Anterior
@@ -895,6 +1004,8 @@ export function OperatorApp() {
               >
                 Color sólido
               </Button>
+              {/* Colors (picker + solid) | media (add / delete / fit) */}
+              <Separator orientation="vertical" className="stage-background-sep" />
               <Button
                 type="button"
                 onClick={async () => {
@@ -916,6 +1027,12 @@ export function OperatorApp() {
                   {deletingMedia ? "Cancelar eliminación" : "Eliminar media"}
                 </Button>
               )}
+              <FitToggle
+                label="Media de fondo"
+                testId="media-fit"
+                value={settings.backgroundFit}
+                onChange={(backgroundFit) => void applyChrome({ ...settings, backgroundFit })}
+              />
             </div>
             {(settings.backgroundImages ?? []).length > 0 && (
               <div className="background-gallery" aria-label="Imágenes de fondo guardadas">
@@ -937,7 +1054,7 @@ export function OperatorApp() {
             )}
           </div>
           <div className="stage-tweaks">
-            <label className="tweak">
+            {mode !== "diapositivas" && <label className="tweak">
               <span className="tweak-head">
                 <span>Fuente</span>
                 <span className="tweak-val">{settings.fontSize}px</span>
@@ -951,7 +1068,7 @@ export function OperatorApp() {
                   void applyChrome({ ...settings, fontSize: next ?? settings.fontSize });
                 }}
               />
-            </label>
+            </label>}
             <label className="tweak">
               <span className="tweak-head">
                 <span>Luz</span>
@@ -967,7 +1084,7 @@ export function OperatorApp() {
                 }}
               />
             </label>
-            <label className="tweak">
+            {mode !== "diapositivas" && <label className="tweak">
               <span className="tweak-head">
                 <span>Padding</span>
                 <span className="tweak-val">{settings.padding}vw</span>
@@ -981,7 +1098,7 @@ export function OperatorApp() {
                   void applyChrome({ ...settings, padding: next ?? settings.padding });
                 }}
               />
-            </label>
+            </label>}
           </div>
         </section>
 

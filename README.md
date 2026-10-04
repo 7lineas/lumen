@@ -36,6 +36,21 @@ Aplicación de escritorio **offline** para proyectar versículos de la Biblia en
 - **Ajustes**: pantalla, dos versiones lado a lado, tema, fuente, fondo.
 - **Acerca de**: versiones de la Biblia incluidas y licencias.
 
+## Diapositivas
+
+Pestaña **Diapositivas**: importa presentaciones y proyéctalas como imágenes.
+
+| Formato | Cómo se muestra |
+| --- | --- |
+| `.pptx` / `.ppsx` | Se renderiza a PNG dentro de la app (pptx-glimpse + resvg WASM, en un proceso aparte de Electron). Usa las **fuentes instaladas en el equipo**: si falta una (p. ej. Calibri en macOS) se sustituye por otra. |
+| `.pdf` | Se rasteriza con pdf.js (build *legacy*, compatible con el Chromium de Electron 34). |
+| `.png` / `.jpg` / `.webp` | Tal cual. Varias imágenes a la vez forman una sola presentación, en orden natural (Diapositiva2 antes que Diapositiva10). |
+| Keynote (`.key`), `.ppt`, `.odp` | No se pueden renderizar sin otra aplicación: la app pide exportar a **PDF o PPTX**. |
+
+Solo se guardan **imágenes** (una PNG por diapositiva, más el título): no se extrae ni guarda el texto de las diapositivas. Si la conversión falla se muestra el error con **Reintentar** y no se guarda nada. El original se copia a `userData/slide-decks` solo mientras se convierte (y se borra al terminar); las imágenes van a `userData/slide-images`; solo `slide-images` (y `background-images`) se sirven por el protocolo `lumen-media`. No hace falta instalar nada extra ni copiar archivos WASM: el renderizado de PPTX no usa `vendor/`. `pptx-glimpse` se carga desde `node_modules` (externo al bundle de `vite.config.ts`), porque su entrada Node lee el `.wasm` de resvg y las fuentes en tiempo de ejecución.
+
+**Cubrir / Ajustar.** En el encabezado (solo en modo Diapositivas) se elige si las diapositivas cubren la pantalla (recorte) o se ajustan enteras (por defecto). Junto a "Añadir media" hay otro control igual para el fondo de imagen/video (por defecto: Cubrir). Ambos se guardan en los ajustes.
+
 ## Atajos de teclado
 
 | Tecla | Acción |

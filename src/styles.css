@@ -362,6 +362,8 @@ button.primary {
   transition: opacity 0.35s ease;
 }
 
+.projector-inner-slide { max-width: none; }
+
 .projector-inner.show {
   opacity: 1;
 }
@@ -410,6 +412,36 @@ button.primary {
 .projector-text {
   white-space: pre-wrap;
   margin: 0;
+}
+
+.projector-slide {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  flex: 1 1 auto;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.monitor-screen-slide {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+/* Thumbnail = the whole slide image: no border, radius, padding or cropping. */
+button.song-part .song-part-thumb {
+  width: 4.5rem;
+  height: auto;
+  flex: none;
+  object-fit: contain;
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
 }
 
 .projector-col-label {
@@ -1266,6 +1298,9 @@ select:focus-visible {
 }
 
 .song-presenter { grid-column: 3; grid-row: 1; }
+.slides-library-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; margin-bottom: 1rem; }
+.slides-library-head h2 { margin: 0; font-size: 1.05rem; }
+.slides-library-head button { flex: none; }
 .songs-panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; margin-bottom: 1rem; }
 .songs-panel-head h2, .song-presenter h2 { margin: 0; font-size: 1.05rem; }
 .eyebrow { color: var(--accent); font-size: 0.7rem; letter-spacing: 0.08em; margin: 0 0 0.2rem; text-transform: uppercase; }
@@ -1305,7 +1340,11 @@ button.song-part.selected, button.song-part.selected:hover { background: #1e3a5f
 .song-slides { display: flex; flex-wrap: wrap; gap: 0.3rem; margin: 0.65rem 0; }
 .song-project-toggle { display: flex; align-items: center; gap: 0.5rem; color: var(--muted); font-size: 0.8rem; margin-top: 0.6rem; cursor: pointer; }
 .stage-background { display: flex; flex-direction: column; gap: 0.45rem; color: var(--muted); font-size: 0.8rem; border-top: 1px solid #292d34; padding-top: 0.65rem; }
-.stage-background-row { display: flex; gap: 0.5rem; align-items: center; }
+.stage-background-row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+.stage-background-sep { width: 1px; flex: none; align-self: stretch; min-height: 1.75rem; margin-inline: 0.15rem; background: #4a515c; }
+.fit-toggle button { border-color: #3a404a; color: var(--muted); background: transparent; }
+.fit-toggle button[data-pressed] { background: var(--accent); border-color: var(--accent); color: #061018; }
+.top-right .fit-toggle { margin-left: 0; }
 .background-gallery { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .background-choice-wrap { position: relative; display: flex; flex-direction: column; gap: 0.25rem; align-items: stretch; }
 .background-choice { width: 5.5rem; height: 3.4rem; padding: 0; overflow: hidden; border: 1px solid #3a404a; border-radius: 4px; background: transparent; cursor: pointer; }
