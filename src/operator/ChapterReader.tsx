@@ -2,7 +2,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { BOOKS } from "@shared/books";
-import type { VerseRange } from "@shared/types";
+import type { VerseRange } from "@shared/reference";
 import { getBible } from "@shared/bible-service";
 
 interface SearchHit {

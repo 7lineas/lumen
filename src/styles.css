@@ -325,6 +325,8 @@ button.primary {
 .projector {
   width: 100vw;
   height: 100vh;
+  font-family: inherit;
+  font-synthesis: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -349,6 +351,9 @@ button.primary {
 .projector-inner {
   width: 100%;
   max-width: 1600px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
   opacity: 0;
   transition: opacity 0.35s ease;
 }
@@ -358,20 +363,24 @@ button.primary {
 }
 
 .projector-ref {
-  position: absolute;
-  top: 2.5vh;
-  left: 5vw;
-  right: 5vw;
+  flex: none;
   text-align: start;
   font-size: 0.5em;
   opacity: 0.95;
-  margin: 0;
+  margin: 0 0 0.35em;
   font-weight: 700;
   pointer-events: none;
   color: var(--accent);
 }
 
 .projector-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   text-align: center;
   line-height: 1.35;
   font-weight: 500;
@@ -381,7 +390,17 @@ button.primary {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 2rem;
+  align-content: center;
   text-align: left;
+}
+
+.projector-footer {
+  flex: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1em;
+  margin-top: 0.5em;
 }
 
 .projector-text {
@@ -653,7 +672,10 @@ button.primary {
 
 .monitor {
   position: relative;
-  min-height: 210px;
+  font-family: inherit;
+  font-synthesis: none;
+  height: 300px;
+  min-height: 0;
   border-radius: 12px;
   padding: 0;
   display: flex;
@@ -666,12 +688,14 @@ button.primary {
 .monitor-screen {
   position: relative;
   width: 100%;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  min-height: 0;
   flex: none;
   aspect-ratio: 16 / 9;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
+  flex-direction: column;
   overflow: hidden;
   padding: 5%;
   border: 0;
@@ -685,8 +709,7 @@ button.primary {
   width: 100%;
   height: 100%;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
   opacity: 0;
   transition: opacity 0.35s ease;
 }
@@ -696,19 +719,22 @@ button.primary {
 }
 
 .monitor-screen-ref {
-  position: absolute;
-  top: 4%;
-  left: 5%;
-  right: 5%;
+  flex: none;
   text-align: start;
-  margin: 0;
+  margin: 0 0 0.35em;
   font-weight: 700;
   line-height: 1.25;
   pointer-events: none;
 }
 
 .monitor-screen-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   text-align: center;
   line-height: 1.35;
   font-weight: 500;
@@ -719,6 +745,7 @@ button.primary {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.5em;
+  align-content: center;
   text-align: left;
   font-size: 0.85em;
 }
@@ -736,25 +763,34 @@ button.primary {
 }
 
 .monitor-screen-logo {
-  margin: 0;
+  margin: auto;
   font-weight: 600;
   text-align: center;
   line-height: 1.25;
+  position: relative;
+  z-index: 1;
 }
 
 .monitor-screen-empty {
-  margin: 0;
+  margin: auto;
   color: var(--muted);
   font-size: 0.85rem;
   position: relative;
   z-index: 1;
 }
 
+.monitor-screen-footer {
+  flex: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1em;
+  margin-top: 0.5em;
+  position: relative;
+  z-index: 1;
+}
+
 .monitor-screen-version {
-  position: absolute;
-  bottom: 4%;
-  right: 5%;
-  left: 30%;
   margin: 0;
   text-align: end;
   line-height: 1.35;
@@ -763,9 +799,6 @@ button.primary {
 }
 
 .monitor-screen-copyright {
-  position: absolute;
-  bottom: 4%;
-  left: 5%;
   max-width: 55%;
   margin: 0;
   text-align: start;
@@ -826,8 +859,10 @@ button.primary {
 
 .projector-background-layer,
 .projector-background-video,
+.projector-background-media,
 .monitor-background-layer,
-.monitor-background-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; z-index: 0; }
+.monitor-background-video,
+.monitor-background-media { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; pointer-events: none; z-index: 0; }
 .projector-inner, .monitor-fade, .monitor-screen-fade { position: relative; z-index: 1; }
 
 .monitor-fade.show {
@@ -1006,10 +1041,6 @@ button.primary {
 }
 
 .projector-version {
-  position: absolute;
-  bottom: 2.5vh;
-  right: 3vw;
-  left: 5vw;
   margin: 0;
   text-align: end;
   font-size: clamp(18px, 0.3em, 32px);
@@ -1021,9 +1052,6 @@ button.primary {
 }
 
 .projector-copyright {
-  position: absolute;
-  bottom: 2.5vh;
-  left: 5vw;
   max-width: 55%;
   margin: 0;
   text-align: start;
@@ -1042,7 +1070,7 @@ button.primary {
   text-align: center;
   font-size: 0.65em;
   font-weight: 600;
-  margin: 0;
+  margin: auto;
 }
 
 @media (max-width: 1100px) {

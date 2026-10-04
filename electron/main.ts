@@ -415,6 +415,9 @@ ipcMain.handle("settings:get", () => currentSettings());
 
 ipcMain.handle("settings:set", (_e, settings: AppSettings) => {
   store.set("settings", settings);
+  if (projectorWindow && !projectorWindow.isDestroyed()) {
+    projectorWindow.webContents.send("settings:update", settings);
+  }
   return true;
 });
 

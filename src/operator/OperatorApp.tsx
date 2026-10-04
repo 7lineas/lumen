@@ -4,10 +4,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { AppSettings, HistoryEntry, ProjectorPayload, QueueEntry, VerseRange } from "@shared/types";
+import type { AppSettings, HistoryEntry, ProjectorPayload, QueueEntry } from "@shared/types";
 import { DEFAULT_SETTINGS } from "@shared/types";
 import { useBibleLoader } from "../hooks/useBibleLoader";
-import { parseReference, formatRange, type VerseRef } from "@shared/reference";
+import { parseReference, formatRange, type VerseRange, type VerseRef } from "@shared/reference";
 import {
   fetchRangeTexts,
   getBible,
@@ -131,8 +131,8 @@ export function OperatorApp() {
   }, [settings.projectorDisplayId]);
 
   const projectorAspect = useMemo(() => {
-    if (!projectorBounds || projectorBounds.height <= 0) return "16 / 9";
-    return `${projectorBounds.width} / ${projectorBounds.height}`;
+    if (!projectorBounds || projectorBounds.height <= 0) return 16 / 9;
+    return projectorBounds.width / projectorBounds.height;
   }, [projectorBounds]);
 
   const projectorRatioLabel = useMemo(() => {
@@ -156,13 +156,17 @@ export function OperatorApp() {
   const { ready, versions, error: loadError } = useBibleLoader(versionIds, libraryTick);
 
   const previewContent = useMemo(() => {
-    if (!staged || !ready) return null;
+    // fetchRangeTexts already returns null while the selected Bible is not in
+    // the cache. Do not gate this on the loader's transient `ready` flag:
+    // switching between the song and Bible workspaces can otherwise leave the
+    // preview empty for the rest of that render cycle.
+    if (!staged) return null;
     return fetchRangeTexts(
       settings.primaryVersionId,
       settings.dualView ? settings.secondaryVersionId : null,
       staged,
     );
-  }, [staged, ready, settings.primaryVersionId, settings.dualView, settings.secondaryVersionId]);
+  }, [staged, settings.primaryVersionId, settings.dualView, settings.secondaryVersionId]);
 
   const previewPayload = useMemo<ProjectorPayload | null>(() => {
     if (!previewContent) return null;
@@ -232,6 +236,27 @@ export function OperatorApp() {
     setParseError(null);
     setRefInput(formatRange(range));
   }, []);
+
+  // The song workspace is mounted in place of the Bible reader. Keep the
+  // selected Bible range available when returning to Bible mode, including
+  // the case where the mode switch happens while a live verse is showing.
+  useEffect(() => {
+    if (mode !== "biblia" || staged || !liveRange) return;
+    stageRange(liveRange);
+  }, [mode, staged, liveRange, stageRange]);
+
+  const switchMode = useCallback((next: "biblia" | "canciones") => {
+    setMode(next);
+    if (next !== "biblia" || staged) return;
+    if (liveRange) {
+      stageRange(liveRange);
+      return;
+    }
+    const reference = lastVerse.current?.referenceLabel.split(" — ")[0];
+    if (!reference) return;
+    const parsed = parseReference(reference);
+    if (parsed.ok) stageRange(parsed.range);
+  }, [liveRange, stageRange, staged]);
 
   useEffect(() => {
     if (!ready || booted.current) return;
@@ -597,10 +622,10 @@ export function OperatorApp() {
             <h1>Lumen</h1>
           </div>
           <div className="modes">
-            <Button type="button" data-testid="mode-biblia" className={mode === "biblia" ? "active" : ""} onClick={() => setMode("biblia")}>
+            <Button type="button" data-testid="mode-biblia" className={mode === "biblia" ? "active" : ""} onClick={() => switchMode("biblia")}>
               Biblia
             </Button>
-            <Button type="button" data-testid="mode-canciones" className={mode === "canciones" ? "active" : ""} onClick={() => setMode("canciones")}>
+            <Button type="button" data-testid="mode-canciones" className={mode === "canciones" ? "active" : ""} onClick={() => switchMode("canciones")}>
               Canciones
             </Button>
             <span className="top-sep" aria-hidden />
@@ -713,7 +738,6 @@ export function OperatorApp() {
                 testId="preview-box"
                 aspectRatio={projectorAspect}
                 displayWidth={projectorBounds?.width}
-                displayHeight={projectorBounds?.height}
                 ratioLabel={projectorRatioLabel}
               />
               <div className="action-row">
@@ -749,7 +773,6 @@ export function OperatorApp() {
                 isLive
                 aspectRatio={projectorAspect}
                 displayWidth={projectorBounds?.width}
-                displayHeight={projectorBounds?.height}
                 ratioLabel={projectorRatioLabel}
               />
               <div className="action-row">

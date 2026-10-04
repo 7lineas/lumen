@@ -42,6 +42,11 @@ contextBridge.exposeInMainWorld("proyector", {
   removeBible: (id: string): Promise<{ settings: AppSettings }> => ipcRenderer.invoke("bibles:remove", id),
   getSettings: (): Promise<AppSettings> => ipcRenderer.invoke("settings:get"),
   setSettings: (s: AppSettings): Promise<boolean> => ipcRenderer.invoke("settings:set", s),
+  onSettingsUpdate: (cb: (s: AppSettings) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, settings: AppSettings) => cb(settings);
+    ipcRenderer.on("settings:update", handler);
+    return () => ipcRenderer.removeListener("settings:update", handler);
+  },
   getHistory: (): Promise<HistoryEntry[]> => ipcRenderer.invoke("history:get"),
   addHistory: (e: HistoryEntry): Promise<HistoryEntry[]> => ipcRenderer.invoke("history:add", e),
   getQueue: (): Promise<QueueEntry[]> => ipcRenderer.invoke("queue:get"),
