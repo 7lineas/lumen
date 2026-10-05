@@ -114,14 +114,6 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
 
       <label className="field checkbox">
         <Checkbox
-          checked={local.showCopyright}
-          onCheckedChange={(checked) => setLocal({ ...local, showCopyright: checked === true })}
-        />
-        <span>Mostrar la línea de copyright en el pie de la proyección</span>
-      </label>
-
-      <label className="field checkbox">
-        <Checkbox
           checked={local.dualView}
           onCheckedChange={(checked) => setLocal({ ...local, dualView: checked === true })}
         />

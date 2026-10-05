@@ -21,7 +21,6 @@ import {
 } from "@shared/bible-service";
 import { BOOKS } from "@shared/books";
 import { rangeFromVerseClick } from "@shared/stage";
-import { hasCopyrightLine, projectionCopyright } from "@shared/copyright-line";
 import { backgroundImageUrl, backgroundThumbnailUrl, isBackgroundVideo } from "@shared/background-image";
 import { AboutModal } from "./AboutModal";
 import { BiblesPanel } from "./BiblesPanel";
@@ -48,9 +47,12 @@ type StoredSettings = Partial<AppSettings> & {
 
 function mergeSettings(s: StoredSettings): AppSettings {
   const fadeMs = s.fadeMs ?? DEFAULT_SETTINGS.fadeMs;
+  // Legacy key from before the copyright footer was removed: never persisted again.
+  const rest = { ...s };
+  delete (rest as Record<string, unknown>).showCopyright;
   return {
     ...DEFAULT_SETTINGS,
-    ...s,
+    ...rest,
     accentColor:
       s.accentColor ?? s.referenceColor ?? s.versionColor ?? DEFAULT_SETTINGS.accentColor,
     fadeMs,
@@ -74,7 +76,6 @@ function blankPayload(s: AppSettings, fadeMs?: number): ProjectorPayload {
     padding: s.padding,
     theme: s.theme,
     backgroundColor: s.backgroundColor,
-    copyright: "",
     referenceColor: s.accentColor,
     versionColor: s.accentColor,
     fadeMs: fadeMs ?? s.fadeMs,
@@ -301,22 +302,13 @@ export function OperatorApp() {
       padding: settings.padding,
       theme: settings.theme,
       backgroundColor: settings.backgroundColor,
-      copyright: projectionCopyright(
-        primaryId,
-        settings.dualView ? settings.secondaryVersionId : null,
-        settings.showCopyright,
-      ),
-      hasCopyright: hasCopyrightLine(
-        primaryId,
-        settings.dualView ? settings.secondaryVersionId : null,
-      ),
       referenceColor: settings.accentColor,
       versionColor: settings.accentColor,
       backgroundImagePath: settings.backgroundImagePath,
       fadeMs: settings.fadeMs,
       backgroundFadeMs: settings.backgroundFadeMs,
     };
-  }, [previewContent, settings, primaryId]);
+  }, [previewContent, settings]);
 
   const chrome = useCallback(
     (base: ProjectorPayload): ProjectorPayload => ({
@@ -327,21 +319,6 @@ export function OperatorApp() {
       padding: settings.padding,
       theme: settings.theme,
       backgroundColor: settings.backgroundColor,
-      copyright:
-        base.mode === "verse"
-          ? projectionCopyright(
-              primaryId,
-              settings.dualView ? settings.secondaryVersionId : null,
-              settings.showCopyright,
-            )
-          : "",
-      hasCopyright:
-        base.mode === "verse"
-          ? hasCopyrightLine(
-              primaryId,
-              settings.dualView ? settings.secondaryVersionId : null,
-            )
-          : false,
       referenceColor: settings.accentColor,
       versionColor: settings.accentColor,
       backgroundImagePath: settings.backgroundImagePath,
@@ -350,7 +327,7 @@ export function OperatorApp() {
       fadeMs: base.fadeMs ?? settings.fadeMs,
       backgroundFadeMs: settings.backgroundFadeMs,
     }),
-    [settings, primaryId],
+    [settings],
   );
 
   useEffect(() => {
@@ -447,7 +424,6 @@ export function OperatorApp() {
     padding: settings.padding,
     theme: settings.theme,
     backgroundColor: settings.backgroundColor,
-    copyright: "",
     referenceColor: settings.accentColor,
     versionColor: settings.accentColor,
     backgroundImagePath: settings.backgroundImagePath,
@@ -627,21 +603,6 @@ export function OperatorApp() {
         versionColor: next.accentColor,
         fadeMs: live.fadeMs ?? next.fadeMs,
         backgroundFadeMs: next.backgroundFadeMs,
-        copyright:
-          live.mode === "verse"
-            ? projectionCopyright(
-                next.primaryVersionId,
-                next.dualView ? next.secondaryVersionId : null,
-                next.showCopyright,
-              )
-            : "",
-        hasCopyright:
-          live.mode === "verse"
-            ? hasCopyrightLine(
-                next.primaryVersionId,
-                next.dualView ? next.secondaryVersionId : null,
-              )
-            : false,
       });
     },
     [live, send],
@@ -708,15 +669,6 @@ export function OperatorApp() {
       padding: settings.padding,
         theme: settings.theme,
         backgroundColor: settings.backgroundColor,
-        copyright: projectionCopyright(
-          primaryId,
-          settings.dualView ? settings.secondaryVersionId : null,
-          settings.showCopyright,
-        ),
-        hasCopyright: hasCopyrightLine(
-          primaryId,
-          settings.dualView ? settings.secondaryVersionId : null,
-        ),
         referenceColor: settings.accentColor,
         versionColor: settings.accentColor,
         backgroundImagePath: settings.backgroundImagePath,
@@ -770,15 +722,6 @@ export function OperatorApp() {
       padding: settings.padding,
         theme: settings.theme,
         backgroundColor: settings.backgroundColor,
-        copyright: projectionCopyright(
-          primaryId,
-          settings.dualView ? settings.secondaryVersionId : null,
-          settings.showCopyright,
-        ),
-        hasCopyright: hasCopyrightLine(
-          primaryId,
-          settings.dualView ? settings.secondaryVersionId : null,
-        ),
         referenceColor: settings.accentColor,
         versionColor: settings.accentColor,
         backgroundImagePath: settings.backgroundImagePath,

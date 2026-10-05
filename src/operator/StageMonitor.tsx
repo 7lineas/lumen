@@ -195,8 +195,6 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
     return () => window.removeEventListener("resize", fit);
   }, [renderPayload, projectorFontPx, projectorW, screenAspect, pad]);
 
-  const copyrightPx = 18 * scale;
-  const footerPx = 18 * scale;
   const versionPx = Math.max(18 * scale, Math.min(32 * scale, fitPx * 0.3));
   // The monitor's browser surface has a small extra text-box inset compared
   // with the projector window. Keep the glyphs at the same visual scale so
@@ -226,21 +224,14 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
               </section>
             ))}
           </div>
-          {(version || renderPayload.copyright || renderPayload.hasCopyright) && (
+          {version && (
             <div className="monitor-screen-footer">
-              {renderPayload.copyright
-                ? <footer className="monitor-screen-copyright" style={{ fontSize: `${Number.isFinite(copyrightPx) && copyrightPx > 0 ? copyrightPx : footerPx}px` }}>
-                    {renderPayload.copyright}
-                  </footer>
-                : <span aria-hidden />}
-              {version && (
-                <div
-                  className="monitor-screen-version"
-                  style={{ color: versionColor, fontSize: `${versionPx}px` }}
-                >
-                  {version}{renderPayload.hasCopyright && !renderPayload.copyright ? "®" : ""}
-                </div>
-              )}
+              <div
+                className="monitor-screen-version"
+                style={{ color: versionColor, fontSize: `${versionPx}px` }}
+              >
+                {version}®
+              </div>
             </div>
           )}
         </>
