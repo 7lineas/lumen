@@ -47,11 +47,6 @@ export interface ProjectorPayload {
   padding: number;
   theme: "dark" | "light";
   backgroundColor: string;
-  /** Shown in the projection footer when the operator leaves the option on. */
-  copyright?: string;
-  /** The projected version(s) carry a copyright: render a ® mark by the
-   * bottom-right version tag when the full line above is hidden. */
-  hasCopyright?: boolean;
   /** Color of the top-left reference (e.g. "Juan 5:13"). */
   referenceColor?: string;
   /** Color of the bottom-right version tag (e.g. "RV1909"). */
@@ -93,8 +88,6 @@ export interface AppSettings {
   brightness: number;
   /** Uniform projector content padding in viewport width units. */
   padding: number;
-  /** Copyright line on the projection footer. */
-  showCopyright: boolean;
   /** Single accent color for the reference (top-left) and version tag (bottom-right). */
   accentColor: string;
 }
@@ -117,7 +110,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   churchName: "Iglesia",
   brightness: 0.4,
   padding: 9,
-  showCopyright: true,
   accentColor: "#f6a623",
 };
 

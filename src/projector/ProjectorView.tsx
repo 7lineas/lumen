@@ -14,7 +14,6 @@ const EMPTY: ProjectorPayload = {
   padding: DEFAULT_SETTINGS.padding,
   theme: "dark",
   backgroundColor: DEFAULT_SETTINGS.backgroundColor,
-  copyright: "",
 };
 
 function splitReference(label: string): { ref: string; version: string } {
@@ -240,12 +239,9 @@ export function ProjectorView() {
             </section>
           ))}
         </div>
-        {(version || payload.copyright || payload.hasCopyright) && (
+        {version && (
           <div className="projector-footer">
-            {payload.copyright
-              ? <footer className="projector-copyright">{payload.copyright}</footer>
-              : <span aria-hidden />}
-            {version && <div className="projector-version" style={{ color: versionColor }}>{version}{payload.hasCopyright && !payload.copyright ? "®" : ""}</div>}
+            <div className="projector-version" style={{ color: versionColor }}>{version}®</div>
           </div>
         )}
       </div>
