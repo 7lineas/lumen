@@ -427,7 +427,7 @@ button.primary {
 .projector-footer {
   flex: none;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: flex-end;
   gap: 1em;
   margin-top: 0.5em;
@@ -875,7 +875,7 @@ button.song-part .song-part-thumb {
 .monitor-screen-footer {
   flex: none;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: flex-end;
   gap: 1em;
   margin-top: 0.5em;
@@ -888,16 +888,6 @@ button.song-part .song-part-thumb {
   text-align: end;
   line-height: 1.35;
   font-weight: 600;
-  pointer-events: none;
-}
-
-.monitor-screen-copyright {
-  max-width: 55%;
-  margin: 0;
-  text-align: start;
-  line-height: 1.35;
-  font-weight: 400;
-  opacity: 0.7;
   pointer-events: none;
 }
 
@@ -1179,17 +1169,6 @@ button.song-part .song-part-thumb {
   opacity: 0.95;
   pointer-events: none;
   color: var(--accent);
-}
-
-.projector-copyright {
-  max-width: 55%;
-  margin: 0;
-  text-align: start;
-  font-size: 18px;
-  line-height: 1.35;
-  font-weight: 400;
-  opacity: 0.7;
-  pointer-events: none;
 }
 
 .error {

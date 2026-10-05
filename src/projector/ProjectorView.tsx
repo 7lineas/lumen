@@ -210,6 +210,9 @@ export function ProjectorView() {
 
   const slideImage = payload.mode === "slides" ? payload.slideImagePath ?? null : null;
   const slideImageUrl = slideImage ? backgroundImageUrl(slideImage) ?? undefined : undefined;
+  // Floating labels (reference top-left, version® bottom-right) share one
+  // size: 3/4 of the fitted verse text.
+  const metaSize = fitSize * 0.75;
 
   if (slideImage && slideImageUrl) {
     return (
@@ -230,7 +233,7 @@ export function ProjectorView() {
         <div className="projector-background-layer" style={backgroundStyle} />
         {backgroundMedia}
       <div className={`projector-inner fade ${visible ? "show" : ""}`} style={fadeStyle}>
-        {ref && <header className="projector-ref" style={{ color: referenceColor }}>{ref}</header>}
+        {ref && <header className="projector-ref" style={{ color: referenceColor, fontSize: `${metaSize}px` }}>{ref}</header>}
         <div ref={textRef} className={`projector-body ${payload.blocks.length > 1 ? "dual" : ""}`}>
           {payload.blocks.map((block, i) => (
             <section key={i} className="projector-column">
@@ -241,7 +244,7 @@ export function ProjectorView() {
         </div>
         {version && (
           <div className="projector-footer">
-            <div className="projector-version" style={{ color: versionColor }}>{version}®</div>
+            <div className="projector-version" style={{ color: versionColor, fontSize: `${metaSize}px` }}>{version}®</div>
           </div>
         )}
       </div>

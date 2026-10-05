@@ -122,7 +122,6 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
   const monitorRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
   const [fitPx, setFitPx] = useState(projectorFontPx * 0.16);
-  const [scale, setScale] = useState(0.16);
   const [screenSize, setScreenSize] = useState<{ width: number; height: number } | null>(null);
 
   // The card is a fixed-height monitor viewport. Fit the simulated projector
@@ -166,7 +165,6 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
         1600,
       );
       const s = bodyWidth / Math.max(1, projectorContentWidth);
-      setScale(s);
       // Always restart from the full size so growing the window grows text back.
       let size = projectorFontPx * s;
       const el = textRef.current;
@@ -195,11 +193,13 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
     return () => window.removeEventListener("resize", fit);
   }, [renderPayload, projectorFontPx, projectorW, screenAspect, pad]);
 
-  const versionPx = Math.max(18 * scale, Math.min(32 * scale, fitPx * 0.3));
   // The monitor's browser surface has a small extra text-box inset compared
   // with the projector window. Keep the glyphs at the same visual scale so
   // line breaks match after the screen is reduced into the fixed card.
   const bodyFitPx = fitPx * 0.84;
+  // Floating labels (reference top-left, version® bottom-right) share one
+  // size: 3/4 of the verse text.
+  const metaPx = bodyFitPx * 0.75;
 
   const slideImage = renderPayload?.mode === "slides" ? renderPayload.slideImagePath ?? null : null;
   const screenContent = (
@@ -211,7 +211,7 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
       )}
       {renderPayload?.mode === "verse" && (
         <>
-          {ref && <header className="monitor-screen-ref" style={{ color: referenceColor, fontSize: `${fitPx * 0.5}px` }}>{ref}</header>}
+          {ref && <header className="monitor-screen-ref" style={{ color: referenceColor, fontSize: `${metaPx}px` }}>{ref}</header>}
           <div
             ref={textRef}
             className={`monitor-screen-body ${renderPayload.blocks.length > 1 ? "dual" : ""}`}
@@ -228,7 +228,7 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
             <div className="monitor-screen-footer">
               <div
                 className="monitor-screen-version"
-                style={{ color: versionColor, fontSize: `${versionPx}px` }}
+                style={{ color: versionColor, fontSize: `${metaPx}px` }}
               >
                 {version}®
               </div>
