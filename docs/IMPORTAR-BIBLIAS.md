@@ -39,6 +39,7 @@ Los libros se reconocen por código USFM/OSIS (`JHN`, `John`), nombre en españo
 
 - `meta` es opcional y solo rellena los campos del formulario (usted los confirma). También puede poner `name`, `abbr`, `language`, `copyright` en la raíz.
 - `verses`: libro → capítulo → versículo → texto. El libro puede ser el código USFM o un nombre reconocido; capítulos y versículos son números como texto.
+- Si no hay `verses`, los libros pueden ir directamente en la raíz (`{ "Génesis": { "1": { "1": "…" } }, "S. Mateo": { … } }`), como en muchos JSON descargados; las claves sueltas que no son libros (por ejemplo `"lang": "SPAN"`) se ignoran. Se reconocen también los evangelios escritos `S. Mateo`, `S.Juan`, `San Lucas`, etc.
 - También se acepta una lista plana: `[{ "book": "JHN", "chapter": 3, "verse": 16, "text": "…" }]`.
 - Es el mismo esquema (`BibleData`) de los módulos que descarga Lumen; el archivo guardado además trae `searchIndex` para la búsqueda.
 

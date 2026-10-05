@@ -37,6 +37,25 @@ describe("parseBibleText", () => {
     expect(parsed.hint).toMatchObject({ name: "Muestra JSON", abbr: "MJSON", copyright: "Dominio público" });
   });
 
+  it("reads JSON with the books at the root (no \"verses\"), Spanish names and \"S. Mateo\"-style gospels", () => {
+    const parsed = parseBibleText("RVR1960 - Spanish.json", fixture("sample-root-books.json"));
+    expect(parsed.format).toBe("json");
+    expect(Object.keys(parsed.verses).sort()).toEqual(["2PE", "GEN", "JHN", "LUK", "MAT", "MRK"]);
+    expect(parsed.verses.GEN["1"]["1"]).toBe("En el principio creó Dios los cielos y la tierra.");
+    expect(parsed.verses.MAT["1"]["1"]).toMatch(/^Libro de la genealogía/);
+    expect(parsed.verses.JHN["3"]["16"]).toMatch(/^Porque de tal manera/);
+    expect(parsed.verses["2PE"]["3"]["18"]).toMatch(/^Antes bien/);
+    expect(parsed.warnings).toEqual([]);
+  });
+
+  it("recognizes the Spanish \"S./San\" gospel names", () => {
+    for (const [name, code] of [
+      ["S. Mateo", "MAT"], ["San Marcos", "MRK"], ["S. Lucas", "LUK"], ["S.Juan", "JHN"], ["S. Juan", "JHN"], ["San Juan", "JHN"],
+    ]) {
+      expect(resolveBook(name)).toBe(code);
+    }
+  });
+
   it("reads a JSON list of {book, chapter, verse, text}", () => {
     const parsed = parseBibleText(
       "x.json",

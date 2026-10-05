@@ -27,6 +27,11 @@ const SPANISH_EXTRA: Record<string, string[]> = {
   ECC: ["Eclesiastés", "Qohélet"],
   JOL: ["Joel"],
   OBA: ["Abdías"],
+  // Gospels as printed in many Spanish Bibles: "S. Mateo", "S.Juan", "San Lucas"…
+  MAT: ["S. Mateo", "San Mateo", "Evangelio según San Mateo", "St. Matthew", "Saint Matthew"],
+  MRK: ["S. Marcos", "San Marcos", "Evangelio según San Marcos", "St. Mark", "Saint Mark"],
+  LUK: ["S. Lucas", "San Lucas", "Evangelio según San Lucas", "St. Luke", "Saint Luke"],
+  JHN: ["S. Juan", "San Juan", "Evangelio según San Juan", "St. John", "Saint John"],
 };
 
 export function normalizeBookToken(token: string): string {
