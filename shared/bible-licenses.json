@@ -85,52 +85,6 @@
         "verse": "1",
         "includes": "Elohim"
       }
-    },
-    {
-      "id": "bll",
-      "name": "Santa Biblia libre Latinoamericano",
-      "abbr": "BLL",
-      "language": "Español",
-      "languageCode": "es",
-      "license": "Dominio público",
-      "sourceName": "eBible.org",
-      "sourceUrl": "https://ebible.org/Scriptures/spabll_vpl.zip",
-      "attribution": "Santa Biblia libre Latinoamericano, dominio público, publicada por eBible.org. Es un borrador. Esta aplicación incluye solo el canon protestante de 66 libros.",
-      "copyright": "Santa Biblia libre Latinoamericano. Dominio público. Edición marcada como borrador.",
-      "availability": "Se descarga dentro de la aplicación",
-      "draft": true,
-      "vplZip": "spabll_vpl.zip",
-      "vplTxt": "spabll_vpl.txt",
-      "minVerses": 30000,
-      "spot": {
-        "book": "JHN",
-        "chapter": "3",
-        "verse": "16",
-        "includes": "Hijo"
-      }
-    },
-    {
-      "id": "blm",
-      "name": "Santa Biblia libre para el mundo",
-      "abbr": "BLM",
-      "language": "Español",
-      "languageCode": "es",
-      "license": "Dominio público",
-      "sourceName": "eBible.org",
-      "sourceUrl": "https://ebible.org/Scriptures/spablm_vpl.zip",
-      "attribution": "Santa Biblia libre para el mundo, dominio público, de David Williams y Michael Paul Johnson, publicada por eBible.org. Es un borrador en español de España. Esta aplicación incluye solo el canon protestante de 66 libros.",
-      "copyright": "Santa Biblia libre para el mundo. Dominio público. Edición marcada como borrador. David Williams y Michael Paul Johnson.",
-      "availability": "Se descarga dentro de la aplicación",
-      "draft": true,
-      "vplZip": "spablm_vpl.zip",
-      "vplTxt": "spablm_vpl.txt",
-      "minVerses": 30000,
-      "spot": {
-        "book": "JHN",
-        "chapter": "3",
-        "verse": "16",
-        "includes": "Hijo"
-      }
     }
   ]
 }

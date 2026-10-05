@@ -128,7 +128,6 @@ async function main() {
   const { licenses, sources } = loadSources();
   fs.mkdirSync(outDir, { recursive: true });
   const versions = [];
-  const genesis = new Map();
 
   for (const src of sources) {
     const zipPath = ensureZip(src);
@@ -137,7 +136,6 @@ async function main() {
     execSync(`unzip -o -q "${zipPath}" "${src.vplTxt}" -d "${extractDir}"`, { stdio: "inherit" });
     const { verses, searchIndex } = await parseVplFile(path.join(extractDir, src.vplTxt));
     assertModule(src, verses);
-    genesis.set(src.id, verses.GEN?.["1"]?.["2"] ?? "");
 
     const module = {
       meta: {
@@ -172,10 +170,6 @@ async function main() {
       abbr: src.abbr,
       draft: src.draft === true,
     });
-  }
-
-  if (genesis.get("bll") && genesis.get("bll") === genesis.get("blm")) {
-    throw new Error("BLL y BLM salieron idénticas en Génesis 1:2; revise las fuentes");
   }
 
   const catalog = {

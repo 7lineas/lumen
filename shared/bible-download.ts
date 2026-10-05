@@ -83,7 +83,7 @@ function asRecord(value: unknown): Record<string, unknown> | null {
   return value as Record<string, unknown>;
 }
 
-/** Keeps only complete entries. Download URLs stay on the fixed public host. */
+/** Keeps only complete, non-draft entries. Download URLs stay on the fixed public host. */
 export function parseCatalog(data: unknown, extensionNote = ""): BibleCatalog | null {
   const root = asRecord(data);
   if (!root || !Array.isArray(root.versions)) return null;
@@ -91,6 +91,7 @@ export function parseCatalog(data: unknown, extensionNote = ""): BibleCatalog | 
   for (const item of root.versions) {
     const row = asRecord(item);
     if (!row) continue;
+    if (row.draft === true) continue;
     if (typeof row.id !== "string" || !BIBLE_ID.test(row.id)) continue;
     if (typeof row.name !== "string" || row.name.trim() === "") continue;
     if (typeof row.language !== "string" || row.language.trim() === "") continue;
@@ -256,12 +257,15 @@ export function describeLibrary(input: {
   catalogSource: "remote" | "bundled";
 }): LibraryView {
   const bundledIds = new Set(input.bundled.map((entry) => entry.id));
-  const entries: LibraryEntry[] = input.bundled.map((entry) => ({
-    ...entry,
-    availability: "included",
-  }));
+  const entries: LibraryEntry[] = input.bundled
+    .filter((entry) => !entry.draft)
+    .map((entry) => ({
+      ...entry,
+      availability: "included",
+    }));
 
   for (const version of input.catalog.versions) {
+    if (version.draft) continue;
     if (bundledIds.has(version.id)) continue;
     entries.push({
       id: version.id,

@@ -1093,6 +1093,44 @@ button.song-part .song-part-thumb {
   color: var(--muted);
 }
 
+.bibles {
+  display: flex;
+  flex-direction: column;
+}
+
+.bible-section + .bible-section {
+  margin-top: 2.5rem;
+  padding-top: 1.75rem;
+  border-top: 1px solid #292d34;
+}
+
+.bibles .bible-section h2 {
+  margin: 0 0 1rem;
+  font-size: 1.2rem;
+}
+
+.bibles .bible-intro {
+  margin: 0 0 1.5rem;
+  line-height: 1.55;
+}
+
+.bibles .bible-list {
+  margin-top: 1.5rem;
+}
+
+.bible-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.bible-status svg {
+  flex: none;
+  color: #6fbf73;
+}
+
 .bible-list {
   display: flex;
   flex-direction: column;
@@ -1511,6 +1549,15 @@ button.song-part.selected, button.song-part.selected:hover { background: #1e3a5f
   border-bottom: 1px solid #292d34;
   background: transparent;
   padding-inline: 0;
+  padding-block: 1.1rem;
+}
+
+.bible-list > .bible-row:last-child {
+  border-bottom: 0;
+}
+
+.overlay-sheet > .panel.single.bibles {
+  padding: 1.75rem 1.5rem 2.5rem;
 }
 
 .overlay {

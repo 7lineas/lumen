@@ -9,7 +9,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const catalog = JSON.parse(fs.readFileSync(path.join(root, "data/bible-modules/bibles-catalog.json"), "utf8"));
 const licenses = JSON.parse(fs.readFileSync(path.join(root, "shared/bible-licenses.json"), "utf8"));
 
-const EXPECTED = ["bes", "onbv", "pddpt", "bll", "blm"];
+const EXPECTED = ["bes", "onbv", "pddpt"];
 const FORBIDDEN = ["rvg", "sparvg", "rvr1960", "nvi", "ntv", "dhh", "tla", "rvc", "lbla", "nblh"];
 
 describe("bibles catalog", () => {
@@ -23,9 +23,6 @@ describe("bibles catalog", () => {
     expect(onbv.copyright).toMatch(/Biblica® Open Nueva Biblia Viva™/);
     expect(onbv.copyright).toMatch(/2006, 2008 Biblica/);
     expect(onbv.license).toBe("CC BY-SA 4.0");
-    for (const id of ["bll", "blm"]) {
-      expect(catalog.versions.find((version: { id: string }) => version.id === id).draft).toBe(true);
-    }
     for (const version of catalog.versions) {
       expect(version.file).toBe(`${version.id}.json`);
       expect(version.sha256).toMatch(/^[a-f0-9]{64}$/);

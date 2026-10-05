@@ -8,8 +8,8 @@
       "name": "Biblia en Español Sencillo",
       "language": "Español",
       "file": "bes.json",
-      "bytes": 10047026,
-      "sha256": "8657ea879ed2afffeed380b0e877e9c63f83cc54dfbdd1ca6be820f40839f6a0",
+      "bytes": 10019730,
+      "sha256": "c7b5b3a26433565e4e2f735bc07adbad8730cbb92d30ec83feb1019ef9ddb5fd",
       "license": "CC BY 4.0",
       "attribution": "La Biblia en Español Sencillo, de AudioBiblia.org e Irma Flores (2018–2019), publicada por eBible.org bajo CC BY 4.0.",
       "copyright": "La Biblia en Español Sencillo © AudioBiblia.org e Irma Flores, 2018–2019. Licencia CC BY 4.0.",
@@ -21,8 +21,8 @@
       "name": "Biblica® Open Nueva Biblia Viva™ 2008",
       "language": "Español",
       "file": "onbv.json",
-      "bytes": 10135419,
-      "sha256": "f7397ae64ea3579df7499944f178172eb10b327e3e12ab2b6eeba5ed0cf87e24",
+      "bytes": 10135429,
+      "sha256": "8f2acae8c396e9ab5d0b2fe9e3228da0a994e01a577619a7fd8f897d2fdb3d0f",
       "license": "CC BY-SA 4.0",
       "attribution": "Biblica® Open Nueva Biblia Viva™ © 2006, 2008 Biblica, Inc. Se redistribuye bajo CC BY-SA 4.0 sin cambiar el texto. Hay que conservar el título y el copyright de Biblica.",
       "copyright": "Biblica® Open Nueva Biblia Viva™ © 2006, 2008 Biblica, Inc. Licencia CC BY-SA 4.0. Conserve este título y este aviso de copyright.",
@@ -41,32 +41,6 @@
       "copyright": "Palabra de Dios para ti © 2020 Asociación Bíblica Latinoamericana. Licencia CC BY 4.0.",
       "abbr": "PDDPT",
       "draft": false
-    },
-    {
-      "id": "bll",
-      "name": "Santa Biblia libre Latinoamericano",
-      "language": "Español",
-      "file": "bll.json",
-      "bytes": 10378966,
-      "sha256": "0eb05c3baddfc5be49f8357cec7d5930c20d40a7592d854a300b49d7fbfadc1b",
-      "license": "Dominio público",
-      "attribution": "Santa Biblia libre Latinoamericano, dominio público, publicada por eBible.org. Es un borrador. Esta aplicación incluye solo el canon protestante de 66 libros.",
-      "copyright": "Santa Biblia libre Latinoamericano. Dominio público. Edición marcada como borrador.",
-      "abbr": "BLL",
-      "draft": true
-    },
-    {
-      "id": "blm",
-      "name": "Santa Biblia libre para el mundo",
-      "language": "Español",
-      "file": "blm.json",
-      "bytes": 10220902,
-      "sha256": "9ef7d72c332bb2d4154f77899eb4f47b42ff5d77cdbeee41f12f9ac4027c21ba",
-      "license": "Dominio público",
-      "attribution": "Santa Biblia libre para el mundo, dominio público, de David Williams y Michael Paul Johnson, publicada por eBible.org. Es un borrador en español de España. Esta aplicación incluye solo el canon protestante de 66 libros.",
-      "copyright": "Santa Biblia libre para el mundo. Dominio público. Edición marcada como borrador. David Williams y Michael Paul Johnson.",
-      "abbr": "BLM",
-      "draft": true
     }
   ]
 }

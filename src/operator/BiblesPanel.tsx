@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Check } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { AppSettings, BibleVersionMeta } from "@shared/types";
 import { ImportBibleCard } from "./ImportBibleCard";
@@ -89,32 +89,31 @@ export function BiblesPanel({ onChanged, online, onRefreshOnline, customVersions
 
   return (
     <main className="panel single bibles" data-testid="bible-list">
-      <h2>Biblias</h2>
-      <p>
-        Elija una versión para guardarla en este equipo. Después funciona sin internet. RV1909 ya viene con el programa.
-      </p>
-      {library?.offline && (
-        <p className="bible-banner">
-          No hay conexión al catálogo. Se muestran las versiones conocidas. Las que ya descargó siguen
-          disponibles.
-        </p>
-      )}
-      {error && <p className="error">{error}</p>}
-      {!library && !error && <p className="muted">Cargando catálogo…</p>}
-      <div className="bible-list">
-        {library?.entries.map((entry) => (
-          <BibleRow
-            key={entry.id}
-            entry={entry}
-            busy={activeId !== null}
-            downloading={activeId === entry.id}
-            progress={progress?.id === entry.id ? progress : null}
-            error={rowError?.id === entry.id ? rowError.message : null}
-            onDownload={() => void download(entry.id)}
-            onRemove={() => void remove(entry.id)}
-          />
-        ))}
-      </div>
+      <section className="bible-section">
+        <h2>Biblias</h2>
+        {library?.offline && (
+          <p className="bible-banner">
+            No hay conexión al catálogo. Se muestran las versiones conocidas. Las que ya descargó siguen
+            disponibles.
+          </p>
+        )}
+        {error && <p className="error">{error}</p>}
+        {!library && !error && <p className="muted">Cargando catálogo…</p>}
+        <div className="bible-list">
+          {library?.entries.map((entry) => (
+            <BibleRow
+              key={entry.id}
+              entry={entry}
+              busy={activeId !== null}
+              downloading={activeId === entry.id}
+              progress={progress?.id === entry.id ? progress : null}
+              error={rowError?.id === entry.id ? rowError.message : null}
+              onDownload={() => void download(entry.id)}
+              onRemove={() => void remove(entry.id)}
+            />
+          ))}
+        </div>
+      </section>
       <ImportBibleCard
         customVersions={customVersions}
         onChanged={() => onChanged()}
@@ -124,36 +123,43 @@ export function BiblesPanel({ onChanged, online, onRefreshOnline, customVersions
           onChanged(result?.settings);
         }}
       />
-      <h2>En línea (YouVersion)</h2>
-      {!online?.configured && (
-        <p className="muted">Esta compilación no incluye la clave de YouVersion Platform, así que las Biblias en línea no están disponibles.</p>
-      )}
-      {online?.configured && (
-        <>
-          <p>
-            Se consultan al elegirlas y cada capítulo se guarda en este equipo por 30 días: lo ya consultado funciona sin
-            internet. El texto lleva siempre el copyright de la editorial.
-          </p>
-          <Button type="button" onClick={onRefreshOnline} data-testid="online-refresh">Actualizar lista</Button>
-          {online.stale && <p className="bible-banner">Sin conexión: se muestra la lista guardada.{online.error ? ` (${online.error})` : ""}</p>}
-          {!online.stale && online.error && online.versions.length === 0 && (
-            <p className="error">{online.error}{" "}<Button type="button" onClick={onRefreshOnline}>Reintentar</Button></p>
-          )}
-          <div className="bible-list">
-            {online.versions.map((version) => (
-              <article className="bible-row" key={version.id} data-testid={`online-row-${version.id}`}>
-                <h3>{version.name}</h3>
-                <p className="bible-meta">{version.abbr} · {version.license ?? "YouVersion Platform"}</p>
-                <div className="bible-actions">
-                  {version.locked
-                    ? <span className="error">{version.lockedReason}</span>
-                    : <span className="muted">Disponible en el selector de versión</span>}
-                </div>
-              </article>
-            ))}
-          </div>
-        </>
-      )}
+      <section className="bible-section">
+        <h2>En línea (YouVersion)</h2>
+        {!online?.configured && (
+          <p className="muted">Esta compilación no incluye la clave de YouVersion Platform, así que las Biblias en línea no están disponibles.</p>
+        )}
+        {online?.configured && (
+          <>
+            <p className="bible-intro">
+              Se consultan al elegirlas y cada capítulo se guarda en este equipo por 30 días: lo ya consultado funciona sin
+              internet. El texto lleva siempre el copyright de la editorial.
+            </p>
+            <Button type="button" onClick={onRefreshOnline} data-testid="online-refresh">Actualizar lista</Button>
+            {online.stale && <p className="bible-banner">Sin conexión: se muestra la lista guardada.{online.error ? ` (${online.error})` : ""}</p>}
+            {!online.stale && online.error && online.versions.length === 0 && (
+              <p className="error">{online.error}{" "}<Button type="button" onClick={onRefreshOnline}>Reintentar</Button></p>
+            )}
+            <div className="bible-list">
+              {online.versions.map((version) => (
+                <article className="bible-row" key={version.id} data-testid={`online-row-${version.id}`}>
+                  <h3>{version.name}</h3>
+                  <p className="bible-meta">{version.abbr} · {version.license ?? "YouVersion Platform"}</p>
+                  <div className="bible-actions">
+                    {version.locked
+                      ? <span className="error">{version.lockedReason}</span>
+                      : (
+                        <span className="bible-status">
+                          <Check size={16} strokeWidth={2.5} aria-hidden />
+                          Disponible en el selector de versión
+                        </span>
+                      )}
+                  </div>
+                </article>
+              ))}
+            </div>
+          </>
+        )}
+      </section>
     </main>
   );
 }
@@ -180,18 +186,23 @@ function BibleRow({
 
   return (
     <article className="bible-row" data-testid={`bible-row-${entry.id}`}>
-      <h3>
-        {entry.name}
-        {entry.draft && <Badge className="badge">Borrador</Badge>}
-      </h3>
+      <h3>{entry.name}</h3>
       <p className="bible-meta">
         {entry.language} · {formatByteSize(entry.bytes)} · {entry.license}
       </p>
       <div className="bible-actions">
-        {entry.availability === "included" && <span className="muted">Incluida</span>}
+        {entry.availability === "included" && (
+          <span className="bible-status">
+            <Check size={16} strokeWidth={2.5} aria-hidden />
+            Incluida
+          </span>
+        )}
         {entry.availability === "installed" && !downloading && (
           <>
-            <span className="muted">Descargada</span>
+            <span className="bible-status">
+              <Check size={16} strokeWidth={2.5} aria-hidden />
+              Descargada
+            </span>
             <Button type="button" onClick={onRemove} disabled={busy}>
               Quitar
             </Button>

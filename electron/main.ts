@@ -469,7 +469,7 @@ async function captureScreenshots(): Promise<void> {
   `);
   for (let i = 0; i < 40; i++) {
     const ready = await operatorWindow.webContents.executeJavaScript(`
-      document.querySelectorAll('[data-testid="bible-list"] article').length >= 9
+      document.querySelectorAll('[data-testid="bible-list"] article').length >= 7
     `);
     if (ready) break;
     await delay(300);
