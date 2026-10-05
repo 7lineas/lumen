@@ -36,8 +36,15 @@ export interface YvLicense {
   bible_ids?: number[];
 }
 
-/** Popularity in Colombia, most used first. Only affects ordering. */
-export const COLOMBIA_PRIORITY = [128, 2664, 103, 89, 147, 3291, 3365];
+/**
+ * Default online list for Colombia (and ordering of that list):
+ * NVI 2025, NVI 2015, NBLA, LBLA, RVES, PDT. Other versions the user adds
+ * come after these.
+ */
+export const DEFAULT_ONLINE_VERSION_IDS = [128, 2664, 103, 89, 147, 3365] as const;
+
+/** @deprecated alias kept for callers that still import the old name. */
+export const COLOMBIA_PRIORITY = DEFAULT_ONLINE_VERSION_IDS;
 
 /** The API abbreviates "Palabla de Dios para ti" as spaPdDpt. */
 const ABBR_OVERRIDES: Record<number, string> = { 3365: "PDT" };
@@ -81,8 +88,8 @@ export function buildOnlineVersions(
   }
   const licenseOf = (id: number) => licenses.find((license) => license.bible_ids?.includes(id));
   const rank = (id: number) => {
-    const at = COLOMBIA_PRIORITY.indexOf(id);
-    return at === -1 ? COLOMBIA_PRIORITY.length : at;
+    const at = (DEFAULT_ONLINE_VERSION_IDS as readonly number[]).indexOf(id);
+    return at === -1 ? DEFAULT_ONLINE_VERSION_IDS.length : at;
   };
   return [...catalog]
     .sort((a, b) => rank(a.id) - rank(b.id) || clean(a.abbreviation).localeCompare(clean(b.abbreviation)))
@@ -105,7 +112,7 @@ export function buildOnlineVersions(
         online: true,
         locked: locked || undefined,
         lockedReason: locked
-          ? `Acepta la licencia ${license?.name ?? "de la editorial"} en el portal de YouVersion Platform para usar ${abbr}`
+          ? `Licencia no aceptada en el portal de YouVersion Platform de esta app (${license?.name ?? "editorial"}). Acéptala allí para usar ${abbr}.`
           : undefined,
       } satisfies BibleVersionMeta;
     });
@@ -140,6 +147,127 @@ export function mergeChapter(
 
 export function hasChapter(bible: BibleData | undefined, book: string, chapter: number): boolean {
   return !!bible?.verses[book]?.[String(chapter)];
+}
+
+
+/** Numeric YouVersion id of a default online Bible, or null. */
+export function parseDefaultOnlineNumericId(id: string): number | null {
+  const numeric = parseYvVersionId(id);
+  if (numeric === null) return null;
+  return (DEFAULT_ONLINE_VERSION_IDS as readonly number[]).includes(numeric) ? numeric : null;
+}
+
+export function isDefaultOnlineVersionId(id: string): boolean {
+  return parseDefaultOnlineNumericId(id) !== null;
+}
+
+/** Defaults first (Colombia order), then user-added ids in the order they were saved. */
+export function mergeSelectedOnlineIds(customIds: readonly number[]): number[] {
+  const seen = new Set<number>();
+  const out: number[] = [];
+  for (const id of DEFAULT_ONLINE_VERSION_IDS) {
+    if (seen.has(id)) continue;
+    seen.add(id);
+    out.push(id);
+  }
+  for (const id of customIds) {
+    if (!Number.isInteger(id) || id < 1 || seen.has(id)) continue;
+    seen.add(id);
+    out.push(id);
+  }
+  return out;
+}
+
+/** Keep only user-added ids (never persist the defaults). */
+export function sanitizeCustomOnlineIds(ids: readonly number[]): number[] {
+  const defaults = new Set<number>(DEFAULT_ONLINE_VERSION_IDS);
+  const seen = new Set<number>();
+  const out: number[] = [];
+  for (const id of ids) {
+    if (!Number.isInteger(id) || id < 1 || defaults.has(id) || seen.has(id)) continue;
+    seen.add(id);
+    out.push(id);
+  }
+  return out;
+}
+
+/** Fold accents and case so "niño" matches "Nino" and "NVI" matches "nvi". */
+export function normalizeSearchText(value: string): string {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .trim();
+}
+
+export interface OnlineSearchHit {
+  id: string;
+  name: string;
+  abbr: string;
+  language: string;
+  license?: string;
+  locked?: boolean;
+  lockedReason?: string;
+  /** Already in the user's selected online list. */
+  added: boolean;
+}
+
+/**
+ * Local search over an already-built catalog (name, abbr, language, id).
+ * Empty query → no hits. Results keep catalog order (Colombia first).
+ */
+export function searchOnlineCatalog(
+  catalog: readonly BibleVersionMeta[],
+  query: string,
+  selectedIds: ReadonlySet<string>,
+  limit = 30,
+): OnlineSearchHit[] {
+  const needle = normalizeSearchText(query);
+  if (!needle) return [];
+  const hits: OnlineSearchHit[] = [];
+  for (const version of catalog) {
+    if (!version.online) continue;
+    const haystack = normalizeSearchText(
+      [version.name, version.abbr, version.language, version.license, version.id].filter(Boolean).join(" "),
+    );
+    if (!haystack.includes(needle)) continue;
+    hits.push({
+      id: version.id,
+      name: version.name,
+      abbr: version.abbr,
+      language: version.language,
+      license: version.license,
+      locked: version.locked,
+      lockedReason: version.lockedReason,
+      added: selectedIds.has(version.id),
+    });
+    if (hits.length >= limit) break;
+  }
+  return hits;
+}
+
+/** Pick selected versions from a full catalog, preserving selection order. */
+export function pickSelectedOnlineVersions(
+  catalog: readonly BibleVersionMeta[],
+  selectedNumericIds: readonly number[],
+): BibleVersionMeta[] {
+  const byId = new Map(catalog.map((version) => [version.id, version]));
+  const out: BibleVersionMeta[] = [];
+  for (const numeric of selectedNumericIds) {
+    const version = byId.get(yvVersionId(numeric));
+    if (!version) continue;
+    out.push(version);
+  }
+  return out;
+}
+
+export interface OnlineSearchResult {
+  configured: boolean;
+  query: string;
+  hits: OnlineSearchHit[];
+  /** True when the catalog came from disk because the network failed. */
+  stale: boolean;
+  error?: string;
 }
 
 /** A chapter result as sent over IPC. */

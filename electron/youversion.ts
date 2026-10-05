@@ -4,8 +4,14 @@ import {
   attributionFor,
   buildOnlineVersions,
   fallbackAttribution,
+  mergeSelectedOnlineIds,
   parseYvVersionId,
+  pickSelectedOnlineVersions,
+  sanitizeCustomOnlineIds,
+  searchOnlineCatalog,
+  yvVersionId,
   type ChapterResult,
+  type OnlineSearchResult,
   type OnlineVersionsResult,
   type YvBible,
   type YvLicense,
@@ -124,6 +130,33 @@ export class YouVersionClient {
     return path.join(this.options.cacheDir, "versions.json");
   }
 
+  private selectedFile(): string {
+    return path.join(this.options.cacheDir, "selected-versions.json");
+  }
+
+  /** User-added ids only (defaults are never stored). */
+  private readCustomIds(): number[] {
+    const cached = readJson<{ ids?: unknown }>(this.selectedFile());
+    if (!Array.isArray(cached?.ids)) return [];
+    return sanitizeCustomOnlineIds(cached.ids.map((value) => Number(value)));
+  }
+
+  private writeCustomIds(ids: readonly number[]): void {
+    writeJsonAtomic(this.selectedFile(), { ids: sanitizeCustomOnlineIds(ids) });
+  }
+
+  private selectedNumericIds(): number[] {
+    return mergeSelectedOnlineIds(this.readCustomIds());
+  }
+
+  private selectedIdSet(): Set<string> {
+    return new Set(this.selectedNumericIds().map((id) => yvVersionId(id)));
+  }
+
+  private toListed(catalog: BibleVersionMeta[]): OnlineVersionsResult["versions"] {
+    return pickSelectedOnlineVersions(catalog, this.selectedNumericIds());
+  }
+
   private chapterFile(versionId: number, book: string, chapter: number): string {
     return path.join(this.options.cacheDir, String(versionId), `${book}.${chapter}.json`);
   }
@@ -162,7 +195,10 @@ export class YouVersionClient {
           continue;
         }
         if (response.status === 403) {
-          throw new YvError("La licencia de esta versión no está aceptada en YouVersion Platform", "locked");
+          throw new YvError(
+            "Licencia no aceptada en el portal de YouVersion Platform de esta app. Acéptala allí para usar esta versión.",
+            "locked",
+          );
         }
         if (response.status === 404 || response.status === 204) {
           throw new YvError("YouVersion no tiene ese pasaje", "not-found");
@@ -206,13 +242,15 @@ export class YouVersionClient {
     return items;
   }
 
-  /** Spanish catalog with licensing state. Cached on disk; stale cache is served when offline. */
-  async listVersions(force = false): Promise<OnlineVersionsResult> {
-    if (!this.configured) return { configured: false, versions: [], stale: false };
+  /**
+   * Full Spanish catalog with licensing state, cached on disk.
+   * The operator only *sees* the selected subset (defaults + user-added).
+   */
+  private async loadCatalog(force = false): Promise<{ versions: BibleVersionMeta[]; stale: boolean; error?: string }> {
     const cached = readJson<CachedVersions>(this.versionsFile());
     const ttl = cached?.versions.some((version) => version.locked) ? LOCKED_VERSIONS_TTL_MS : VERSIONS_TTL_MS;
     if (!force && cached && this.now() - cached.fetchedAt < ttl) {
-      return { configured: true, versions: cached.versions, stale: false };
+      return { versions: cached.versions, stale: false };
     }
     try {
       const [catalog, licensed, licenses] = await Promise.all([
@@ -222,12 +260,74 @@ export class YouVersionClient {
       ]);
       const versions = buildOnlineVersions(catalog, new Set(licensed.map((bible) => bible.id)), licenses);
       writeJsonAtomic(this.versionsFile(), { fetchedAt: this.now(), versions } satisfies CachedVersions);
-      return { configured: true, versions, stale: false };
+      return { versions, stale: false };
     } catch (error) {
       const message = error instanceof Error ? error.message : "No se pudo leer YouVersion";
-      if (cached) return { configured: true, versions: cached.versions, stale: true, error: message };
-      return { configured: true, versions: [], stale: false, error: message };
+      if (cached) return { versions: cached.versions, stale: true, error: message };
+      return { versions: [], stale: false, error: message };
     }
+  }
+
+  /** Selected online list (defaults + versions the user added). */
+  async listVersions(force = false): Promise<OnlineVersionsResult> {
+    if (!this.configured) return { configured: false, versions: [], stale: false };
+    const catalog = await this.loadCatalog(force);
+    return {
+      configured: true,
+      versions: this.toListed(catalog.versions),
+      stale: catalog.stale,
+      error: catalog.error,
+    };
+  }
+
+  /**
+   * Search the cached Spanish catalog by name, abbreviation or language.
+   * Does not hit the network per keystroke; refreshes the catalog only when stale/missing.
+   */
+  async searchVersions(query: string): Promise<OnlineSearchResult> {
+    const normalized = String(query ?? "").trim();
+    if (!this.configured) return { configured: false, query: normalized, hits: [], stale: false };
+    const catalog = await this.loadCatalog(false);
+    return {
+      configured: true,
+      query: normalized,
+      hits: searchOnlineCatalog(catalog.versions, normalized, this.selectedIdSet()),
+      stale: catalog.stale,
+      error: catalog.error,
+    };
+  }
+
+  /** Persist a catalog version into the user's online list. */
+  async addVersion(lumenId: string): Promise<OnlineVersionsResult> {
+    if (!this.configured) return { configured: false, versions: [], stale: false };
+    const numeric = parseYvVersionId(String(lumenId ?? ""));
+    if (numeric === null) throw new YvError("Versión en línea no válida", "error");
+    const catalog = await this.loadCatalog(false);
+    if (!catalog.versions.some((version) => version.id === yvVersionId(numeric))) {
+      throw new YvError("Esa versión no está en el catálogo de YouVersion", "not-found");
+    }
+    this.writeCustomIds([...this.readCustomIds(), numeric]);
+    return {
+      configured: true,
+      versions: this.toListed(catalog.versions),
+      stale: catalog.stale,
+      error: catalog.error,
+    };
+  }
+
+  /** Remove a user-added version (defaults cannot be removed). */
+  async removeVersion(lumenId: string): Promise<OnlineVersionsResult> {
+    if (!this.configured) return { configured: false, versions: [], stale: false };
+    const numeric = parseYvVersionId(String(lumenId ?? ""));
+    if (numeric === null) throw new YvError("Versión en línea no válida", "error");
+    this.writeCustomIds(this.readCustomIds().filter((id) => id !== numeric));
+    const catalog = await this.loadCatalog(false);
+    return {
+      configured: true,
+      versions: this.toListed(catalog.versions),
+      stale: catalog.stale,
+      error: catalog.error,
+    };
   }
 
   /** One chapter: fresh disk cache, else network (stale cache if the network fails). */

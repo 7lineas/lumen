@@ -11,7 +11,7 @@ import { randomBytes, timingSafeEqual } from "node:crypto";
 export type RpcHandler = (args: unknown[]) => Promise<unknown> | unknown;
 
 const BROWSER_CHANNELS = new Set([
-  "bibles:list", "bibles:load", "yvp:versions", "yvp:chapter", "bibles:catalog",
+  "bibles:list", "bibles:load", "yvp:versions", "yvp:search", "yvp:add", "yvp:remove", "yvp:chapter", "bibles:catalog",
   "bibles:download", "bibles:remove", "settings:get", "settings:set", "history:get", "history:add",
   "queue:get", "queue:set", "favorites:get", "favorites:set", "songs:get", "songs:set",
   "slides:get", "slides:set", "slides:readFile", "slides:savePngs", "slides:convertPptx",

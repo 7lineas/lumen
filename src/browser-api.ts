@@ -1,7 +1,8 @@
 import type { ProyectorApi } from "./vite-env";
 
 const methods: Record<string, string> = {
-  listBibleVersions: "bibles:list", loadBible: "bibles:load", listOnlineBibles: "yvp:versions",
+  listBibleVersions: "bibles:list", loadBible: "bibles:load", listOnlineBibles: "yvp:versions", searchOnlineBibles: "yvp:search",
+  addOnlineBible: "yvp:add", removeOnlineBible: "yvp:remove",
   getOnlineChapter: "yvp:chapter", getBibleCatalog: "bibles:catalog", downloadBible: "bibles:download",
   removeBible: "bibles:remove", getSettings: "settings:get", setSettings: "settings:set",
   getHistory: "history:get", addHistory: "history:add", getQueue: "queue:get", setQueue: "queue:set",
