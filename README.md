@@ -65,7 +65,6 @@ Solo se guardan **imágenes** (una PNG por diapositiva, más el título): no se 
 | --- | --- |
 | Clic en un versículo | Lo deja en **vista previa**, sin cambiar el videobeam |
 | Mayús + clic | Marca un rango en el mismo capítulo |
-| Doble clic | Lo proyecta de inmediato |
 | Enter | Envía la vista previa al videobeam |
 | ← / → (o ↑ / ↓) | Versículo anterior / siguiente, solo en la vista previa |
 | Esc o B | Pantalla negra / volver al último versículo |

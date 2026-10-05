@@ -29,7 +29,6 @@ interface Props {
   /** References already stored in the rundown; caps how many can be added. */
   savedCount: number;
   onVerseClick: (verse: number, shiftKey: boolean) => void;
-  onVerseDoubleClick: (verse: number) => void;
   refInput: string;
   onRefInput: (value: string) => void;
   onRefSubmit: () => void;
@@ -198,7 +197,6 @@ export function ChapterReader(props: Props) {
                 className={`verse-row${inRange ? " in-range" : ""}${props.liveKey === key ? " is-live" : ""}`}
                 data-verse-active={inRange ? "1" : undefined}
                 onClick={(e) => props.onVerseClick(v, e.shiftKey)}
-                onDoubleClick={() => props.onVerseDoubleClick(v)}
               >
                 <span className="verse-num">{v}</span>
                 <span>{text}</span>
@@ -219,7 +217,6 @@ export function ChapterReader(props: Props) {
               className={inRange ? "chip selected" : "chip"}
               data-verse-active={inRange ? "1" : undefined}
               onClick={(e) => props.onVerseClick(v, e.shiftKey)}
-              onDoubleClick={() => props.onVerseDoubleClick(v)}
             >
               {v}
             </Button>
@@ -247,7 +244,7 @@ export function ChapterReader(props: Props) {
           ))}
         </ul>
       )}
-      <p className="hint">Clic prepara el versículo. Mayús+clic marca un rango. Doble clic lo proyecta.</p>
+      <p className="hint">Clic prepara el versículo. Mayús+clic marca un rango.</p>
     </section>
   );
 }
