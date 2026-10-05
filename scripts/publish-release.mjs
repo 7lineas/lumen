@@ -133,7 +133,7 @@ export function artifactFilename(version, role) {
   return `lumen-${safeVersion}-setup.exe`;
 }
 
-export async function findWindowsArtifacts(dir) {
+export async function findWindowsArtifacts(dir, version) {
   const entries = await readdir(dir);
   const exes = [];
   for (const name of entries) {
@@ -142,8 +142,11 @@ export async function findWindowsArtifacts(dir) {
     const info = await stat(full);
     if (info.isFile()) exes.push({ name, full });
   }
-  const portable = exes.find((file) => /portable/i.test(file.name));
-  const setup = exes.find((file) => file !== portable && /(setup|win-x64|nsis)/i.test(file.name));
+  const versionedExes = version
+    ? exes.filter((file) => file.name.toLowerCase().startsWith(`lumen-${String(version).trim().toLowerCase()}-`))
+    : exes;
+  const portable = versionedExes.find((file) => /portable/i.test(file.name));
+  const setup = versionedExes.find((file) => file !== portable && /(setup|win-x64|nsis)/i.test(file.name));
   if (!setup || !portable) {
     const found = exes.map((file) => file.name).join(", ") || "(ninguno)";
     throw new Error(
@@ -488,7 +491,7 @@ async function writeJson(filePath, value) {
 
 export async function publishRelease(options) {
   const version = options.version || (await readVersion());
-  const artifacts = await findWindowsArtifacts(options.dir);
+  const artifacts = await findWindowsArtifacts(options.dir, version);
   const releasedAt = new Date().toISOString().slice(0, 10);
   const downloadBaseUrl = resolveDownloadBaseUrl();
   const manifest = await buildReleaseManifest({
