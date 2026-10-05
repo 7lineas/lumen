@@ -962,11 +962,6 @@ export function OperatorApp() {
             const next = rangeFromVerseClick(anchor, viewBook, viewChapter, verse, shiftKey);
             stageRange(next.range, next.anchor);
           }}
-          onVerseDoubleClick={(verse) => {
-            const next = rangeFromVerseClick(null, viewBook, viewChapter, verse, false);
-            stageRange(next.range, next.anchor);
-            void projectReference(formatRange(next.range));
-          }}
           refInput={refInput}
           onRefInput={setRefInput}
           onRefSubmit={resolveFromInput}
