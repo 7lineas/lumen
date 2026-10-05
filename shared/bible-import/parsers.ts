@@ -93,6 +93,21 @@ function toInt(value: unknown): number {
 
 // ---------------------------------------------------------------- JSON
 
+const isPlainObject = (value: unknown): value is Record<string, unknown> =>
+  !!value && typeof value === "object" && !Array.isArray(value);
+
+/**
+ * Some downloaded Bibles put the books straight at the root
+ * (`{ "Génesis": { "1": { "1": "…" } }, "lang": "SPAN" }`) instead of under `verses`.
+ * Returns those book objects (ignoring loose values such as "lang" and the "meta" block),
+ * or null when no root key looks like a book.
+ */
+function rootBooks(root: Record<string, unknown>): Record<string, unknown> | null {
+  const entries = Object.entries(root).filter(([key, value]) => key !== "meta" && isPlainObject(value));
+  if (!entries.some(([key]) => resolveBookName(key))) return null;
+  return Object.fromEntries(entries);
+}
+
 function parseJson(text: string): ParsedBible {
   let data: unknown;
   try {
@@ -112,7 +127,7 @@ function parseJson(text: string): ParsedBible {
     for (const key of ["name", "abbr", "language", "copyright"] as const) {
       if (typeof meta[key] === "string" && meta[key]) hint[key] = meta[key] as string;
     }
-    const books = root.verses;
+    const books = root.verses === undefined ? rootBooks(root) : root.verses;
     if (!books || typeof books !== "object" || Array.isArray(books)) {
       throw new ImportError('El JSON debe tener un objeto "verses": { "GEN": { "1": { "1": "texto" } } }. Vea docs/IMPORTAR-BIBLIAS.md.');
     }

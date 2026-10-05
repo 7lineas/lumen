@@ -68,7 +68,7 @@ export const BOOKS: BookMeta[] = [
   { code: "HEB", name: "Hebreos", abbrev: ["heb"], testament: "NT", chapters: 13 },
   { code: "JAS", name: "Santiago", abbrev: ["jas", "stg"], testament: "NT", chapters: 5 },
   { code: "1PE", name: "1 Pedro", abbrev: ["1pe", "1 ped", "1ped"], testament: "NT", chapters: 5 },
-  { code: "2PE", name: "2 Pedro", abbrev: ["2pe", "2 ped", "2ped"], testament: "NT", chapters: 5 },
+  { code: "2PE", name: "2 Pedro", abbrev: ["2pe", "2 ped", "2ped"], testament: "NT", chapters: 3 },
   { code: "1JN", name: "1 Juan", abbrev: ["1jn", "1 jn", "1ju"], testament: "NT", chapters: 5 },
   { code: "2JN", name: "2 Juan", abbrev: ["2jn", "2 jn"], testament: "NT", chapters: 1 },
   { code: "3JN", name: "3 Juan", abbrev: ["3jn", "3 jn"], testament: "NT", chapters: 1 },
