@@ -313,7 +313,7 @@ describe("search, add and remove online versions", () => {
     expect(calls.length).toBe(before);
 
     const listed = await yv.addVersion("yv-9999");
-    expect(listed.versions.map((v) => v.id)).toEqual(["yv-128", "yv-147", "yv-3365", "yv-9999"]);
+    expect(listed.versions.map((v) => v.id)).toEqual(["yv-128", "yv-147", "yv-9999"]);
     expect(fs.existsSync(path.join(dir, "selected-versions.json"))).toBe(true);
     expect(JSON.parse(fs.readFileSync(path.join(dir, "selected-versions.json"), "utf8"))).toEqual({ ids: [9999] });
 
@@ -324,7 +324,7 @@ describe("search, add and remove online versions", () => {
     await yv.removeVersion("yv-128");
     expect((await yv.listVersions()).versions.map((v) => v.id)).toContain("yv-128");
     const afterRemove = await yv.removeVersion("yv-9999");
-    expect(afterRemove.versions.map((v) => v.id)).toEqual(["yv-128", "yv-147", "yv-3365"]);
+    expect(afterRemove.versions.map((v) => v.id)).toEqual(["yv-128", "yv-147"]);
     expect(JSON.parse(fs.readFileSync(path.join(dir, "selected-versions.json"), "utf8"))).toEqual({ ids: [] });
     expect(calls.length).toBe(before);
   });

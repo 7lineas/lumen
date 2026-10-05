@@ -20,7 +20,7 @@ import {
 import { parseChapterContent } from "./youversion-parse";
 
 const catalog: YvBible[] = [
-  { id: 3365, abbreviation: "PDT", title: "Palabla de Dios para ti", copyright: "© PDT" },
+  { id: 3365, abbreviation: "spaPdDpt", title: "Palabla de Dios para ti", copyright: "© PdDpt" },
   { id: 147, abbreviation: "RVES", title: "Reina-Valera Antigua", copyright: '"Dominio público"' },
   { id: 2664, abbreviation: "NVI-S", title: "Nueva Versión Internacional 2015", copyright: "© Biblica" },
   { id: 128, abbreviation: "NVI-S", title: "Nueva Versión Internacional 2025", copyright: "© Biblica" },
@@ -49,6 +49,7 @@ describe("buildOnlineVersions", () => {
 
   it("orders by popularity in Colombia, unknown ones last", () => {
     expect(versions.map((v) => v.id)).toEqual(["yv-128", "yv-2664", "yv-103", "yv-89", "yv-147", "yv-3365", "yv-9999"]);
+    // 3365 sorts after defaults (not itself a default) when present in the catalog
   });
 
   it("tells the two NVI-S editions apart by year", () => {
@@ -68,8 +69,9 @@ describe("buildOnlineVersions", () => {
     expect(rves.online).toBe(true);
   });
 
-  it("shows PDT instead of the API abbreviation spaPdDpt", () => {
-    expect(versions.find((v) => v.id === "yv-3365")!.abbr).toBe("PDT");
+  it("labels 3365 as PdDpt, not PDT (PDT is bible.com 197, absent from Platform)", () => {
+    expect(versions.find((v) => v.id === "yv-3365")!.abbr).toBe("PdDpt");
+    expect(versions.find((v) => v.id === "yv-3365")!.name).toMatch(/Palabla de Dios para ti/i);
   });
 
   it("puts multi-line publisher notices on one line", () => {
@@ -99,15 +101,16 @@ describe("mergeChapter", () => {
 
 
 describe("default online list", () => {
-  it("ships NVI 2025/2015, NBLA, LBLA, RVES and PDT in Colombia order", () => {
-    expect([...DEFAULT_ONLINE_VERSION_IDS]).toEqual([128, 2664, 103, 89, 147, 3365]);
-    expect(isDefaultOnlineVersionId("yv-3365")).toBe(true);
+  it("ships NVI 2025/2015, NBLA, LBLA and RVES in Colombia order (no PDT: not on Platform)", () => {
+    expect([...DEFAULT_ONLINE_VERSION_IDS]).toEqual([128, 2664, 103, 89, 147]);
+    expect(isDefaultOnlineVersionId("yv-147")).toBe(true);
+    expect(isDefaultOnlineVersionId("yv-3365")).toBe(false);
     expect(isDefaultOnlineVersionId("yv-9999")).toBe(false);
   });
 
   it("keeps defaults first and appends user-added ids without duplicates", () => {
     expect(mergeSelectedOnlineIds([3365, 9999, 128, 42])).toEqual([128, 2664, 103, 89, 147, 3365, 9999, 42]);
-    expect(sanitizeCustomOnlineIds([128, 9999, 9999, -1, 42.5, 42])).toEqual([9999, 42]);
+    expect(sanitizeCustomOnlineIds([128, 3365, 9999, 9999, -1, 42.5, 42])).toEqual([3365, 9999, 42]);
   });
 
   it("picks only selected versions from the full catalog, in selection order", () => {
@@ -138,9 +141,11 @@ describe("searchOnlineCatalog", () => {
 
   it("matches name, abbreviation and id without accents, and marks added ones", () => {
     expect(normalizeSearchText("Niño NVI")).toBe("nino nvi");
-    const byAbbr = searchOnlineCatalog(catalog, "pdt", new Set(["yv-128"]));
+    const byAbbr = searchOnlineCatalog(catalog, "pddpt", new Set(["yv-128"]));
     expect(byAbbr.map((h) => h.id)).toEqual(["yv-3365"]);
-    expect(byAbbr[0]).toMatchObject({ abbr: "PDT", added: false, language: "Español" });
+    expect(byAbbr[0]).toMatchObject({ abbr: "PdDpt", added: false, language: "Español" });
+    // Searching "PDT" must not pretend 3365 is "Palabra de Dios para Todos"
+    expect(searchOnlineCatalog(catalog, "pdt", new Set()).every((h) => h.abbr !== "PDT")).toBe(true);
     const byName = searchOnlineCatalog(catalog, "reina", new Set(["yv-147"]));
     expect(byName[0]).toMatchObject({ id: "yv-147", added: true });
     expect(searchOnlineCatalog(catalog, "yv-9999", new Set()).map((h) => h.id)).toEqual(["yv-9999"]);

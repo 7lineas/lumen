@@ -38,16 +38,23 @@ export interface YvLicense {
 
 /**
  * Default online list for Colombia (and ordering of that list):
- * NVI 2025, NVI 2015, NBLA, LBLA, RVES, PDT. Other versions the user adds
- * come after these.
+ * NVI 2025, NVI 2015, NBLA, LBLA, RVES. Other versions the user adds come after these.
+ *
+ * Note: bible.com version 197 ("Palabra de Dios para Todos" / PDT, Liga Bíblica
+ * Internacional) is NOT on YouVersion Platform (`GET /bibles/197` → 404). Do not
+ * confuse it with Platform id 3365 ("Palabla de Dios para ti").
  */
-export const DEFAULT_ONLINE_VERSION_IDS = [128, 2664, 103, 89, 147, 3365] as const;
+export const DEFAULT_ONLINE_VERSION_IDS = [128, 2664, 103, 89, 147] as const;
 
 /** @deprecated alias kept for callers that still import the old name. */
 export const COLOMBIA_PRIORITY = DEFAULT_ONLINE_VERSION_IDS;
 
-/** The API abbreviates "Palabla de Dios para ti" as spaPdDpt. */
-const ABBR_OVERRIDES: Record<number, string> = { 3365: "PDT" };
+/**
+ * Prefer the publisher-facing short label when the API abbreviation is opaque.
+ * Never map 3365 to "PDT": that abbreviation belongs to "Palabra de Dios para Todos"
+ * (bible.com 197), which is not on Platform; 3365 is "Palabla de Dios para ti".
+ */
+const ABBR_OVERRIDES: Record<number, string> = { 3365: "PdDpt" };
 
 function clean(value: unknown): string {
   if (typeof value !== "string") return "";
