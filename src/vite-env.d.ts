@@ -3,6 +3,7 @@
 import type { BibleImportPickResult, BibleImportCommitResult } from "../shared/bible-import/types";
 import type { ImportMetaInput } from "../shared/bible-import/build";
 import type { ChapterResult, OnlineVersionsResult } from "../shared/youversion";
+import type { AppUpdateState } from "../shared/app-update";
 import type { AppSettings, HistoryEntry, ProjectorPayload, QueueEntry, StoredSong, StoredSlideDeck, SlideImportResult } from "../shared/types";
 
 export interface DisplayInfo {
@@ -36,28 +37,6 @@ export interface BibleDownloadProgress {
   loaded: number;
   total: number | null;
   attempt: number;
-}
-
-export interface AppUpdateStatus {
-  version: string;
-  platform: NodeJS.Platform;
-  packaged: boolean;
-  portable: boolean;
-  supported: boolean;
-  feedUrl: string;
-}
-
-export interface AppUpdateEvent {
-  type:
-    | "checking-for-update"
-    | "update-available"
-    | "update-not-available"
-    | "download-progress"
-    | "update-downloaded"
-    | "error";
-  version?: string;
-  percent?: number;
-  message?: string;
 }
 
 export interface ProyectorApi {
@@ -97,12 +76,10 @@ export interface ProyectorApi {
   showOnProjector: (p: ProjectorPayload) => Promise<boolean>;
   pickBackgroundImage: () => Promise<string | null>;
   deleteBackgroundMedia: (path: string) => Promise<boolean>;
-  getAppUpdateStatus: () => Promise<AppUpdateStatus>;
-  checkForAppUpdate: () => Promise<{ version: string | null; updateAvailable: boolean }>;
-  downloadAppUpdate: () => Promise<boolean>;
-  installAppUpdate: () => Promise<boolean>;
-  openAppDownload: (url: string) => Promise<boolean>;
-  onAppUpdateEvent: (cb: (event: AppUpdateEvent) => void) => () => void;
+  getAppUpdateState: () => Promise<AppUpdateState>;
+  startAppUpdate: () => Promise<AppUpdateState>;
+  installAppUpdate: () => Promise<AppUpdateState>;
+  onAppUpdateState: (cb: (state: AppUpdateState) => void) => () => void;
   onProjectorUpdate: (cb: (p: ProjectorPayload) => void) => () => void;
   onBibleDownloadProgress: (cb: (progress: BibleDownloadProgress) => void) => () => void;
   onOperatorShortcut: (cb: (data: { action: string }) => void) => () => void;

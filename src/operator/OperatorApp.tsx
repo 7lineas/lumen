@@ -861,7 +861,6 @@ export function OperatorApp() {
             <Button type="button" data-testid="mode-diapositivas" className={mode === "diapositivas" ? "active" : ""} onClick={() => switchMode("diapositivas")}>
               Diapositivas
             </Button>
-            <span className="top-sep" aria-hidden />
             <UpdateButton />
           </div>
         </div>

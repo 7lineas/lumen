@@ -1305,10 +1305,49 @@ body {
   color: #061018;
 }
 
-.update-error-wrap {
-  display: inline-flex;
-  gap: 0.35rem;
-  align-items: stretch;
+.modes .update-button {
+  position: relative;
+  overflow: hidden;
+  align-self: center;
+  border: 1px solid var(--accent-dim);
+  border-radius: 999px;
+  padding: 0.2rem 0.85rem;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  font-weight: 600;
+}
+
+.modes .update-button[data-state="install"] {
+  color: #061018;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.modes .update-button[data-state="downloading"] {
+  opacity: 1;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--accent) 35%, transparent) var(--update-progress, 0%),
+    color-mix(in srgb, var(--accent) 10%, transparent) var(--update-progress, 0%)
+  );
+}
+
+.update-note {
+  align-self: center;
+  margin-left: 0.5rem;
+  max-width: 18rem;
+  color: var(--danger);
+  font-size: 0.75rem;
+}
+
+.update-warning {
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: var(--danger);
+  font-size: 0.85rem;
 }
 
 .version-select {

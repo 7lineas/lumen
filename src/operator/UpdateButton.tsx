@@ -1,177 +1,124 @@
 import { useEffect, useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { UPDATE_FEED_URL } from "@shared/app-update";
-import type { AppUpdateEvent, AppUpdateStatus } from "../vite-env.d";
+import {
+  getUpdateConfirmation,
+  resolveUpdateButtonAction,
+  shouldShowUpdateButton,
+  updateButtonLabel,
+  updateButtonTitle,
+  type AppUpdateState,
+} from "@shared/app-update";
 
-type Phase =
-  | "idle"
-  | "checking"
-  | "up-to-date"
-  | "available"
-  | "downloading"
-  | "ready"
-  | "error";
-
+/**
+ * Botón de actualización: solo existe cuando hay una versión nueva (o una
+ * descarga en curso). Sin versión nueva no se muestra nada.
+ */
 export function UpdateButton() {
-  const [phase, setPhase] = useState<Phase>("idle");
-  const [status, setStatus] = useState<AppUpdateStatus | null>(null);
-  const [latest, setLatest] = useState<string | null>(null);
-  const [percent, setPercent] = useState(0);
-  const [message, setMessage] = useState<string | null>(null);
+  const [state, setState] = useState<AppUpdateState | null>(null);
+  const [dialogState, setDialogState] = useState<AppUpdateState | null>(null);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    void window.proyector?.getAppUpdateStatus().then(setStatus).catch(() => undefined);
-    return window.proyector?.onAppUpdateEvent((event: AppUpdateEvent) => {
-      if (event.type === "checking-for-update") {
-        setPhase("checking");
-        setMessage(null);
-      } else if (event.type === "update-available") {
-        setLatest(event.version ?? null);
-        setPhase("available");
-      } else if (event.type === "update-not-available") {
-        setPhase("up-to-date");
-      } else if (event.type === "download-progress") {
-        setPercent(event.percent ?? 0);
-        setPhase("downloading");
-      } else if (event.type === "update-downloaded") {
-        setLatest(event.version ?? null);
-        setPhase("ready");
-      } else if (event.type === "error") {
-        setMessage(event.message ?? "No se pudo buscar la actualización");
-        setPhase("error");
-      }
-    });
+    const api = window.proyector;
+    if (!api) return;
+    void api.getAppUpdateState().then(setState).catch(() => undefined);
+    return api.onAppUpdateState(setState);
   }, []);
 
-  useEffect(() => {
-    if (phase !== "up-to-date") return;
-    const timer = setTimeout(() => setPhase("idle"), 4000);
-    return () => clearTimeout(timer);
-  }, [phase]);
+  if (!state || !shouldShowUpdateButton(state)) return null;
 
-  async function check() {
-    setMessage(null);
-    setPhase("checking");
+  const action = resolveUpdateButtonAction(state);
+  const downloading = state.status === "downloading";
+  const percent = Math.floor(state.downloadPercent ?? 0);
+
+  async function onPress() {
+    const api = window.proyector;
+    if (!api || busy) return;
+    setBusy(true);
     try {
-      const result = await window.proyector?.checkForAppUpdate();
-      if (result?.updateAvailable && result.version) {
-        setLatest(result.version);
-        setPhase("available");
-      } else if (result && !result.updateAvailable) {
-        setPhase("up-to-date");
-      }
-    } catch (error) {
-      // Portable, dev o sin red: ofrecer la descarga manual.
-      if (status && !status.supported) {
-        setPhase("error");
-        setMessage(
-          status.portable
-            ? "La versión portable no se actualiza sola. Descargue el instalador nuevo."
-            : "Descargue la versión nueva desde la página.",
-        );
+      // Estado fresco: si se está proyectando o no cambia el aviso del diálogo.
+      const fresh = await api.getAppUpdateState();
+      setState(fresh);
+      if (resolveUpdateButtonAction(fresh) === "open") {
+        setState(await api.startAppUpdate());
         return;
       }
-      setPhase("error");
-      setMessage(error instanceof Error ? error.message : "No se pudo buscar la actualización");
+      setDialogState(fresh);
+    } catch {
+      // Sin respuesta del proceso principal: no hay nada que hacer aquí.
+    } finally {
+      setBusy(false);
     }
   }
 
-  async function download() {
-    setMessage(null);
-    setPercent(0);
-    setPhase("downloading");
+  async function confirm() {
+    const api = window.proyector;
+    const current = dialogState;
+    setDialogState(null);
+    if (!api || !current) return;
     try {
-      await window.proyector?.downloadAppUpdate();
-    } catch (error) {
-      setPhase("error");
-      setMessage(error instanceof Error ? error.message : "No se pudo descargar la actualización");
+      if (resolveUpdateButtonAction(current) === "install") setState(await api.installAppUpdate());
+      else setState(await api.startAppUpdate());
+    } catch {
+      // El proceso principal informa los fallos mediante el estado.
     }
   }
 
-  async function restart() {
-    await window.proyector?.installAppUpdate().catch(() => undefined);
-  }
+  const confirmation = dialogState ? getUpdateConfirmation(dialogState) : null;
 
-  async function openManualDownload() {
-    const base = (status?.feedUrl || UPDATE_FEED_URL).replace(/\/+$/, "");
-    const file = latest ? `Lumen-${latest}-win-x64.exe` : null;
-    const url = file ? `${base}/${file}` : `${base}/releases.json`;
-    try {
-      await window.proyector?.openAppDownload(url);
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "No se pudo abrir la descarga");
-    }
-  }
-
-  const title = status
-    ? `Versión actual ${status.version}. Fuente: ${status.feedUrl}`
-    : "Buscar actualizaciones";
-
-  if (phase === "checking") {
-    return (
-      <Button type="button" data-testid="btn-update" disabled title={title}>
-        Buscando…
-      </Button>
-    );
-  }
-  if (phase === "up-to-date") {
-    return (
-      <Button type="button" data-testid="btn-update" title={title} onClick={() => void check()}>
-        Al día{status ? ` (${status.version})` : ""}
-      </Button>
-    );
-  }
-  if (phase === "available") {
-    return (
-      <Button
-        type="button"
-        data-testid="btn-update"
-        className="primary"
-        title={title}
-        onClick={() => void download()}
-      >
-        Descargar{latest ? ` v${latest}` : ""}
-      </Button>
-    );
-  }
-  if (phase === "downloading") {
-    return (
-      <Button type="button" data-testid="btn-update" disabled title={title}>
-        Descargando {percent}%
-      </Button>
-    );
-  }
-  if (phase === "ready") {
-    return (
-      <Button
-        type="button"
-        data-testid="btn-update"
-        className="primary"
-        title={title}
-        onClick={() => void restart()}
-      >
-        Reiniciar para actualizar{latest ? ` v${latest}` : ""}
-      </Button>
-    );
-  }
-  if (phase === "error") {
-    const manual = status && !status.supported;
-    return (
-      <span className="update-error-wrap" title={message ?? title}>
-        <Button type="button" data-testid="btn-update" title={message ?? title} onClick={() => void check()}>
-          Reintentar
-        </Button>
-        {manual && (
-          <Button type="button" title={title} onClick={() => void openManualDownload()}>
-            Descargar
-          </Button>
-        )}
-      </span>
-    );
-  }
   return (
-    <Button type="button" data-testid="btn-update" title={title} onClick={() => void check()}>
-      Actualizar
-    </Button>
+    <>
+      <span className="top-sep" aria-hidden />
+      <Button
+        type="button"
+        data-testid="btn-update"
+        className="update-button"
+        data-state={downloading ? "downloading" : action}
+        disabled={downloading || busy}
+        title={updateButtonTitle(state)}
+        style={downloading ? ({ "--update-progress": `${percent}%` } as React.CSSProperties) : undefined}
+        onClick={() => void onPress()}
+      >
+        {updateButtonLabel(state)}
+      </Button>
+      {state.message && state.errorContext && state.errorContext !== "check" && !downloading && (
+        <span className="update-note" role="status" data-testid="update-error">
+          {state.message}
+        </span>
+      )}
+      <AlertDialog open={dialogState !== null} onOpenChange={(open) => !open && setDialogState(null)}>
+        <AlertDialogContent data-testid="update-dialog" className="update-dialog">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{confirmation?.title}</AlertDialogTitle>
+            <AlertDialogDescription>{confirmation?.description}</AlertDialogDescription>
+          </AlertDialogHeader>
+          {confirmation?.projectionWarning && (
+            <p className="update-warning" role="alert" data-testid="update-projection-warning">
+              {confirmation.projectionWarning}
+            </p>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="update-cancel">Ahora no</AlertDialogCancel>
+            <AlertDialogAction
+              data-testid="update-confirm"
+              variant={confirmation?.projectionWarning ? "destructive" : "default"}
+              onClick={() => void confirm()}
+            >
+              {confirmation?.confirmLabel}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

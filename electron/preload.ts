@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from "electron";
 import type { BibleImportPickResult, BibleImportCommitResult } from "../shared/bible-import/types";
 import type { ImportMetaInput } from "../shared/bible-import/build";
+import type { AppUpdateState } from "../shared/app-update";
 import type { ChapterResult, OnlineVersionsResult } from "../shared/youversion";
 import type { AppSettings, HistoryEntry, ProjectorPayload, QueueEntry, StoredSong, StoredSlideDeck, SlideImportResult } from "../shared/types";
 
@@ -105,24 +106,12 @@ contextBridge.exposeInMainWorld("proyector", {
     ipcRenderer.on("operator:shortcut", handler);
     return () => ipcRenderer.removeListener("operator:shortcut", handler);
   },
-  getAppUpdateStatus: (): Promise<{
-    version: string;
-    platform: NodeJS.Platform;
-    packaged: boolean;
-    portable: boolean;
-    supported: boolean;
-    feedUrl: string;
-  }> => ipcRenderer.invoke("updater:status"),
-  checkForAppUpdate: (): Promise<{ version: string | null; updateAvailable: boolean }> =>
-    ipcRenderer.invoke("updater:check"),
-  downloadAppUpdate: (): Promise<boolean> => ipcRenderer.invoke("updater:download"),
-  installAppUpdate: (): Promise<boolean> => ipcRenderer.invoke("updater:install"),
-  openAppDownload: (url: string): Promise<boolean> => ipcRenderer.invoke("updater:openDownload", url),
-  onAppUpdateEvent: (
-    cb: (event: { type: string; version?: string; percent?: number; message?: string }) => void,
-  ): (() => void) => {
-    const handler = (_: Electron.IpcRendererEvent, event: { type: string }) => cb(event);
-    ipcRenderer.on("updater:event", handler);
-    return () => ipcRenderer.removeListener("updater:event", handler);
+  getAppUpdateState: (): Promise<AppUpdateState> => ipcRenderer.invoke("updater:get-state"),
+  startAppUpdate: (): Promise<AppUpdateState> => ipcRenderer.invoke("updater:start"),
+  installAppUpdate: (): Promise<AppUpdateState> => ipcRenderer.invoke("updater:install"),
+  onAppUpdateState: (cb: (state: AppUpdateState) => void): (() => void) => {
+    const handler = (_: Electron.IpcRendererEvent, state: AppUpdateState) => cb(state);
+    ipcRenderer.on("updater:state", handler);
+    return () => ipcRenderer.removeListener("updater:state", handler);
   },
 });
