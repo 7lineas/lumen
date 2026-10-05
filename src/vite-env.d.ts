@@ -39,7 +39,16 @@ export interface BibleDownloadProgress {
   attempt: number;
 }
 
+export interface BrowserAccessInfo {
+  enabled: boolean;
+  pairingCode: string;
+  port: number;
+  addresses: string[];
+}
+
 export interface ProyectorApi {
+  getBrowserAccess: () => Promise<BrowserAccessInfo>;
+  setBrowserAccess: (enabled: boolean) => Promise<BrowserAccessInfo>;
   listBibleVersions: () => Promise<Array<{ id: string; name: string; abbr: string; language: string }>>;
   loadBible: (id: string) => Promise<unknown>;
   listOnlineBibles: (force?: boolean) => Promise<OnlineVersionsResult>;
@@ -75,6 +84,7 @@ export interface ProyectorApi {
   onProjectorBounds: (cb: (bounds: { width: number; height: number }) => void) => () => void;
   showOnProjector: (p: ProjectorPayload) => Promise<boolean>;
   pickBackgroundImage: () => Promise<string | null>;
+  saveBackgroundThumbnail: (videoPath: string, jpegBase64: string) => Promise<boolean>;
   deleteBackgroundMedia: (path: string) => Promise<boolean>;
   getAppUpdateState: () => Promise<AppUpdateState>;
   startAppUpdate: () => Promise<AppUpdateState>;
@@ -88,5 +98,6 @@ export interface ProyectorApi {
 declare global {
   interface Window {
     proyector?: ProyectorApi;
+    __LUMEN_BROWSER__?: boolean;
   }
 }
