@@ -7,6 +7,7 @@ import {
   isOnlineVersionId,
   mergeChapter,
   type ChapterResult,
+  type OnlineSearchResult,
   type OnlineVersionsResult,
 } from "@shared/youversion";
 
@@ -50,6 +51,26 @@ export function useOnlineBibles() {
   useEffect(() => {
     void refreshVersions();
   }, [refreshVersions]);
+
+  const searchVersions = useCallback(async (query: string): Promise<OnlineSearchResult> => {
+    const api = window.proyector;
+    if (!api?.searchOnlineBibles) {
+      return { configured: false, query, hits: [], stale: false };
+    }
+    return api.searchOnlineBibles(query);
+  }, []);
+
+  const addVersion = useCallback(async (id: string) => {
+    const api = window.proyector;
+    if (!api?.addOnlineBible) return;
+    setOnline(await api.addOnlineBible(id));
+  }, []);
+
+  const removeVersion = useCallback(async (id: string) => {
+    const api = window.proyector;
+    if (!api?.removeOnlineBible) return;
+    setOnline(await api.removeOnlineBible(id));
+  }, []);
 
   const keyOf = (ref: ChapterRef) => `${ref.versionId}/${ref.book}.${ref.chapter}`;
 
@@ -108,5 +129,18 @@ export function useOnlineBibles() {
     setFailures({});
   }, []);
 
-  return { online, loaded, refreshVersions, chapterTick, failures, loading, ensureChapter, resetFailures, chapterKey: keyOf };
+  return {
+    online,
+    loaded,
+    refreshVersions,
+    searchVersions,
+    addVersion,
+    removeVersion,
+    chapterTick,
+    failures,
+    loading,
+    ensureChapter,
+    resetFailures,
+    chapterKey: keyOf,
+  };
 }

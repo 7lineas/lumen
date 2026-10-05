@@ -2,7 +2,7 @@ import { contextBridge, ipcRenderer } from "electron";
 import type { BibleImportPickResult, BibleImportCommitResult } from "../shared/bible-import/types";
 import type { ImportMetaInput } from "../shared/bible-import/build";
 import type { AppUpdateState } from "../shared/app-update";
-import type { ChapterResult, OnlineVersionsResult } from "../shared/youversion";
+import type { ChapterResult, OnlineSearchResult, OnlineVersionsResult } from "../shared/youversion";
 import type { AppSettings, HistoryEntry, ProjectorPayload, QueueEntry, StoredSong, StoredSlideDeck, SlideImportResult } from "../shared/types";
 
 export interface BibleLibraryEntry {
@@ -44,6 +44,9 @@ contextBridge.exposeInMainWorld("proyector", {
   listBibleVersions: (): Promise<unknown[]> => ipcRenderer.invoke("bibles:list"),
   loadBible: (id: string): Promise<unknown> => ipcRenderer.invoke("bibles:load", id),
   listOnlineBibles: (force?: boolean): Promise<OnlineVersionsResult> => ipcRenderer.invoke("yvp:versions", force === true),
+  searchOnlineBibles: (query: string): Promise<OnlineSearchResult> => ipcRenderer.invoke("yvp:search", query),
+  addOnlineBible: (id: string): Promise<OnlineVersionsResult> => ipcRenderer.invoke("yvp:add", id),
+  removeOnlineBible: (id: string): Promise<OnlineVersionsResult> => ipcRenderer.invoke("yvp:remove", id),
   getOnlineChapter: (id: string, book: string, chapter: number): Promise<ChapterResult> =>
     ipcRenderer.invoke("yvp:chapter", id, book, chapter),
   getBibleCatalog: (): Promise<BibleLibraryView> => ipcRenderer.invoke("bibles:catalog"),

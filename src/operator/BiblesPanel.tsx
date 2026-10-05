@@ -1,16 +1,22 @@
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Check } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { AppSettings, BibleVersionMeta } from "@shared/types";
+import { isDefaultOnlineVersionId, type OnlineSearchHit, type OnlineVersionsResult } from "@shared/youversion";
 import { ImportBibleCard } from "./ImportBibleCard";
-import type { OnlineVersionsResult } from "@shared/youversion";
 import type { BibleDownloadProgress, BibleLibraryEntry, BibleLibraryView } from "../vite-env.d";
+
+const SEARCH_DEBOUNCE_MS = 300;
 
 interface Props {
   onChanged: (settings?: AppSettings) => void;
   online?: OnlineVersionsResult;
   onRefreshOnline?: () => void;
+  onSearchOnline?: (query: string) => Promise<{ hits: OnlineSearchHit[]; error?: string; stale?: boolean }>;
+  onAddOnline?: (id: string) => Promise<void>;
+  onRemoveOnline?: (id: string) => Promise<void>;
   /** Bibles the user imported from files. */
   customVersions?: BibleVersionMeta[];
 }
@@ -21,12 +27,26 @@ function formatByteSize(bytes: number | null): string {
   return `${mb.toLocaleString("es-ES", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} MB`;
 }
 
-export function BiblesPanel({ onChanged, online, onRefreshOnline, customVersions = [] }: Props) {
+export function BiblesPanel({
+  onChanged,
+  online,
+  onRefreshOnline,
+  onSearchOnline,
+  onAddOnline,
+  onRemoveOnline,
+  customVersions = [],
+}: Props) {
   const [library, setLibrary] = useState<BibleLibraryView | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [progress, setProgress] = useState<BibleDownloadProgress | null>(null);
   const [rowError, setRowError] = useState<{ id: string; message: string } | null>(null);
+  const [query, setQuery] = useState("");
+  const [hits, setHits] = useState<OnlineSearchHit[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [busyOnlineId, setBusyOnlineId] = useState<string | null>(null);
+  const searchSeq = useRef(0);
 
   async function reload() {
     const view = await window.proyector?.getBibleCatalog();
@@ -53,6 +73,36 @@ export function BiblesPanel({ onChanged, online, onRefreshOnline, customVersions
       setProgress(next);
     });
   }, []);
+
+  useEffect(() => {
+    if (!onSearchOnline) return;
+    const trimmed = query.trim();
+    if (!trimmed) {
+      setHits([]);
+      setSearchError(null);
+      setSearching(false);
+      return;
+    }
+    const seq = ++searchSeq.current;
+    setSearching(true);
+    const timer = window.setTimeout(() => {
+      void onSearchOnline(trimmed)
+        .then((result) => {
+          if (seq !== searchSeq.current) return;
+          setHits(result.hits);
+          setSearchError(result.error ?? null);
+        })
+        .catch((reason: unknown) => {
+          if (seq !== searchSeq.current) return;
+          setHits([]);
+          setSearchError(reason instanceof Error ? reason.message : "No se pudo buscar");
+        })
+        .finally(() => {
+          if (seq === searchSeq.current) setSearching(false);
+        });
+    }, SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(timer);
+  }, [query, onSearchOnline]);
 
   async function download(id: string) {
     setActiveId(id);
@@ -84,6 +134,40 @@ export function BiblesPanel({ onChanged, online, onRefreshOnline, customVersions
         id,
         message: reason instanceof Error ? reason.message : "No se pudo quitar",
       });
+    }
+  }
+
+  async function addOnline(id: string) {
+    if (!onAddOnline) return;
+    setBusyOnlineId(id);
+    setRowError(null);
+    try {
+      await onAddOnline(id);
+      setHits((prev) => prev.map((hit) => (hit.id === id ? { ...hit, added: true } : hit)));
+    } catch (reason) {
+      setRowError({
+        id,
+        message: reason instanceof Error ? reason.message : "No se pudo añadir",
+      });
+    } finally {
+      setBusyOnlineId(null);
+    }
+  }
+
+  async function removeOnline(id: string) {
+    if (!onRemoveOnline) return;
+    setBusyOnlineId(id);
+    setRowError(null);
+    try {
+      await onRemoveOnline(id);
+      setHits((prev) => prev.map((hit) => (hit.id === id ? { ...hit, added: false } : hit)));
+    } catch (reason) {
+      setRowError({
+        id,
+        message: reason instanceof Error ? reason.message : "No se pudo quitar",
+      });
+    } finally {
+      setBusyOnlineId(null);
     }
   }
 
@@ -123,7 +207,7 @@ export function BiblesPanel({ onChanged, online, onRefreshOnline, customVersions
           onChanged(result?.settings);
         }}
       />
-      <section className="bible-section">
+      <section className="bible-section" data-testid="online-bibles-section">
         <h2>En línea (YouVersion)</h2>
         {!online?.configured && (
           <p className="muted">Esta compilación no incluye la clave de YouVersion Platform, así que las Biblias en línea no están disponibles.</p>
@@ -131,31 +215,118 @@ export function BiblesPanel({ onChanged, online, onRefreshOnline, customVersions
         {online?.configured && (
           <>
             <p className="bible-intro">
-              Se consultan al elegirlas y cada capítulo se guarda en este equipo por 30 días: lo ya consultado funciona sin
-              internet. El texto lleva siempre el copyright de la editorial.
+              Por defecto aparecen NVI, NBLA, LBLA y RVES. Puede buscar otras versiones del catálogo y
+              añadirlas a esta instalación. Se consultan al elegirlas y cada capítulo se guarda en este
+              equipo por 30 días. El texto lleva siempre el copyright de la editorial. Si una versión pide
+              licencia, acéptela en el portal de YouVersion Platform de esta app.
             </p>
-            <Button type="button" onClick={onRefreshOnline} data-testid="online-refresh">Actualizar lista</Button>
-            {online.stale && <p className="bible-banner">Sin conexión: se muestra la lista guardada.{online.error ? ` (${online.error})` : ""}</p>}
-            {!online.stale && online.error && online.versions.length === 0 && (
-              <p className="error">{online.error}{" "}<Button type="button" onClick={onRefreshOnline}>Reintentar</Button></p>
+            <div className="online-toolbar">
+              <Button type="button" onClick={onRefreshOnline} data-testid="online-refresh">
+                Actualizar catálogo
+              </Button>
+            </div>
+            {online.stale && (
+              <p className="bible-banner">
+                Sin conexión: se muestra la lista guardada.{online.error ? ` (${online.error})` : ""}
+              </p>
             )}
+            {!online.stale && online.error && online.versions.length === 0 && (
+              <p className="error">
+                {online.error}{" "}
+                <Button type="button" onClick={onRefreshOnline}>
+                  Reintentar
+                </Button>
+              </p>
+            )}
+
+            <label className="online-search">
+              <span className="col-label">Buscar versiones</span>
+              <Input
+                data-testid="online-search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Nombre, abreviatura o idioma (p. ej. NVI, NBLA, español)"
+                aria-label="Buscar versiones de YouVersion"
+              />
+            </label>
+            {query.trim() && (
+              <div className="bible-list online-search-results" data-testid="online-search-results">
+                {searching && hits.length === 0 && <p className="muted">Buscando…</p>}
+                {searchError && <p className="error">{searchError}</p>}
+                {!searching && !searchError && hits.length === 0 && (
+                  <p className="muted">Ninguna versión coincide con “{query.trim()}”.</p>
+                )}
+                {hits.map((hit) => (
+                  <article className="bible-row" key={hit.id} data-testid={`online-hit-${hit.id}`}>
+                    <h3>{hit.name}</h3>
+                    <p className="bible-meta">
+                      {hit.abbr} · {hit.language}
+                      {hit.license ? ` · ${hit.license}` : ""}
+                      {hit.locked ? " · licencia pendiente" : ""}
+                    </p>
+                    <div className="bible-actions">
+                      {hit.locked && <span className="error">{hit.lockedReason}</span>}
+                      {hit.added ? (
+                        <span className="bible-status">
+                          <Check size={16} strokeWidth={2.5} aria-hidden />
+                          En tu lista
+                        </span>
+                      ) : (
+                        <Button
+                          type="button"
+                          className="primary"
+                          data-testid={`online-add-${hit.id}`}
+                          disabled={busyOnlineId !== null}
+                          onClick={() => void addOnline(hit.id)}
+                        >
+                          {busyOnlineId === hit.id ? "Añadiendo…" : "Añadir"}
+                        </Button>
+                      )}
+                    </div>
+                    {rowError?.id === hit.id && <p className="error">{rowError.message}</p>}
+                  </article>
+                ))}
+              </div>
+            )}
+
+            <h3 className="online-list-title">Tu lista</h3>
             <div className="bible-list">
-              {online.versions.map((version) => (
-                <article className="bible-row" key={version.id} data-testid={`online-row-${version.id}`}>
-                  <h3>{version.name}</h3>
-                  <p className="bible-meta">{version.abbr} · {version.license ?? "YouVersion Platform"}</p>
-                  <div className="bible-actions">
-                    {version.locked
-                      ? <span className="error">{version.lockedReason}</span>
-                      : (
+              {online.versions.map((version) => {
+                const canRemove = !isDefaultOnlineVersionId(version.id);
+                return (
+                  <article className="bible-row" key={version.id} data-testid={`online-row-${version.id}`}>
+                    <h3>{version.name}</h3>
+                    <p className="bible-meta">
+                      {version.abbr} · {version.language}
+                      {version.license ? ` · ${version.license}` : " · YouVersion Platform"}
+                    </p>
+                    <div className="bible-actions">
+                      {version.locked ? (
+                        <span className="error">{version.lockedReason}</span>
+                      ) : (
                         <span className="bible-status">
                           <Check size={16} strokeWidth={2.5} aria-hidden />
                           Disponible en el selector de versión
                         </span>
                       )}
-                  </div>
-                </article>
-              ))}
+                      {canRemove && (
+                        <Button
+                          type="button"
+                          data-testid={`online-remove-${version.id}`}
+                          disabled={busyOnlineId !== null}
+                          onClick={() => void removeOnline(version.id)}
+                        >
+                          {busyOnlineId === version.id ? "Quitando…" : "Quitar"}
+                        </Button>
+                      )}
+                    </div>
+                    {rowError?.id === version.id && <p className="error">{rowError.message}</p>}
+                  </article>
+                );
+              })}
+              {online.versions.length === 0 && !online.error && (
+                <p className="muted">No hay versiones en la lista todavía.</p>
+              )}
             </div>
           </>
         )}

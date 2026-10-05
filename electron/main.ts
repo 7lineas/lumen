@@ -162,6 +162,11 @@ function registerIpcHandle<TArgs extends unknown[], TResult>(
   } } as unknown as Electron.IpcMainInvokeEvent, ...args as TArgs));
 }
 
+// Isolated profile for automated checks (never used in normal installs).
+if (process.env.LUMEN_TEST_USERDATA) {
+  app.setPath("userData", path.resolve(process.env.LUMEN_TEST_USERDATA));
+}
+
 const store = new Store<{
   settings: AppSettings;
   history: HistoryEntry[];
@@ -614,6 +619,9 @@ function yvp(): YouVersionClient {
 
 // Online Bibles (YouVersion Platform). The App Key stays in this process.
 registerIpcHandle("yvp:versions", (_e, force?: boolean) => yvp().listVersions(force === true));
+registerIpcHandle("yvp:search", (_e, query?: string) => yvp().searchVersions(String(query ?? "")));
+registerIpcHandle("yvp:add", (_e, id?: string) => yvp().addVersion(String(id ?? "")));
+registerIpcHandle("yvp:remove", (_e, id?: string) => yvp().removeVersion(String(id ?? "")));
 registerIpcHandle("yvp:chapter", (_e, id: string, book: string, chapter: number) =>
   yvp().getChapter(String(id), String(book), Number(chapter)),
 );

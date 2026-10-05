@@ -2,7 +2,7 @@
 
 import type { BibleImportPickResult, BibleImportCommitResult } from "../shared/bible-import/types";
 import type { ImportMetaInput } from "../shared/bible-import/build";
-import type { ChapterResult, OnlineVersionsResult } from "../shared/youversion";
+import type { ChapterResult, OnlineSearchResult, OnlineVersionsResult } from "../shared/youversion";
 import type { AppUpdateState } from "../shared/app-update";
 import type { AppSettings, HistoryEntry, ProjectorPayload, QueueEntry, StoredSong, StoredSlideDeck, SlideImportResult } from "../shared/types";
 
@@ -52,6 +52,9 @@ export interface ProyectorApi {
   listBibleVersions: () => Promise<Array<{ id: string; name: string; abbr: string; language: string }>>;
   loadBible: (id: string) => Promise<unknown>;
   listOnlineBibles: (force?: boolean) => Promise<OnlineVersionsResult>;
+  searchOnlineBibles: (query: string) => Promise<OnlineSearchResult>;
+  addOnlineBible: (id: string) => Promise<OnlineVersionsResult>;
+  removeOnlineBible: (id: string) => Promise<OnlineVersionsResult>;
   getOnlineChapter: (id: string, book: string, chapter: number) => Promise<ChapterResult>;
   getBibleCatalog: () => Promise<BibleLibraryView>;
   downloadBible: (id: string) => Promise<{ id: string }>;

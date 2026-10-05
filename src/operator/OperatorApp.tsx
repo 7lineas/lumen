@@ -1244,6 +1244,9 @@ export function OperatorApp() {
               customVersions={versions.filter((v) => v.custom)}
               online={onlineBibles.online}
               onRefreshOnline={() => void onlineBibles.refreshVersions(true)}
+              onSearchOnline={(query) => onlineBibles.searchVersions(query)}
+              onAddOnline={(id) => onlineBibles.addVersion(id)}
+              onRemoveOnline={(id) => onlineBibles.removeVersion(id)}
               onChanged={(next) => {
                 if (next) setSettings(mergeSettings(next));
                 setLibraryTick((tick) => tick + 1);

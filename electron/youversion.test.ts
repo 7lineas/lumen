@@ -144,7 +144,9 @@ describe("getChapter", () => {
 
   it("maps 403 to locked and 404 to not-found without retrying", async () => {
     replies = [{ status: 403 }];
-    expect(await client().getChapter("yv-128", "JHN", 3)).toMatchObject({ ok: false, reason: "locked" });
+    const locked = await client().getChapter("yv-128", "JHN", 3);
+    expect(locked).toMatchObject({ ok: false, reason: "locked" });
+    expect(locked.ok === false && locked.message).toMatch(/portal de YouVersion Platform/i);
     replies = [{ status: 404 }];
     expect(await client().getChapter("yv-147", "JHN", 99)).toMatchObject({ ok: false, reason: "not-found" });
     expect(calls).toHaveLength(2);
@@ -203,21 +205,25 @@ describe("listVersions", () => {
   const bible = (id: number, abbreviation: string) => ({ id, abbreviation, title: `Biblia ${abbreviation}` });
   const page = (data: unknown[], next?: string) => ({ status: 200, body: { data, next_page_token: next } });
 
-  it("merges catalog, licensed ids and licenses, follows pagination and caches", async () => {
+  it("merges catalog, licensed ids and licenses, follows pagination and caches the full catalog", async () => {
     router = (url) => {
       if (url.includes("/licenses")) return page([{ id: 2, name: "Biblica Fast-track", bible_ids: [128] }]);
       if (url.includes("all_available=true")) {
-        return url.includes("page_token=tok") ? page([bible(147, "RVES")]) : page([bible(128, "NVI-S")], "tok");
+        return url.includes("page_token=tok")
+          ? page([bible(147, "RVES"), bible(9999, "ZZZ")])
+          : page([bible(128, "NVI-S")], "tok");
       }
       return page([bible(147, "RVES")]);
     };
     const yv = client();
     const result = await yv.listVersions();
     expect(result.configured).toBe(true);
+    // Only defaults present in the catalog appear in the personal list.
     expect(result.versions.map((v) => [v.id, !!v.locked])).toEqual([
       ["yv-128", true],
       ["yv-147", false],
     ]);
+    expect(result.versions[0].lockedReason).toMatch(/Licencia no aceptada/i);
     expect(result.versions[0].lockedReason).toContain("Biblica Fast-track");
     expect(calls.some((c) => c.url.includes("page_token=tok"))).toBe(true);
     expect(calls.every((c) => c.url.includes("language_ranges[]=es") || c.url.includes("/licenses"))).toBe(true);
@@ -264,5 +270,73 @@ describe("listVersions", () => {
   it("reports not configured without a key", async () => {
     expect(await client({ appKey: "" }).listVersions()).toEqual({ configured: false, versions: [], stale: false });
     expect(calls).toHaveLength(0);
+  });
+});
+
+describe("search, add and remove online versions", () => {
+  const bible = (id: number, abbreviation: string, title?: string) => ({
+    id,
+    abbreviation,
+    title: title ?? `Biblia ${abbreviation}`,
+  });
+  const page = (data: unknown[], next?: string) => ({ status: 200, body: { data, next_page_token: next } });
+
+  function seedCatalog() {
+    router = (url) => {
+      if (url.includes("/licenses")) return page([{ id: 2, name: "Biblica Fast-track", bible_ids: [128] }]);
+      if (url.includes("all_available=true")) {
+        return page([
+          bible(128, "NVI-S", "Nueva Versión Internacional 2025"),
+          bible(147, "RVES", "Reina-Valera Antigua"),
+          bible(3365, "spaPdDpt", "Palabla de Dios para ti"),
+          bible(9999, "ZZZ", "Traducción libre"),
+          bible(42, "ABC", "Otra biblia"),
+        ]);
+      }
+      return page([bible(147, "RVES")]);
+    };
+  }
+
+  it("searches the cached catalog without new network calls and adds/removes custom versions", async () => {
+    seedCatalog();
+    const yv = client();
+    await yv.listVersions();
+    const before = calls.length;
+
+    const empty = await yv.searchVersions("   ");
+    expect(empty.hits).toEqual([]);
+    expect(calls.length).toBe(before);
+
+    const hits = await yv.searchVersions("traducción");
+    expect(hits.hits.map((h) => h.id)).toEqual(["yv-9999"]);
+    expect(hits.hits[0]).toMatchObject({ abbr: "ZZZ", added: false, language: "Español" });
+    expect(calls.length).toBe(before);
+
+    const listed = await yv.addVersion("yv-9999");
+    expect(listed.versions.map((v) => v.id)).toEqual(["yv-128", "yv-147", "yv-9999"]);
+    expect(fs.existsSync(path.join(dir, "selected-versions.json"))).toBe(true);
+    expect(JSON.parse(fs.readFileSync(path.join(dir, "selected-versions.json"), "utf8"))).toEqual({ ids: [9999] });
+
+    const again = await yv.searchVersions("zzz");
+    expect(again.hits[0].added).toBe(true);
+
+    // Defaults cannot be removed; custom ones can.
+    await yv.removeVersion("yv-128");
+    expect((await yv.listVersions()).versions.map((v) => v.id)).toContain("yv-128");
+    const afterRemove = await yv.removeVersion("yv-9999");
+    expect(afterRemove.versions.map((v) => v.id)).toEqual(["yv-128", "yv-147"]);
+    expect(JSON.parse(fs.readFileSync(path.join(dir, "selected-versions.json"), "utf8"))).toEqual({ ids: [] });
+    expect(calls.length).toBe(before);
+  });
+
+  it("rejects unknown versions and keeps selection across clients", async () => {
+    seedCatalog();
+    const yv = client();
+    await yv.listVersions();
+    await expect(yv.addVersion("yv-404")).rejects.toMatchObject({ reason: "not-found" });
+    await expect(yv.addVersion("rv1909")).rejects.toMatchObject({ reason: "error" });
+    await yv.addVersion("yv-42");
+    const other = client();
+    expect((await other.listVersions()).versions.map((v) => v.id)).toContain("yv-42");
   });
 });
