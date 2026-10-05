@@ -179,8 +179,6 @@ Después de `pnpm build:bible-modules`, suba estos archivos del directorio `data
 | `bes.json` | `bibles/bes.json` | https://downloads.7lineas.com/bibles/bes.json |
 | `onbv.json` | `bibles/onbv.json` | https://downloads.7lineas.com/bibles/onbv.json |
 | `pddpt.json` | `bibles/pddpt.json` | https://downloads.7lineas.com/bibles/pddpt.json |
-| `bll.json` | `bibles/bll.json` | https://downloads.7lineas.com/bibles/bll.json |
-| `blm.json` | `bibles/blm.json` | https://downloads.7lineas.com/bibles/blm.json |
 
 Ejemplo, sin guardar secretos en el repo:
 
@@ -194,7 +192,7 @@ aws s3 cp data/bible-modules/bes.json s3://desktop-releases/bibles/bes.json \
   --content-type application/json
 ```
 
-Repita el `aws s3 cp` para `onbv.json`, `pddpt.json`, `bll.json`, `blm.json`. El proceso de Electron descarga directo; no hace falta CORS en el bucket. La landing sigue leyendo solo sus propios JSON.
+Repita el `aws s3 cp` para `onbv.json` y `pddpt.json`. El proceso de Electron descarga directo; no hace falta CORS en el bucket. La landing sigue leyendo solo sus propios JSON.
 
 ## Licencia del código
 

@@ -117,7 +117,9 @@ export function listSelectableVersions(bibleDir: string, userDir: string): Bible
       const raw = JSON.parse(fs.readFileSync(path.join(userDir, `${id}.json`), "utf8")) as {
         meta?: BibleVersionMeta;
       };
-      if (raw.meta?.id === id) versions.push(raw.meta);
+      if (raw.meta?.id !== id) continue;
+      if (raw.meta?.draft === true) continue;
+      versions.push(raw.meta);
     } catch {
       // A broken download stays out of the version list.
     }

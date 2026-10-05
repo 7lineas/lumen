@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { ImportMetaErrors } from "@shared/bible-import/build";
@@ -92,16 +93,15 @@ export function ImportBibleCard({ customVersions, onChanged, onRemove }: Props) 
     setFields({ ...fields, [key]: event.target.value });
 
   return (
-    <section data-testid="import-bible">
+    <section className="bible-section" data-testid="import-bible">
       <h2>Mis biblias</h2>
-      <p>
+      <p className="bible-intro">
         Importe su propia versión desde un archivo: JSON de Lumen, Zefania XML, OSIS XML, USFM, CSV o TSV. Se guarda en este
-        equipo y funciona sin internet. Usted es responsable de tener permiso para usar el texto; el copyright que escriba
-        aparece en el pie de la proyección.
+        equipo y funciona sin internet. Usted es responsable de tener permiso para usar el texto.
       </p>
       {!preview && (
         <Button type="button" className="primary" data-testid="import-bible-button" onClick={() => void pick()} disabled={busy}>
-          Importar Biblia…
+          Importar Biblia
         </Button>
       )}
       {done && <p className="muted" data-testid="import-done">{done}</p>}
@@ -159,7 +159,10 @@ export function ImportBibleCard({ customVersions, onChanged, onRemove }: Props) 
                 {version.stats ? ` · ${version.stats.books} libros · ${NUMBER.format(version.stats.verses)} versículos` : ""} · {version.copyright}
               </p>
               <div className="bible-actions">
-                <span className="muted">Importada</span>
+                <span className="bible-status">
+                  <Check size={16} strokeWidth={2.5} aria-hidden />
+                  Importada
+                </span>
                 <Button type="button" onClick={() => void remove(version.id)} disabled={busy}>
                   Quitar
                 </Button>

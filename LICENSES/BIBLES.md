@@ -36,12 +36,15 @@ Las Biblias que el usuario importa desde sus propios archivos (Biblias → Mis b
 | `bes` | Biblia en Español Sencillo | CC BY 4.0 | AudioBiblia.org e Irma Flores, 2018–2019. |
 | `onbv` | Biblica® Open Nueva Biblia Viva™ 2008 | CC BY-SA 4.0 | © 2006, 2008 Biblica, Inc. Conservar título y copyright. El texto no se modifica. Génesis 1 no tiene 31 versículos. |
 | `pddpt` | Palabra de Dios para ti | CC BY 4.0 | © 2020 Asociación Bíblica Latinoamericana. |
-| `bll` | Santa Biblia libre Latinoamericano | Dominio público | Borrador. Solo el canon protestante de 66 libros. |
-| `blm` | Santa Biblia libre para el mundo | Dominio público | Borrador de David Williams y Michael Paul Johnson. Solo 66 libros. |
 
 ## Traducciones NO incluidas (derechos de autor)
 
 No se distribuyen: Reina Valera Gómez, RVR1960, NVI, NTV, DHH, TLA, RVC, LBLA ni otras ediciones con copyright. Se podrán añadir después, con permiso, solo con un archivo y una entrada de catálogo.
+
+## Decisiones 2026-10-05
+
+- Sin borradores: se excluyen `bll` y `blm` porque eBible las marca como borrador (`draft: true`) y no se quiere distribuir texto en revisión. Se quitaron de `shared/bible-licenses.json` y del catálogo; además `parseCatalog`, `describeLibrary` y `listSelectableVersions` filtran `draft === true` para que un catálogo remoto viejo no las reviva ni aparezcan como descargadas.
+- Catálogo regenerado y publicado: `pnpm build:bible-modules` (eBible había cambiado `bes` y `onbv`, hashes nuevos) y subida de `bibles-catalog.json` + `bes/onbv/pddpt.json` a `desktop-releases/bibles/`. El aviso “sin conexión al catálogo” era un 404 del remoto, no falta de internet.
 
 ## Proceso de verificación
 
