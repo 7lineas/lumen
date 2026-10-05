@@ -147,12 +147,12 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
       )}
 
       <label className="field">
-        <span>Tema del proyector</span>
-        <Select value={local.theme} items={[{ value: "dark", label: "Oscuro" }, { value: "light", label: "Claro" }]} onValueChange={(value) => value && setLocal({ ...local, theme: value as "dark" | "light" })}>
+        <span>Color de texto proyectado</span>
+        <Select value={local.theme} items={[{ value: "dark", label: "Texto claro" }, { value: "light", label: "Texto oscuro" }]} onValueChange={(value) => value && setLocal({ ...local, theme: value as "dark" | "light" })}>
           <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="dark">Oscuro</SelectItem>
-            <SelectItem value="light">Claro</SelectItem>
+            <SelectItem value="dark">Texto claro</SelectItem>
+            <SelectItem value="light">Texto oscuro</SelectItem>
           </SelectContent>
         </Select>
       </label>
