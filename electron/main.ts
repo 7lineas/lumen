@@ -13,6 +13,8 @@ import {
 import path from "path";
 import { pathToFileURL } from "url";
 import fs from "fs";
+import os from "node:os";
+import { randomInt } from "node:crypto";
 import Store from "electron-store";
 import { isPdfPath } from "../shared/slide-deck";
 import { renderPptxInWorker } from "./pptx-render";
@@ -147,6 +149,18 @@ import {
 } from "./bible-library";
 import { ImportSession } from "./bible-import";
 import type { ImportMetaInput } from "../shared/bible-import/build";
+import { publishBrowserEvent, registerBrowserRpc, startBrowserService, stopBrowserService } from "./browser-service";
+
+function registerIpcHandle<TArgs extends unknown[], TResult>(
+  channel: string,
+  handler: (event: Electron.IpcMainInvokeEvent, ...args: TArgs) => TResult,
+): void {
+  ipcMain.handle(channel, handler as never);
+  registerBrowserRpc(channel, (args) => handler({ sender: {
+    isDestroyed: () => false,
+    send: (event: string, payload: unknown) => publishBrowserEvent(event, payload),
+  } } as unknown as Electron.IpcMainInvokeEvent, ...args as TArgs));
+}
 
 const store = new Store<{
   settings: AppSettings;
@@ -155,6 +169,7 @@ const store = new Store<{
   favorites: QueueEntry[];
   songs: StoredSong[];
   slideDecks: StoredSlideDeck[];
+  browserAccess: { enabled: boolean; pairingCode: string };
 }>({
   defaults: {
     settings: DEFAULT_SETTINGS,
@@ -163,6 +178,7 @@ const store = new Store<{
     favorites: [],
     songs: [],
     slideDecks: [],
+    browserAccess: { enabled: false, pairingCode: "" },
   },
 });
 
@@ -170,6 +186,7 @@ let operatorWindow: BrowserWindow | null = null;
 let projectorWindow: BrowserWindow | null = null;
 let projectorReady = false;
 let pendingProjectorPayload: ProjectorPayload | null = null;
+let lastProjectorPayload: ProjectorPayload | null = null;
 let lastProjectorMode: ProjectorPayload["mode"] | null = null;
 const isDev = !app.isPackaged && process.env.PROYECTOR_SCREENSHOT !== "1";
 
@@ -317,8 +334,10 @@ function createProjectorWindow(): void {
 
   projectorWindow.webContents.on("did-finish-load", () => {
     projectorReady = true;
-    if (pendingProjectorPayload) {
-      projectorWindow?.webContents.send("projector:update", pendingProjectorPayload);
+    const payload = pendingProjectorPayload ?? lastProjectorPayload;
+    if (payload) {
+      projectorWindow?.webContents.send("projector:update", payload);
+      publishBrowserEvent("projector:update", payload);
       pendingProjectorPayload = null;
     }
   });
@@ -361,12 +380,14 @@ function isProjectionActive(): boolean {
 
 function sendToProjector(payload: ProjectorPayload): void {
   pendingProjectorPayload = payload;
+  lastProjectorPayload = payload;
   lastProjectorMode = payload.mode;
   if (!projectorWindow) {
     createProjectorWindow();
   }
   if (projectorReady) {
     projectorWindow?.webContents.send("projector:update", payload);
+    publishBrowserEvent("projector:update", payload);
     pendingProjectorPayload = null;
   }
 }
@@ -469,11 +490,11 @@ async function captureScreenshots(): Promise<void> {
   app.quit();
 }
 
-app.whenReady().then(() => {
+  app.whenReady().then(() => {
   app.setName("Lumen");
   app.setAppUserModelId("com.7lineas.lumen");
   Menu.setApplicationMenu(null);
-  protocol.handle("lumen-media", (request) => {
+  protocol.handle("lumen-media", async (request) => {
     const encodedPath = new URL(request.url).pathname.slice("/media/".length);
     const target = path.resolve(decodeURIComponent(encodedPath));
     const userData = path.resolve(app.getPath("userData"));
@@ -481,9 +502,34 @@ app.whenReady().then(() => {
     // (original PPTX/PDF sources) is deliberately NOT served.
     const allowed = ["background-images", "slide-images"].map((dir) => `${path.join(userData, dir)}${path.sep}`);
     if (!allowed.some((root) => target.startsWith(root))) return new Response("Forbidden", { status: 403 });
-    return net.fetch(pathToFileURL(target).toString());
+    const response = await net.fetch(pathToFileURL(target).toString());
+    const origin = request.headers.get("origin");
+    let localAppOrigin = origin === "null";
+    if (origin && origin !== "null") {
+      try {
+        const parsed = new URL(origin);
+        localAppOrigin = (parsed.protocol === "http:" || parsed.protocol === "https:")
+          && (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1" || parsed.hostname === "::1" || parsed.hostname.endsWith(".localhost"));
+      } catch { localAppOrigin = false; }
+    }
+    if (!localAppOrigin || !origin) return response;
+    const headers = new Headers(response.headers);
+    headers.set("access-control-allow-origin", origin);
+    headers.set("vary", "Origin");
+    return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
   });
   setupUpdater({ getOperatorWindow: () => operatorWindow, isProjectionActive });
+  const browserAccess = store.get("browserAccess");
+  const accessConfig = browserAccess.enabled && !/^\d{6}$/.test(browserAccess.pairingCode)
+    ? { enabled: true, pairingCode: String(randomInt(0, 1_000_000)).padStart(6, "0") }
+    : browserAccess;
+  if (accessConfig !== browserAccess) store.set("browserAccess", accessConfig);
+  startBrowserService({
+    root: path.join(app.getAppPath(), "dist"),
+    userData: app.getPath("userData"),
+    host: accessConfig.enabled ? "0.0.0.0" : "127.0.0.1",
+    pairingCode: accessConfig.pairingCode || undefined,
+  });
   if (process.platform === "darwin" && app.dock) {
     const dockIcon = nativeImage.createFromPath(appIconPath());
     if (!dockIcon.isEmpty()) app.dock.setIcon(dockIcon);
@@ -505,6 +551,7 @@ app.whenReady().then(() => {
 
 app.on("will-quit", () => {
   globalShortcut.unregisterAll();
+  stopBrowserService();
 });
 
 app.on("window-all-closed", () => {
@@ -513,9 +560,42 @@ app.on("window-all-closed", () => {
   }
 });
 
-ipcMain.handle("bibles:list", () => listSelectableVersions(biblesPath(), userBiblesDir()));
+registerIpcHandle("bibles:list", () => listSelectableVersions(biblesPath(), userBiblesDir()));
 
-ipcMain.handle("bibles:load", (_e, id: string) => {
+function browserAccessInfo() {
+  const config = store.get("browserAccess");
+  const isPrivateIpv4 = (address: string) => {
+    const octets = address.split(".").map(Number);
+    if (octets.length !== 4 || octets.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) return false;
+    const [first, second] = octets;
+    return first === 10 || (first === 172 && second! >= 16 && second! <= 31) || (first === 192 && second === 168) || (first === 169 && second === 254);
+  };
+  const addresses = Object.values(os.networkInterfaces()).flatMap((entries) =>
+    (entries ?? []).filter((entry) => (String(entry.family) === "IPv4" || String(entry.family) === "4") && !entry.internal && isPrivateIpv4(entry.address)).map((entry) => entry.address),
+  );
+  const port = Number(process.env.LUMEN_BROWSER_PORT ?? 43124);
+  return { enabled: config.enabled, pairingCode: config.pairingCode, port, addresses };
+}
+
+registerIpcHandle("browser:status", () => browserAccessInfo());
+registerIpcHandle("browser:configure", (_event, enabled: boolean) => {
+  const stored = store.get("browserAccess");
+  const previous = stored.enabled && !/^\d{6}$/.test(stored.pairingCode)
+    ? { enabled: true, pairingCode: String(randomInt(0, 1_000_000)).padStart(6, "0") }
+    : stored;
+  const next = { enabled: enabled === true, pairingCode: enabled ? previous.pairingCode || String(randomInt(0, 1_000_000)).padStart(6, "0") : "" };
+  store.set("browserAccess", next);
+  stopBrowserService();
+  startBrowserService({
+    root: path.join(app.getAppPath(), "dist"),
+    userData: app.getPath("userData"),
+    host: next.enabled ? "0.0.0.0" : "127.0.0.1",
+    pairingCode: next.pairingCode,
+  });
+  return browserAccessInfo();
+});
+
+registerIpcHandle("bibles:load", (_e, id: string) => {
   const file = resolveModulePath(biblesPath(), userBiblesDir(), String(id));
   return JSON.parse(fs.readFileSync(file, "utf-8"));
 });
@@ -533,15 +613,15 @@ function yvp(): YouVersionClient {
 }
 
 // Online Bibles (YouVersion Platform). The App Key stays in this process.
-ipcMain.handle("yvp:versions", (_e, force?: boolean) => yvp().listVersions(force === true));
-ipcMain.handle("yvp:chapter", (_e, id: string, book: string, chapter: number) =>
+registerIpcHandle("yvp:versions", (_e, force?: boolean) => yvp().listVersions(force === true));
+registerIpcHandle("yvp:chapter", (_e, id: string, book: string, chapter: number) =>
   yvp().getChapter(String(id), String(book), Number(chapter)),
 );
 
 // Importing the user's own Bible files (JSON, Zefania, OSIS, USFM, CSV/TSV).
 const bibleImports = new ImportSession();
 
-ipcMain.handle("bibles:import-pick", async () => {
+registerIpcHandle("bibles:import-pick", async () => {
   const result = await dialog.showOpenDialog(operatorWindow!, {
     title: "Importar Biblia",
     properties: ["openFile", "multiSelections"],
@@ -554,7 +634,7 @@ ipcMain.handle("bibles:import-pick", async () => {
   return bibleImports.preview(result.filePaths);
 });
 
-ipcMain.handle("bibles:import-commit", (_e, previewId: string, input: ImportMetaInput) => {
+registerIpcHandle("bibles:import-commit", (_e, previewId: string, input: ImportMetaInput) => {
   const existing = listSelectableVersions(biblesPath(), userBiblesDir());
   const safe: ImportMetaInput = {
     name: String(input?.name ?? ""),
@@ -565,13 +645,13 @@ ipcMain.handle("bibles:import-commit", (_e, previewId: string, input: ImportMeta
   return bibleImports.commit(String(previewId), safe, userBiblesDir(), existing);
 });
 
-ipcMain.handle("bibles:import-cancel", () => bibleImports.discard());
+registerIpcHandle("bibles:import-cancel", () => bibleImports.discard());
 
-ipcMain.handle("bibles:catalog", () =>
+registerIpcHandle("bibles:catalog", () =>
   buildLibraryView(biblesPath(), userBiblesDir(), catalogPath(), nodeFetch),
 );
 
-ipcMain.handle("bibles:download", async (event, id: string) => {
+registerIpcHandle("bibles:download", async (event, id: string) => {
   const safeId = String(id);
   if (bundledIds(biblesPath()).has(safeId)) {
     throw new Error("Esta versión ya viene con el programa");
@@ -593,7 +673,7 @@ ipcMain.handle("bibles:download", async (event, id: string) => {
   return { id: safeId };
 });
 
-ipcMain.handle("bibles:remove", (_e, id: string) => {
+registerIpcHandle("bibles:remove", (_e, id: string) => {
   const safeId = String(id);
   removeModule(userBiblesDir(), bundledIds(biblesPath()), safeId);
   const settings = currentSettings();
@@ -603,42 +683,43 @@ ipcMain.handle("bibles:remove", (_e, id: string) => {
   return { settings };
 });
 
-ipcMain.handle("settings:get", () => currentSettings());
+registerIpcHandle("settings:get", () => currentSettings());
 
-ipcMain.handle("settings:set", (_e, settings: AppSettings) => {
+registerIpcHandle("settings:set", (_e, settings: AppSettings) => {
   store.set("settings", settings);
   if (projectorWindow && !projectorWindow.isDestroyed()) {
     projectorWindow.webContents.send("settings:update", settings);
+    publishBrowserEvent("settings:update", settings);
   }
   return true;
 });
 
-ipcMain.handle("history:get", () => store.get("history"));
+registerIpcHandle("history:get", () => store.get("history"));
 
-ipcMain.handle("history:add", (_e, entry: HistoryEntry) => {
+registerIpcHandle("history:add", (_e, entry: HistoryEntry) => {
   const history = store.get("history");
   const next = [entry, ...history.filter((h) => h.reference !== entry.reference)].slice(0, 30);
   store.set("history", next);
   return next;
 });
 
-ipcMain.handle("queue:get", () => store.get("queue"));
+registerIpcHandle("queue:get", () => store.get("queue"));
 
-ipcMain.handle("queue:set", (_e, queue: QueueEntry[]) => {
+registerIpcHandle("queue:set", (_e, queue: QueueEntry[]) => {
   store.set("queue", queue);
   return queue;
 });
 
-ipcMain.handle("favorites:get", () => store.get("favorites"));
+registerIpcHandle("favorites:get", () => store.get("favorites"));
 
-ipcMain.handle("favorites:set", (_e, favorites: QueueEntry[]) => {
+registerIpcHandle("favorites:set", (_e, favorites: QueueEntry[]) => {
   store.set("favorites", favorites);
   return favorites;
 });
 
-ipcMain.handle("songs:get", () => store.get("songs"));
+registerIpcHandle("songs:get", () => store.get("songs"));
 
-ipcMain.handle("songs:set", (_e, songs: StoredSong[]) => {
+registerIpcHandle("songs:set", (_e, songs: StoredSong[]) => {
   const next = Array.isArray(songs)
     ? songs.filter((song) => song && typeof song.id === "string" && typeof song.title === "string" && typeof song.lyrics === "string").map((song) => ({
         id: song.id,
@@ -652,7 +733,7 @@ ipcMain.handle("songs:set", (_e, songs: StoredSong[]) => {
   return next;
 });
 
-ipcMain.handle("slides:get", () => {
+registerIpcHandle("slides:get", () => {
   // Older versions stored slide text (and text-only decks): migrate to images-only.
   const saved = store.get("slideDecks");
   const migrated = sanitizeSlideDecks(saved);
@@ -660,7 +741,7 @@ ipcMain.handle("slides:get", () => {
   return migrated;
 });
 
-ipcMain.handle("slides:set", (_e, decks: StoredSlideDeck[]) => {
+registerIpcHandle("slides:set", (_e, decks: StoredSlideDeck[]) => {
   const next = sanitizeSlideDecks(decks);
   store.set("slideDecks", next);
   pruneOrphanSlideImages(next);
@@ -674,7 +755,7 @@ function newDeckId(): string {
 
 const importError = (error: string): SlideImportResult => ({ kind: "error", error });
 
-ipcMain.handle("slides:import", async (): Promise<SlideImportResult | null> => {
+registerIpcHandle("slides:import", async (): Promise<SlideImportResult | null> => {
   const result = await dialog.showOpenDialog({
     properties: ["openFile", "multiSelections"],
     filters: [
@@ -745,7 +826,7 @@ ipcMain.handle("slides:import", async (): Promise<SlideImportResult | null> => {
 });
 
 /** Remove a managed source file once its slides were converted (or the import was abandoned). */
-ipcMain.handle("slides:discardSource", (_e, file: string): boolean => {
+registerIpcHandle("slides:discardSource", (_e, file: string): boolean => {
   try {
     if (!isManagedSlideSource(file)) return false;
     fs.rmSync(path.resolve(file), { force: true });
@@ -768,7 +849,7 @@ function isManagedSlideSource(file: unknown): file is string {
  * Render a managed .pptx to PNGs (one per slide) in a utilityProcess with the
  * system fonts. Returns the stored image paths; progress goes out on "slides:progress".
  */
-ipcMain.handle("slides:convertPptx", async (event, request: { deckId: string; file: string; total: number }) => {
+registerIpcHandle("slides:convertPptx", async (event, request: { deckId: string; file: string; total: number }) => {
   if (!isManagedSlideSource(request?.file) || !/\.(pptx|ppsx)$/i.test(request.file)) {
     return { ok: false as const, error: "Archivo de origen no válido." };
   }
@@ -791,7 +872,7 @@ ipcMain.handle("slides:convertPptx", async (event, request: { deckId: string; fi
 });
 
 /** Read back a managed PDF so the operator window can rasterize it with pdf.js. */
-ipcMain.handle("slides:readFile", (_e, file: string): string | null => {
+registerIpcHandle("slides:readFile", (_e, file: string): string | null => {
   try {
     if (!isManagedSlideSource(file)) return null;
     const data = fs.readFileSync(path.resolve(file));
@@ -804,7 +885,7 @@ ipcMain.handle("slides:readFile", (_e, file: string): string | null => {
 });
 
 /** Persist rasterized slide PNGs (base64) as managed images. Returns stored paths. */
-ipcMain.handle("slides:savePngs", (_e, images: string[]): string[] | null => {
+registerIpcHandle("slides:savePngs", (_e, images: string[]): string[] | null => {
   const stored: string[] = [];
   try {
     if (!Array.isArray(images) || images.length === 0 || images.length > MAX_SLIDE_PNGS) return null;
@@ -830,7 +911,7 @@ ipcMain.handle("slides:savePngs", (_e, images: string[]): string[] | null => {
   }
 });
 
-ipcMain.handle("displays:list", () => {
+registerIpcHandle("displays:list", () => {
   return screen.getAllDisplays().map((d) => ({
     id: d.id,
     label: `${d.label || "Pantalla"} (${d.bounds.width}×${d.bounds.height})`,
@@ -839,19 +920,19 @@ ipcMain.handle("displays:list", () => {
   }));
 });
 
-ipcMain.handle("projector:open", () => {
+registerIpcHandle("projector:open", () => {
   createProjectorWindow();
   return true;
 });
 
-ipcMain.handle("projector:bounds", () => projectorContentBounds());
+registerIpcHandle("projector:bounds", () => projectorContentBounds());
 
-ipcMain.handle("projector:show", (_e, payload: ProjectorPayload) => {
+registerIpcHandle("projector:show", (_e, payload: ProjectorPayload) => {
   sendToProjector(payload);
   return true;
 });
 
-ipcMain.handle("dialog:openImage", async () => {
+registerIpcHandle("dialog:openImage", async () => {
   const result = await dialog.showOpenDialog(operatorWindow!, {
     filters: [{ name: "Imágenes y videos", extensions: ["jpg", "jpeg", "png", "webp", "mp4", "webm", "ogg", "mov"] }],
     properties: ["openFile"],
@@ -872,12 +953,29 @@ ipcMain.handle("dialog:openImage", async () => {
   }
 });
 
-ipcMain.handle("background:delete", (_e, filePath: string) => {
+registerIpcHandle("background:delete", (_e, filePath: string) => {
   const root = path.resolve(app.getPath("userData"), "background-images");
   const target = path.resolve(String(filePath));
   if (!target.startsWith(`${root}${path.sep}`)) return false;
   try {
     fs.rmSync(target, { force: true });
+    fs.rmSync(`${target}.thumbnail.jpg`, { force: true });
+    return true;
+  } catch {
+    return false;
+  }
+});
+
+registerIpcHandle("background:saveThumbnail", (_e, filePath: string, jpegBase64: string) => {
+  const root = path.resolve(app.getPath("userData"), "background-images");
+  const target = path.resolve(String(filePath));
+  if (!target.startsWith(`${root}${path.sep}`) || !/\.(mp4|webm|ogg|mov)$/i.test(target)) return false;
+  if (typeof jpegBase64 !== "string" || jpegBase64.length > 2_800_000) return false;
+  try {
+    if (!fs.statSync(target).isFile()) return false;
+    const jpeg = Buffer.from(jpegBase64, "base64");
+    if (jpeg.length < 4 || jpeg.length > 2_000_000 || jpeg[0] !== 0xff || jpeg[1] !== 0xd8 || jpeg[2] !== 0xff) return false;
+    fs.writeFileSync(`${target}.thumbnail.jpg`, jpeg);
     return true;
   } catch {
     return false;

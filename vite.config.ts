@@ -51,6 +51,16 @@ export default defineConfig(({ mode }) => {
   server: {
     port: Number(process.env.PORT) || 43123,
     strictPort: true,
+    proxy: {
+      "/api": {
+        target: `http://127.0.0.1:${Number(process.env.LUMEN_BROWSER_PORT) || 43124}`,
+        changeOrigin: true,
+      },
+      "/media": {
+        target: `http://127.0.0.1:${Number(process.env.LUMEN_BROWSER_PORT) || 43124}`,
+        changeOrigin: true,
+      },
+    },
   },
   base: "./",
 };

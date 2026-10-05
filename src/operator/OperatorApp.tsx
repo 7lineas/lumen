@@ -5,7 +5,7 @@ import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Palette } from "lucide-react";
+import { Palette, Video } from "lucide-react";
 import type { AppSettings, HistoryEntry, ProjectorPayload, QueueEntry } from "@shared/types";
 import { DEFAULT_SETTINGS, MAX_QUEUE_ITEMS } from "@shared/types";
 import { useBibleLoader } from "../hooks/useBibleLoader";
@@ -22,7 +22,7 @@ import {
 import { BOOKS } from "@shared/books";
 import { rangeFromVerseClick } from "@shared/stage";
 import { hasCopyrightLine, projectionCopyright } from "@shared/copyright-line";
-import { backgroundImageUrl, isBackgroundVideo } from "@shared/background-image";
+import { backgroundImageUrl, backgroundThumbnailUrl, isBackgroundVideo } from "@shared/background-image";
 import { AboutModal } from "./AboutModal";
 import { BiblesPanel } from "./BiblesPanel";
 import { SettingsPanel } from "./SettingsPanel";
@@ -33,6 +33,7 @@ import { SongsWorkspace, type SongStage } from "./SongsWorkspace";
 import { SlidesWorkspace, type SlideStage } from "./SlidesWorkspace";
 import { FitToggle } from "./FitToggle";
 import { UpdateButton } from "./UpdateButton";
+import { createBackgroundVideoThumbnail } from "./background-thumbnail";
 import lumenLogo from "../lumen-icon.png";
 
 function newId(): string {
@@ -82,8 +83,28 @@ function blankPayload(s: AppSettings, fadeMs?: number): ProjectorPayload {
   };
 }
 
+function BackgroundLibraryPreview({ filePath }: { filePath: string }) {
+  const video = isBackgroundVideo(filePath);
+  const [thumbnailFailed, setThumbnailFailed] = useState(false);
+  if (video) {
+    const thumbnail = backgroundThumbnailUrl(filePath);
+    return thumbnail && !thumbnailFailed
+      ? <img src={thumbnail} alt="" onError={() => {
+        setThumbnailFailed(true);
+        if (!window.__LUMEN_BROWSER__) {
+          void createBackgroundVideoThumbnail(filePath).then((created) => {
+            if (created) setThumbnailFailed(false);
+          });
+        }
+      }} />
+      : <span className="background-video-placeholder"><Video aria-hidden="true" /><span>Video</span></span>;
+  }
+  return <img src={backgroundImageUrl(filePath)} alt="" />;
+}
+
 export function OperatorApp() {
   const [deletingMedia, setDeletingMedia] = useState(false);
+  const [backgroundImportBusy, setBackgroundImportBusy] = useState(false);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [refInput, setRefInput] = useState("Juan 3:16");
   const [keyword, setKeyword] = useState("");
@@ -865,6 +886,11 @@ export function OperatorApp() {
           </div>
         </div>
         <div className="top-right">
+          {!window.__LUMEN_BROWSER__ && (
+            <Button type="button" variant="outline" onClick={() => void window.proyector?.openProjector()}>
+              Abrir proyector
+            </Button>
+          )}
           {mode === "biblia" && (
             <label className="version-select">
               Versión
@@ -1143,19 +1169,26 @@ export function OperatorApp() {
               <Separator orientation="vertical" className="stage-background-sep" />
               <Button
                 type="button"
+                disabled={backgroundImportBusy}
                 onClick={async () => {
-                  const path = await window.proyector?.pickBackgroundImage();
-                  if (!path) return;
-                  // New uploads join the library but never auto-project: the
-                  // operator picks explicitly from the gallery.
-                  if ((settings.backgroundImages ?? []).includes(path)) return;
-                  void applyChrome({
-                    ...settings,
-                    backgroundImages: [...(settings.backgroundImages ?? []), path],
-                  });
+                  setBackgroundImportBusy(true);
+                  try {
+                    const path = await window.proyector?.pickBackgroundImage();
+                    if (!path) return;
+                    if (isBackgroundVideo(path)) await createBackgroundVideoThumbnail(path);
+                    // New uploads join the library but never auto-project: the
+                    // operator picks explicitly from the gallery.
+                    if ((settings.backgroundImages ?? []).includes(path)) return;
+                    await applyChrome({
+                      ...settings,
+                      backgroundImages: [...(settings.backgroundImages ?? []), path],
+                    });
+                  } finally {
+                    setBackgroundImportBusy(false);
+                  }
                 }}
               >
-                Añadir media
+                {backgroundImportBusy ? "Preparando…" : "Añadir media"}
               </Button>
               {(settings.backgroundImages ?? []).length > 0 && (
                 <Button type="button" variant={deletingMedia ? "destructive" : "secondary"} onClick={() => setDeletingMedia((value) => !value)}>
@@ -1174,7 +1207,7 @@ export function OperatorApp() {
                 {settings.backgroundImages.map((imagePath, index) => (
                   <div key={`${imagePath}-${index}`} className="background-choice-wrap">
                     <button type="button" className={`background-choice${settings.backgroundImagePath === imagePath ? " active" : ""}`} aria-label={deletingMedia ? `Eliminar media ${index + 1}` : `Usar media ${index + 1}`} aria-pressed={settings.backgroundImagePath === imagePath} onClick={() => { if (!deletingMedia) void applyChrome({ ...settings, backgroundImagePath: imagePath }); }}>
-                      {isBackgroundVideo(imagePath) ? <video src={backgroundImageUrl(imagePath)} muted loop autoPlay playsInline preload="auto" onCanPlay={(event) => { void event.currentTarget.play().catch(() => undefined); }} /> : <img src={backgroundImageUrl(imagePath)} alt="" />}
+                      <BackgroundLibraryPreview filePath={imagePath} />
                     </button>
                     {deletingMedia && <AlertDialog>
                       <AlertDialogTrigger render={<Button type="button" variant="destructive" className="background-delete">Eliminar</Button>} />

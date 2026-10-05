@@ -39,6 +39,8 @@ export interface DisplayInfo {
 }
 
 contextBridge.exposeInMainWorld("proyector", {
+  getBrowserAccess: () => ipcRenderer.invoke("browser:status"),
+  setBrowserAccess: (enabled: boolean) => ipcRenderer.invoke("browser:configure", enabled),
   listBibleVersions: (): Promise<unknown[]> => ipcRenderer.invoke("bibles:list"),
   loadBible: (id: string): Promise<unknown> => ipcRenderer.invoke("bibles:load", id),
   listOnlineBibles: (force?: boolean): Promise<OnlineVersionsResult> => ipcRenderer.invoke("yvp:versions", force === true),
@@ -90,6 +92,8 @@ contextBridge.exposeInMainWorld("proyector", {
   },
   showOnProjector: (p: ProjectorPayload): Promise<boolean> => ipcRenderer.invoke("projector:show", p),
   pickBackgroundImage: (): Promise<string | null> => ipcRenderer.invoke("dialog:openImage"),
+  saveBackgroundThumbnail: (filePath: string, jpegBase64: string): Promise<boolean> =>
+    ipcRenderer.invoke("background:saveThumbnail", filePath, jpegBase64),
   deleteBackgroundMedia: (filePath: string): Promise<boolean> => ipcRenderer.invoke("background:delete", filePath),
   onProjectorUpdate: (cb: (p: ProjectorPayload) => void): (() => void) => {
     const handler = (_: Electron.IpcRendererEvent, payload: ProjectorPayload) => cb(payload);
