@@ -1,5 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { Toaster } from "@/components/ui/sonner";
 import { App } from "./App";
 import { BrowserAccessGate } from "./BrowserAccessGate";
 import { installBrowserApi, refreshBrowserSession } from "./browser-api";
@@ -14,6 +15,7 @@ function renderApp() {
   createRoot(document.getElementById("root")!).render(
     <StrictMode>
       <BrowserAccessGate><App /></BrowserAccessGate>
+      <Toaster position="top-center" />
     </StrictMode>,
   );
 }

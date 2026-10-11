@@ -169,6 +169,9 @@ export function OperatorApp() {
     if (overlay !== null) setLastOverlay(overlay);
   }, [overlay]);
   const activeOverlay = overlay ?? lastOverlay;
+  useEffect(() => {
+    document.documentElement.dataset.overlayMotion = settings.overlayAnimation ? "on" : "off";
+  }, [settings.overlayAnimation]);
   const [libraryTick, setLibraryTick] = useState(0);
   const [projectorBounds, setProjectorBounds] = useState<{ width: number; height: number } | null>(null);
   const lastVerse = useRef<ProjectorPayload | null>(null);
@@ -1497,7 +1500,7 @@ export function OperatorApp() {
             </DialogClose>
           </DialogHeader>
           <div className="overlay-dialog-body">
-            {activeOverlay === "ajustes" && <SettingsPanel settings={settings} versions={allVersions} onSave={async (s) => { await applyChrome(s); setOverlay(null); }} />}
+            {activeOverlay === "ajustes" && <SettingsPanel settings={settings} versions={allVersions} onSave={(s) => applyChrome(s)} />}
             {activeOverlay === "biblias" && (
               <BiblesPanel
                 customVersions={versions.filter((v) => v.custom)}
