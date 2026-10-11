@@ -3,9 +3,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Church, Keyboard, Palette, Timer, Video } from "lucide-react";
+import { ChevronLeft, ChevronRight, Church, Keyboard, Palette, Timer, Video, X } from "lucide-react";
 import type { AppSettings, HistoryEntry, ProjectorPayload, QueueEntry, VideoPlayback } from "@shared/types";
 import { DEFAULT_SETTINGS, MAX_QUEUE_ITEMS, mediaKind } from "@shared/types";
 import { useBibleLoader } from "../hooks/useBibleLoader";
@@ -58,6 +58,7 @@ function gridColumns(): number {
 const COUNTDOWN_OPTIONS = [1, 3, 5, 10, 15, 20].map((minutes) => ({ value: String(minutes), label: `${minutes} min` }));
 /** Caption above the countdown on the projector. */
 const COUNTDOWN_CAPTION = "Comenzamos en";
+const OVERLAY_TITLES = { ajustes: "Ajustes", acerca: "Acerca de Lumen", biblias: "Biblias" } as const;
 
 /** Settings persisted before the accent/song-fade split. */
 type StoredSettings = Partial<AppSettings> & {
@@ -1487,30 +1488,34 @@ export function OperatorApp() {
 
       <ShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
 
-      <Sheet open={overlay !== null} onOpenChange={(open) => !open && setOverlay(null)}>
-        <SheetContent
-          side="right"
-          data-testid={activeOverlay === "ajustes" ? "settings-panel" : undefined}
-          className={activeOverlay === "ajustes" ? "overlay-sheet settings-sheet" : "overlay-sheet wide-sheet"}
-        >
-          {activeOverlay === "ajustes" && <SettingsPanel settings={settings} versions={allVersions} onSave={async (s) => { await applyChrome(s); setOverlay(null); }} />}
-          {activeOverlay === "biblias" && (
-            <BiblesPanel
-              customVersions={versions.filter((v) => v.custom)}
-              online={onlineBibles.online}
-              onRefreshOnline={() => void onlineBibles.refreshVersions(true)}
-              onSearchOnline={(query) => onlineBibles.searchVersions(query)}
-              onAddOnline={(id) => onlineBibles.addVersion(id)}
-              onRemoveOnline={(id) => onlineBibles.removeVersion(id)}
-              onChanged={(next) => {
-                if (next) setSettings(mergeSettings(next));
-                setLibraryTick((tick) => tick + 1);
-              }}
-            />
-          )}
-          {activeOverlay === "acerca" && <AboutModal />}
-        </SheetContent>
-      </Sheet>
+      <Dialog open={overlay !== null} onOpenChange={(open) => !open && setOverlay(null)}>
+        <DialogContent showCloseButton={false} className="overlay-dialog" data-testid={activeOverlay === "ajustes" ? "settings-panel" : undefined}>
+          <DialogHeader className="overlay-dialog-header">
+            <DialogTitle>{activeOverlay ? OVERLAY_TITLES[activeOverlay] : ""}</DialogTitle>
+            <DialogClose render={<Button type="button" variant="ghost" size="icon-sm" aria-label="Cerrar" />}>
+              <X aria-hidden />
+            </DialogClose>
+          </DialogHeader>
+          <div className="overlay-dialog-body">
+            {activeOverlay === "ajustes" && <SettingsPanel settings={settings} versions={allVersions} onSave={async (s) => { await applyChrome(s); setOverlay(null); }} />}
+            {activeOverlay === "biblias" && (
+              <BiblesPanel
+                customVersions={versions.filter((v) => v.custom)}
+                online={onlineBibles.online}
+                onRefreshOnline={() => void onlineBibles.refreshVersions(true)}
+                onSearchOnline={(query) => onlineBibles.searchVersions(query)}
+                onAddOnline={(id) => onlineBibles.addVersion(id)}
+                onRemoveOnline={(id) => onlineBibles.removeVersion(id)}
+                onChanged={(next) => {
+                  if (next) setSettings(mergeSettings(next));
+                  setLibraryTick((tick) => tick + 1);
+                }}
+              />
+            )}
+            {activeOverlay === "acerca" && <AboutModal />}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
