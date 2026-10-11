@@ -38,13 +38,14 @@ export interface YvLicense {
 
 /**
  * Default online list for Colombia (and ordering of that list):
- * NVI 2025, NVI 2015, NBLA, LBLA, RVES. Other versions the user adds come after these.
+ * NVI 2025, NBLA, LBLA, RVES. Other versions the user adds come after these.
+ * NVI 2015 (Platform 2664) is still in the catalog search, just not a default.
  *
  * Note: bible.com version 197 ("Palabra de Dios para Todos" / PDT, Liga Bíblica
  * Internacional) is NOT on YouVersion Platform (`GET /bibles/197` → 404). Do not
  * confuse it with Platform id 3365 ("Palabla de Dios para ti").
  */
-export const DEFAULT_ONLINE_VERSION_IDS = [128, 2664, 103, 89, 147] as const;
+export const DEFAULT_ONLINE_VERSION_IDS = [128, 103, 89, 147] as const;
 
 /** @deprecated alias kept for callers that still import the old name. */
 export const COLOMBIA_PRIORITY = DEFAULT_ONLINE_VERSION_IDS;

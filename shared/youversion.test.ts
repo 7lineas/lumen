@@ -48,13 +48,13 @@ describe("buildOnlineVersions", () => {
   const versions = buildOnlineVersions(catalog, new Set([147, 3365, 9999]), licenses);
 
   it("orders by popularity in Colombia, unknown ones last", () => {
-    expect(versions.map((v) => v.id)).toEqual(["yv-128", "yv-2664", "yv-103", "yv-89", "yv-147", "yv-3365", "yv-9999"]);
-    // 3365 sorts after defaults (not itself a default) when present in the catalog
+    expect(versions.map((v) => v.id)).toEqual(["yv-128", "yv-103", "yv-89", "yv-147", "yv-2664", "yv-3365", "yv-9999"]);
+    // 2664 and 3365 are not defaults, so they sort after the defaults when present in the catalog
   });
 
   it("tells the two NVI-S editions apart by year", () => {
     expect(versions[0].abbr).toBe("NVI 2025");
-    expect(versions[1].abbr).toBe("NVI 2015");
+    expect(versions[4].abbr).toBe("NVI 2015");
   });
 
   it("locks versions the key is not licensed for, naming the license", () => {
@@ -101,15 +101,15 @@ describe("mergeChapter", () => {
 
 
 describe("default online list", () => {
-  it("ships NVI 2025/2015, NBLA, LBLA and RVES in Colombia order (no PDT: not on Platform)", () => {
-    expect([...DEFAULT_ONLINE_VERSION_IDS]).toEqual([128, 2664, 103, 89, 147]);
+  it("ships NVI 2025, NBLA, LBLA and RVES in Colombia order (no NVI 2015, no PDT: not on Platform)", () => {
+    expect([...DEFAULT_ONLINE_VERSION_IDS]).toEqual([128, 103, 89, 147]);
     expect(isDefaultOnlineVersionId("yv-147")).toBe(true);
     expect(isDefaultOnlineVersionId("yv-3365")).toBe(false);
     expect(isDefaultOnlineVersionId("yv-9999")).toBe(false);
   });
 
   it("keeps defaults first and appends user-added ids without duplicates", () => {
-    expect(mergeSelectedOnlineIds([3365, 9999, 128, 42])).toEqual([128, 2664, 103, 89, 147, 3365, 9999, 42]);
+    expect(mergeSelectedOnlineIds([3365, 9999, 128, 42])).toEqual([128, 103, 89, 147, 3365, 9999, 42]);
     expect(sanitizeCustomOnlineIds([128, 3365, 9999, 9999, -1, 42.5, 42])).toEqual([3365, 9999, 42]);
   });
 
