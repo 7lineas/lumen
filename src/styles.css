@@ -2873,15 +2873,58 @@ button.song-part {
   -webkit-app-region: no-drag;
 }
 
-/* macOS: space for the traffic lights (hiddenInset). Windows: space for the
-   overlay window controls at the right edge. Both come from the body classes
-   set in main.tsx. */
+/* macOS: space for the traffic lights (hiddenInset). Windows: the window
+   controls (WindowControls) are the last item of the top bar, flush right, and
+   the accent line stops where they start. Both come from the body classes set
+   in main.tsx. */
 body.mac .top-bar {
   padding-left: 82px;
 }
 
-body.win.electron .top-right {
-  margin-right: 146px;
+body.win.electron .top-bar {
+  padding-right: 0;
+}
+
+body.win.electron .top-bar::after {
+  right: 138px;
+}
+
+/* Frameless window controls (Windows / Linux): 3 × 46px, full bar height. */
+.window-controls {
+  display: flex;
+  align-self: stretch;
+  flex: none;
+  -webkit-app-region: no-drag;
+}
+
+.window-controls button {
+  width: 46px;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #ececef;
+  cursor: default;
+}
+
+.window-controls button svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.2;
+}
+
+.window-controls button:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.window-controls button.close:hover {
+  background: #e81123;
+  color: #fff;
 }
 
 .modes button {

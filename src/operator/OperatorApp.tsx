@@ -37,6 +37,7 @@ import { FitToggle } from "./FitToggle";
 import { MODE_ORDER, ModeSwitch, type OperatorMode } from "./ModeSwitch";
 import { ShortcutsDialog } from "./ShortcutsDialog";
 import { UpdateButton, UpdateCheckButton } from "./UpdateButton";
+import { WindowControls } from "./WindowControls";
 import { createBackgroundVideoThumbnail } from "./background-thumbnail";
 import lumenLogo from "../lumen-icon.png";
 
@@ -1122,6 +1123,7 @@ export function OperatorApp() {
               Acerca de
             </Button>
           </div>
+          <WindowControls />
         </div>
       </header>
 
