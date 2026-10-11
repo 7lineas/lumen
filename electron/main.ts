@@ -582,6 +582,8 @@ async function captureScreenshots(): Promise<void> {
 
   app.whenReady().then(() => {
   app.setName("Lumen");
+  // Warm the remote Bible catalog so the first Biblias overlay opens without waiting.
+  void buildLibraryView(biblesPath(), userBiblesDir(), catalogPath(), nodeFetch).catch(() => undefined);
   app.setAppUserModelId("com.7lineas.lumen");
   Menu.setApplicationMenu(null);
   protocol.handle("lumen-media", async (request) => {

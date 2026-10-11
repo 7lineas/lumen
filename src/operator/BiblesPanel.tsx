@@ -27,6 +27,15 @@ function formatByteSize(bytes: number | null): string {
   return `${mb.toLocaleString("es-ES", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} MB`;
 }
 
+/** Read once when the app starts, so opening Biblias already has the catalog. */
+let libraryCache: BibleLibraryView | null = null;
+void window.proyector
+  ?.getBibleCatalog()
+  .then((view) => {
+    libraryCache = view;
+  })
+  .catch(() => undefined);
+
 export function BiblesPanel({
   onChanged,
   online,
@@ -36,7 +45,7 @@ export function BiblesPanel({
   onRemoveOnline,
   customVersions = [],
 }: Props) {
-  const [library, setLibrary] = useState<BibleLibraryView | null>(null);
+  const [library, setLibrary] = useState<BibleLibraryView | null>(libraryCache);
   const [error, setError] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [progress, setProgress] = useState<BibleDownloadProgress | null>(null);
@@ -50,7 +59,10 @@ export function BiblesPanel({
 
   async function reload() {
     const view = await window.proyector?.getBibleCatalog();
-    if (view) setLibrary(view);
+    if (view) {
+      libraryCache = view;
+      setLibrary(view);
+    }
   }
 
   useEffect(() => {
@@ -58,7 +70,10 @@ export function BiblesPanel({
     void window.proyector
       ?.getBibleCatalog()
       .then((view) => {
-        if (!cancelled) setLibrary(view);
+        if (!cancelled) {
+          libraryCache = view;
+          setLibrary(view);
+        }
       })
       .catch((reason: unknown) => {
         if (!cancelled) setError(reason instanceof Error ? reason.message : "No se pudo leer el catálogo");
@@ -172,9 +187,8 @@ export function BiblesPanel({
   }
 
   return (
-    <main className="panel single bibles" data-testid="bible-list">
+    <div className="bibles" data-testid="bible-list">
       <section className="bible-section">
-        <h2>Biblias</h2>
         {library?.offline && (
           <p className="bible-banner">
             No hay conexión al catálogo. Se muestran las versiones conocidas. Las que ya descargó siguen
@@ -182,7 +196,13 @@ export function BiblesPanel({
           </p>
         )}
         {error && <p className="error">{error}</p>}
-        {!library && !error && <p className="muted">Cargando catálogo…</p>}
+        {!library && !error && (
+          <div className="bible-list bible-skeleton" aria-hidden>
+            {[0, 1, 2].map((i) => (
+              <div className="bible-skeleton-row" key={i} />
+            ))}
+          </div>
+        )}
         <div className="bible-list">
           {library?.entries.map((entry) => (
             <BibleRow
@@ -217,8 +237,7 @@ export function BiblesPanel({
             <p className="bible-intro">
               Por defecto aparecen NVI 2025, NBLA, LBLA y RVES. Puede buscar otras versiones del catálogo y
               añadirlas a esta instalación. Se consultan al elegirlas y cada capítulo se guarda en este
-              equipo por 30 días. El texto lleva siempre el copyright de la editorial. Si una versión pide
-              licencia, acéptela en el portal de YouVersion Platform de esta app.
+              equipo por 30 días.
             </p>
             <div className="online-toolbar">
               <Button type="button" onClick={onRefreshOnline} data-testid="online-refresh">
@@ -258,7 +277,8 @@ export function BiblesPanel({
                 )}
                 {hits.map((hit) => (
                   <article className="bible-row" key={hit.id} data-testid={`online-hit-${hit.id}`}>
-                    <h3>{hit.name}</h3>
+                    <span className="bible-abbr">{hit.abbr}</span>
+      <h3>{hit.name}</h3>
                     <p className="bible-meta">
                       {hit.abbr} · {hit.language}
                       {hit.license ? ` · ${hit.license}` : ""}
@@ -295,7 +315,8 @@ export function BiblesPanel({
                 const canRemove = !isDefaultOnlineVersionId(version.id);
                 return (
                   <article className="bible-row" key={version.id} data-testid={`online-row-${version.id}`}>
-                    <h3>{version.name}</h3>
+                    <span className="bible-abbr">{version.abbr}</span>
+      <h3>{version.name}</h3>
                     <p className="bible-meta">
                       {version.abbr} · {version.language}
                       {version.license ? ` · ${version.license}` : " · YouVersion Platform"}
@@ -304,9 +325,8 @@ export function BiblesPanel({
                       {version.locked ? (
                         <span className="error">{version.lockedReason}</span>
                       ) : (
-                        <span className="bible-status">
+                        <span className="bible-status" role="img" aria-label="Disponible en el selector de versión">
                           <Check size={16} strokeWidth={2.5} aria-hidden />
-                          Disponible en el selector de versión
                         </span>
                       )}
                       {canRemove && (
@@ -331,7 +351,7 @@ export function BiblesPanel({
           </>
         )}
       </section>
-    </main>
+    </div>
   );
 }
 
@@ -357,6 +377,7 @@ function BibleRow({
 
   return (
     <article className="bible-row" data-testid={`bible-row-${entry.id}`}>
+      <span className="bible-abbr">{entry.abbr}</span>
       <h3>{entry.name}</h3>
       <p className="bible-meta">
         {entry.language} · {formatByteSize(entry.bytes)} · {entry.license}
