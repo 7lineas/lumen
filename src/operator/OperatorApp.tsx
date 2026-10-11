@@ -567,6 +567,12 @@ export function OperatorApp() {
     setSlideLive(null);
     void send(blankPayload(settings, settings.backgroundFadeMs));
   }, [slideLive, send, settings]);
+  // Renaming the open item updates the header, the preview and the audio dock too.
+  const mediaRenamed = useCallback((item: MediaItem) => {
+    setMediaSelected((current) => (current?.id === item.id ? item : current));
+    setSlideStaged((current) => (current?.deckId === item.id ? { ...current, title: item.title } : current));
+    setAudioTrack((track) => (track?.id === item.id ? { ...track, title: item.title } : track));
+  }, []);
   const selectSlide = useCallback((index: number) => {
     setSlideStaged((current) => {
       if (!current || current.images.length === 0) return current;
@@ -1145,6 +1151,7 @@ export function OperatorApp() {
             onTakeSlide={takeSlide}
             onTake={takeMedia}
             onRemoved={mediaRemoved}
+            onRenamed={mediaRenamed}
           />
         ) : (
           <BibleWorkspace
