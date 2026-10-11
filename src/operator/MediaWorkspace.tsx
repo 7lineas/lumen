@@ -455,7 +455,7 @@ export function MediaWorkspace({ staged, selected, liveImage, liveVideo, audioId
           <div className="lx-empty-ws">
             <p>{items.length === 0 ? "Importa presentaciones, imágenes, videos o audio. Se copian a la aplicación para usarlos sin el archivo original." : "Elige un elemento de la biblioteca."}</p>
             <button type="button" className="lx-btn pri" disabled={importing} onClick={() => void importMedia()}>
-              <Upload /> Importar media
+              {importing ? <Spinner /> : <Upload />} Importar media
             </button>
             <p className="lx-fine">PowerPoint (.pptx), PDF, imágenes, video (mp4, mov, webm) y audio (mp3, wav, m4a). Keynote, .ppt y .odp: exporta antes a PDF o PPTX.</p>
           </div>
