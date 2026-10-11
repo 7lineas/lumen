@@ -4907,6 +4907,15 @@ button.primary:not(:disabled):active,
   color: var(--text);
 }
 
+.lx .lx-result.live {
+  background: rgba(255, 69, 58, 0.1);
+  box-shadow: 0 0 0 1px var(--lx-live);
+}
+
+.lx .lx-result.live strong {
+  color: var(--lx-live);
+}
+
 /* Video and audio items */
 .lx-player {
   display: flex;
