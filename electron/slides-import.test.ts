@@ -1,6 +1,6 @@
 import JSZip from "jszip";
 import { describe, expect, it } from "vitest";
-import { countPptxSlides, naturalCompare, sanitizeSlideDecks, sortImagePathsNumerically } from "./slides-import";
+import { countPptxSlides, isAudioPath, isVideoPath, naturalCompare, sanitizeSlideDecks, sortImagePathsNumerically } from "./slides-import";
 
 describe("slides-import", () => {
   it("counts the slides of a pptx buffer", async () => {
@@ -50,6 +50,26 @@ describe("slides-import", () => {
     expect(deck).toEqual({ id: "legacy", title: "Antiguo", images: ["/x/1.png"], updatedAt: 1, pinned: false });
     expect(deck).not.toHaveProperty("slides");
     expect(deck).not.toHaveProperty("source");
+  });
+
+  it("keeps video and audio items with their managed file", () => {
+    expect(
+      sanitizeSlideDecks([
+        { id: "v", title: "Bienvenida", kind: "video", file: "/m/v.mp4", images: ["/x.png"], updatedAt: 2, pinned: false },
+        { id: "a", title: "Preludio", kind: "audio", file: "/m/a.mp3", updatedAt: 3, pinned: true },
+        { id: "bad", title: "Sin archivo", kind: "video", updatedAt: 1, pinned: false },
+      ]),
+    ).toEqual([
+      { id: "v", title: "Bienvenida", kind: "video", images: [], file: "/m/v.mp4", updatedAt: 2, pinned: false },
+      { id: "a", title: "Preludio", kind: "audio", images: [], file: "/m/a.mp3", updatedAt: 3, pinned: true },
+    ]);
+  });
+
+  it("tells video and audio files apart", () => {
+    expect(isVideoPath("/a/Culto.MP4")).toBe(true);
+    expect(isVideoPath("/a/song.mp3")).toBe(false);
+    expect(isAudioPath("/a/song.mp3")).toBe(true);
+    expect(isAudioPath("/a/foto.png")).toBe(false);
   });
 
   it("discards legacy text-only decks and malformed input", () => {

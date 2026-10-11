@@ -17,6 +17,14 @@ export function isSlideImagePath(filePath: string): boolean {
   return /\.(png|jpe?g|webp)$/i.test(filePath);
 }
 
+export function isVideoPath(filePath: string): boolean {
+  return /\.(mp4|m4v|webm|mov|ogv)$/i.test(filePath);
+}
+
+export function isAudioPath(filePath: string): boolean {
+  return /\.(mp3|wav|m4a|aac|ogg|oga|opus|flac)$/i.test(filePath);
+}
+
 /** Natural order so Slide2 precedes Slide10 (PowerPoint exports this way). */
 export function naturalCompare(a: string, b: string): number {
   const ax: Array<string | number> = [];
@@ -48,25 +56,31 @@ export function sortImagePathsNumerically(paths: string[]): string[] {
 }
 
 /**
- * Validate/normalize decks coming from the renderer or from older versions.
- * Decks now hold images only: legacy fields (`slides` text, `source`) are
- * ignored, null/empty image entries are dropped, and decks left without any
- * image (old text-only decks) are discarded.
+ * Validate/normalize media items coming from the renderer or from older
+ * versions. Slide decks hold images only: legacy fields (`slides` text,
+ * `source`) are ignored, null/empty image entries are dropped, and decks left
+ * without any image (old text-only decks) are discarded. Video and audio
+ * items hold one managed file and no images.
  */
 export function sanitizeSlideDecks(decks: unknown): StoredSlideDeck[] {
   if (!Array.isArray(decks)) return [];
   return decks.flatMap((deck): StoredSlideDeck[] => {
     if (!deck || typeof deck !== "object") return [];
-    const value = deck as { id?: unknown; title?: unknown; images?: unknown; updatedAt?: unknown; pinned?: unknown };
-    if (typeof value.id !== "string" || typeof value.title !== "string" || !Array.isArray(value.images)) return [];
-    const images = value.images.filter((entry): entry is string => typeof entry === "string" && entry.length > 0);
-    if (images.length === 0) return [];
-    return [{
+    const value = deck as { id?: unknown; title?: unknown; kind?: unknown; file?: unknown; images?: unknown; updatedAt?: unknown; pinned?: unknown };
+    if (typeof value.id !== "string" || typeof value.title !== "string") return [];
+    const base = {
       id: value.id,
       title: value.title,
-      images,
       updatedAt: Number.isFinite(value.updatedAt) ? (value.updatedAt as number) : Date.now(),
       pinned: Boolean(value.pinned),
-    }];
+    };
+    if (value.kind === "video" || value.kind === "audio") {
+      if (typeof value.file !== "string" || value.file.length === 0) return [];
+      return [{ id: base.id, title: base.title, kind: value.kind, images: [], file: value.file, updatedAt: base.updatedAt, pinned: base.pinned }];
+    }
+    if (!Array.isArray(value.images)) return [];
+    const images = value.images.filter((entry): entry is string => typeof entry === "string" && entry.length > 0);
+    if (images.length === 0) return [];
+    return [{ id: base.id, title: base.title, images, updatedAt: base.updatedAt, pinned: base.pinned }];
   });
 }

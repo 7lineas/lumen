@@ -88,7 +88,9 @@ function contentType(file: string): string {
     ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8",
     ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp",
     ".avif": "image/avif", ".gif": "image/gif", ".mp4": "video/mp4", ".webm": "video/webm",
-    ".ogg": "video/ogg", ".mov": "video/quicktime", ".woff2": "font/woff2", ".ico": "image/x-icon",
+    ".ogg": "application/ogg", ".mov": "video/quicktime", ".m4v": "video/mp4", ".ogv": "video/ogg",
+    ".mp3": "audio/mpeg", ".wav": "audio/wav", ".m4a": "audio/mp4", ".aac": "audio/aac", ".oga": "audio/ogg",
+    ".opus": "audio/ogg", ".flac": "audio/flac", ".woff2": "font/woff2", ".ico": "image/x-icon",
   } as Record<string, string>)[path.extname(file).toLowerCase()] ?? "application/octet-stream";
 }
 
@@ -174,7 +176,7 @@ export function startBrowserService(options: { root: string; userData: string; h
       const name = decodeURIComponent(url.pathname.slice("/media/".length));
       const base = path.resolve(options.userData);
       const candidate = path.resolve(base, name);
-      const roots = ["background-images", "slide-images"].map((dir) => path.join(base, dir) + path.sep);
+      const roots = ["background-images", "slide-images", "media-files"].map((dir) => path.join(base, dir) + path.sep);
       if (!roots.some((root) => candidate.startsWith(root)) || !existsSync(candidate) || !statSync(candidate).isFile()) return send(response, 404, { error: "not_found" });
       const { size } = statSync(candidate);
       const range = request.headers.range;

@@ -1,6 +1,8 @@
-import { useEffect } from "react";
-import { OperatorApp } from "./operator/OperatorApp";
+import { lazy, Suspense, useEffect } from "react";
 import { ProjectorView } from "./projector/ProjectorView";
+
+// Separate chunk so the projector window doesn't parse the operator UI.
+const OperatorApp = lazy(() => import("./operator/OperatorApp").then((m) => ({ default: m.OperatorApp })));
 
 export function App() {
   const isProjector = window.location.hash === "#/projector" || window.location.hash === "#projector";
@@ -21,5 +23,9 @@ export function App() {
   if (isProjector && !isRemoteBrowser) {
     return <ProjectorView />;
   }
-  return <OperatorApp />;
+  return (
+    <Suspense fallback={null}>
+      <OperatorApp />
+    </Suspense>
+  );
 }

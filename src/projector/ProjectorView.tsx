@@ -2,7 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import type { AppSettings, ProjectorPayload } from "@shared/types";
 import { DEFAULT_SETTINGS } from "@shared/types";
 import { backgroundImageUrl } from "@shared/background-image";
+import { fitFontSize } from "@shared/text-fit";
+import { payloadContentKey } from "@shared/stage";
 import { FadingBackgroundMedia } from "@/components/BackgroundMedia";
+import { CountdownClock } from "@/components/Clock";
+import { SyncedVideo } from "@/components/SyncedVideo";
 
 const EMPTY: ProjectorPayload = {
   mode: "blank",
@@ -20,12 +24,6 @@ function splitReference(label: string): { ref: string; version: string } {
   const sep = label.lastIndexOf(" — ");
   if (sep < 0) return { ref: label, version: "" };
   return { ref: label.slice(0, sep), version: label.slice(sep + 3) };
-}
-
-function contentKey(p: ProjectorPayload): string {
-  if (p.mode === "blank") return "blank";
-  if (p.mode === "logo") return `logo:${p.churchName}`;
-  return `${p.mode}:${p.referenceLabel}|${p.slideImagePath ?? ""}|${p.blocks.map((b) => `${b.label ?? ""}=${b.text}`).join("|")}`;
 }
 
 export function ProjectorView() {
@@ -63,7 +61,7 @@ export function ProjectorView() {
       });
     };
     const off = api.onProjectorUpdate((p) => {
-      setSlidesActive(p.mode === "slides");
+      setSlidesActive(p.mode === "slides" || p.mode === "video");
       const ms = Math.max(0, p.fadeMs ?? settingsRef.current.fadeMs ?? DEFAULT_SETTINGS.fadeMs);
       if (timerRef.current !== null) {
         clearTimeout(timerRef.current);
@@ -77,7 +75,7 @@ export function ProjectorView() {
       }
       // Style-only update (font, brightness, theme…): apply instantly so
       // live tweaks don't flicker.
-      if (contentKey(p) === contentKey(displayedRef.current)) {
+      if (payloadContentKey(p) === payloadContentKey(displayedRef.current)) {
         displayedRef.current = p;
         setPayload(p);
         if (p.mode !== "blank" && !visibleRef.current) show(true);
@@ -115,15 +113,13 @@ export function ProjectorView() {
     let raf = 0;
     const fit = () => {
       // Always restart from the full size so growing the window grows text back.
-      let size = fontSize;
-      el.style.fontSize = `${size}px`;
       // The body is a flex-1 box with overflow hidden, so fitting to its own
       // clientHeight keeps header/footer clear at any window ratio.
-      let guard = 500;
-      while (guard-- > 0 && size > 28 && el.scrollHeight > el.clientHeight) {
-        size -= 2;
-        el.style.fontSize = `${size}px`;
-      }
+      const size = fitFontSize(fontSize, (s) => {
+        el.style.fontSize = `${s}px`;
+        return el.scrollHeight <= el.clientHeight;
+      });
+      el.style.fontSize = `${size}px`;
       setFitSize(size);
     };
     fit();
@@ -181,6 +177,35 @@ export function ProjectorView() {
       <div className={themeClass} style={style}>
         <div className="projector-background-layer" style={backgroundStyle} />
         {backgroundMedia}
+      </div>
+    );
+  }
+
+  if (payload.mode === "countdown") {
+    const countdown = payload.countdown;
+    return (
+      <div className={themeClass} style={style}>
+        <div className="projector-background-layer" style={backgroundStyle} />
+        {backgroundMedia}
+        <div className={`projector-inner projector-countdown fade ${visible ? "show" : ""}`} style={fadeStyle}>
+          {countdown?.caption && <p className="projector-countdown-caption">{countdown.caption}</p>}
+          <p className="projector-countdown-time">
+            {countdown ? <CountdownClock endsAt={countdown.endsAt} /> : "00:00"}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (payload.mode === "video" && payload.video) {
+    return (
+      // Full-bleed like a slide, with the sound: this is the only window that is not muted.
+      <div className={themeClass} style={{ ...style, padding: 0 }}>
+        <div className="projector-background-layer" style={backgroundStyle} />
+        {backgroundMedia}
+        <div className={`projector-inner projector-inner-slide fade ${visible ? "show" : ""}`} style={fadeStyle}>
+          <SyncedVideo playback={payload.video} muted={false} fit={settings.slideFit ?? DEFAULT_SETTINGS.slideFit} className="projector-slide" />
+        </div>
       </div>
     );
   }

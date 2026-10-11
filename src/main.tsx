@@ -5,6 +5,11 @@ import { BrowserAccessGate } from "./BrowserAccessGate";
 import { installBrowserApi, refreshBrowserSession } from "./browser-api";
 import "./styles.css";
 
+// Platform classes for the top bar (traffic-light space on macOS, window
+// controls on Windows); the top bar is the window title area in Electron.
+if (navigator.userAgent.includes("Electron")) document.body.classList.add("electron");
+document.body.classList.add(/Mac/.test(navigator.userAgent) ? "mac" : "win");
+
 function renderApp() {
   createRoot(document.getElementById("root")!).render(
     <StrictMode>

@@ -44,9 +44,9 @@ Detalles de red, contrato del servicio y configuración para desarrollo: [`docs/
 - **Ajustes**: pantalla, dos versiones lado a lado, tema, fuente, fondo.
 - **Acerca de**: versiones de la Biblia incluidas y licencias.
 
-## Diapositivas
+## Media
 
-Pestaña **Diapositivas**: importa presentaciones y proyéctalas como imágenes.
+Pestaña **Media**: importa presentaciones (se proyectan como imágenes), videos y audio.
 
 | Formato | Cómo se muestra |
 | --- | --- |
@@ -57,7 +57,9 @@ Pestaña **Diapositivas**: importa presentaciones y proyéctalas como imágenes.
 
 Solo se guardan **imágenes** (una PNG por diapositiva, más el título): no se extrae ni guarda el texto de las diapositivas. Si la conversión falla se muestra el error con **Reintentar** y no se guarda nada. El original se copia a `userData/slide-decks` solo mientras se convierte (y se borra al terminar); las imágenes van a `userData/slide-images`; solo `slide-images` (y `background-images`) se sirven por el protocolo `lumen-media`. No hace falta instalar nada extra ni copiar archivos WASM: el renderizado de PPTX no usa `vendor/`. `pptx-glimpse` se carga desde `node_modules` (externo al bundle de `vite.config.ts`), porque su entrada Node lee el `.wasm` de resvg y las fuentes en tiempo de ejecución.
 
-**Cubrir / Ajustar.** En el encabezado (solo en modo Diapositivas) se elige si las diapositivas cubren la pantalla (recorte) o se ajustan enteras (por defecto). Junto a "Añadir media" hay otro control igual para el fondo de imagen/video (por defecto: Cubrir). Ambos se guardan en los ajustes.
+**Video y audio.** Los archivos de video (`.mp4`, `.m4v`, `.mov`, `.webm`, `.ogv`) y de audio (`.mp3`, `.wav`, `.m4a`, `.aac`, `.ogg`, `.opus`, `.flac`) se copian a `userData/media-files` y se sirven por `lumen-media` con soporte de rangos (para poder adelantar y retroceder). Un video se reproduce en el proyector con su sonido y se controla (pausa, posición, volumen) debajo del monitor En vivo; los monitores del operador van en silencio. El audio suena en la ventana del operador y sigue al cambiar de espacio.
+
+**Cubrir / Ajustar.** En el encabezado del espacio Media se elige si las diapositivas cubren la pantalla (recorte) o se ajustan enteras (por defecto). Junto a "Añadir fondo" hay otro control igual para el fondo de imagen/video (por defecto: Cubrir). Ambos se guardan en los ajustes.
 
 ## Atajos de teclado
 
