@@ -114,6 +114,7 @@ contextBridge.exposeInMainWorld("proyector", {
     return () => ipcRenderer.removeListener("operator:shortcut", handler);
   },
   getAppUpdateState: (): Promise<AppUpdateState> => ipcRenderer.invoke("updater:get-state"),
+  checkAppUpdate: (): Promise<AppUpdateState> => ipcRenderer.invoke("updater:check"),
   startAppUpdate: (): Promise<AppUpdateState> => ipcRenderer.invoke("updater:start"),
   installAppUpdate: (): Promise<AppUpdateState> => ipcRenderer.invoke("updater:install"),
   onAppUpdateState: (cb: (state: AppUpdateState) => void): (() => void) => {

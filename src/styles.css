@@ -1335,6 +1335,15 @@ body {
   );
 }
 
+.update-check {
+  color: var(--muted);
+}
+
+.update-check svg {
+  width: 1rem;
+  height: 1rem;
+}
+
 .update-note {
   align-self: center;
   margin-left: 0.5rem;

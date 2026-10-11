@@ -174,6 +174,11 @@ export function setupUpdater(setup: UpdaterSetup): void {
   };
 
   ipcMain.handle("updater:get-state", () => controller?.getState());
+  ipcMain.handle("updater:check", async (event) => {
+    if (!controller || !fromOperator(event)) return controller?.getState();
+    await controller.check();
+    return controller.getState();
+  });
   ipcMain.handle("updater:start", (event) => (fromOperator(event) ? controller?.startUpdate() : controller?.getState()));
   ipcMain.handle("updater:install", (event) => (fromOperator(event) ? controller?.install() : controller?.getState()));
 
