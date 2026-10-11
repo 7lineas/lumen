@@ -110,6 +110,8 @@ export interface AppSettings {
   padding: number;
   /** Single accent color for the reference (top-left) and version tag (bottom-right). */
   accentColor: string;
+  /** Fade windows and dialogs in and out. Off by default so they open and close at once. */
+  overlayAnimation: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -131,6 +133,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   brightness: 0.4,
   padding: 9,
   accentColor: "#f6a623",
+  overlayAnimation: false,
 };
 
 export interface HistoryEntry {
