@@ -57,6 +57,8 @@ const MEDIA_CONTENT_TYPES: Record<string, string> = {
  * Range header and can only seek when it gets a 206 back, which net.fetch on
  * a file:// URL does not give.
  */
+const MEDIA_CHUNK_BYTES = 1024 * 1024;
+
 function rangeResponse(target: string, rangeHeader: string): Response | null {
   const size = fs.statSync(target).size;
   const match = /^bytes=(\d*)-(\d*)$/.exec(rangeHeader.trim());
@@ -66,7 +68,8 @@ function rangeResponse(target: string, rangeHeader: string): Response | null {
   if (start >= size || end < start) {
     return new Response(null, { status: 416, headers: { "content-range": `bytes */${size}`, "accept-ranges": "bytes" } });
   }
-  const stream = Readable.toWeb(fs.createReadStream(target, { start, end })) as unknown as ReadableStream;
+  // Large chunks: a video is read through this process, and 64 KB pieces make an hour-long file tens of thousands of hops.
+  const stream = Readable.toWeb(fs.createReadStream(target, { start, end, highWaterMark: MEDIA_CHUNK_BYTES })) as unknown as ReadableStream;
   return new Response(stream, {
     status: 206,
     headers: {
@@ -78,13 +81,17 @@ function rangeResponse(target: string, rangeHeader: string): Response | null {
   });
 }
 
-function copyToMediaFiles(filePath: string): string | null {
+/**
+ * Copy off the main thread: a synchronous copy of an hour-long video freezes
+ * every window until it ends. FICLONE makes it instant where the disk allows.
+ */
+async function copyToMediaFiles(filePath: string): Promise<string | null> {
   try {
     const dir = mediaFilesDir();
-    fs.mkdirSync(dir, { recursive: true });
+    await fs.promises.mkdir(dir, { recursive: true });
     const ext = path.extname(filePath).toLowerCase();
     const storedPath = path.join(dir, `${Date.now()}-${Math.random().toString(36).slice(2, 9)}${ext}`);
-    fs.copyFileSync(filePath, storedPath);
+    await fs.promises.copyFile(filePath, storedPath, fs.constants.COPYFILE_FICLONE);
     return storedPath;
   } catch (error) {
     console.error("[media] copyToMediaFiles failed", error);
@@ -859,8 +866,8 @@ const VIDEO_EXTENSIONS = ["mp4", "m4v", "webm", "mov", "ogv"];
 const AUDIO_EXTENSIONS = ["mp3", "wav", "m4a", "aac", "ogg", "oga", "opus", "flac"];
 
 /** Copy a video or audio file into app data and describe it as a media item. */
-function importAvFile(filePath: string): StoredSlideDeck | null {
-  const file = copyToMediaFiles(filePath);
+async function importAvFile(filePath: string): Promise<StoredSlideDeck | null> {
+  const file = await copyToMediaFiles(filePath);
   if (!file) return null;
   return {
     id: newDeckId(),
@@ -914,7 +921,11 @@ registerIpcHandle("slides:import", async (): Promise<SlideImportResult | null> =
   // Video and audio: one item per file, so several can be imported at once.
   const avFiles = result.filePaths.filter((file) => isVideoPath(file) || isAudioPath(file));
   if (avFiles.length > 0) {
-    const items = avFiles.map(importAvFile).filter((item): item is StoredSlideDeck => item !== null);
+    const items: StoredSlideDeck[] = [];
+    for (const file of avFiles) {
+      const item = await importAvFile(file);
+      if (item) items.push(item);
+    }
     if (items.length === 0) return importError("read-failed");
     return { kind: "ready", deck: items[0]!, more: items.slice(1) };
   }

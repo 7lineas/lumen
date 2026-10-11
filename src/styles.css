@@ -5635,3 +5635,20 @@ button.primary:not(:disabled):active,
     transition: none;
   }
 }
+
+/* The monitors show a still of a live video; this says it is moving on the projector. */
+.monitor-video-note {
+  position: absolute;
+  left: 50%;
+  bottom: 8%;
+  transform: translateX(-50%);
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.66);
+  color: #f2f2f3;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  pointer-events: none;
+}
