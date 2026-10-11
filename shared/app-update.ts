@@ -244,7 +244,7 @@ export function getUpdateConfirmation(state: AppUpdateState): UpdateConfirmation
       ? "La actualización ya está descargada. Al continuar, Lumen se cerrará y se reiniciará para instalarla. Se interrumpirá cualquier trabajo abierto en la aplicación."
       : "Se descargará la actualización y, al terminar, Lumen se cerrará y se reiniciará para instalarla. Se interrumpirá cualquier trabajo abierto en la aplicación.",
     projectionWarning: state.projectionActive
-      ? "Hay una proyección en vivo: la pantalla de proyección se cerrará y la congregación dejará de ver el contenido hasta que Lumen vuelva a abrir. Se recomienda actualizar fuera del culto."
+      ? "Hay una proyección en vivo: la pantalla de proyección se cerrará y la congregación dejará de ver el contenido hasta que Lumen vuelva a abrir. Se recomienda actualizar fuera del servicio."
       : null,
     confirmLabel: installing ? "Reiniciar y actualizar" : "Descargar y actualizar",
   };
