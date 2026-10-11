@@ -344,10 +344,11 @@ function createOperatorWindow(): void {
     icon: appIconPath(),
     title: "Lumen",
     // The app's top bar is the window title bar (same as Lectern): macOS keeps
-    // the traffic lights inside it, Windows keeps the window controls on the right.
+    // the traffic lights inside it. Elsewhere the window is frameless and the top
+    // bar draws its own window controls, so dialogs can cover them like any content.
     ...(process.platform === "darwin"
       ? { titleBarStyle: "hiddenInset" as const, trafficLightPosition: { x: 16, y: 16 } }
-      : { titleBarStyle: "hidden" as const, titleBarOverlay: { color: "#1d1d1f", symbolColor: "#ececef", height: 52 } }),
+      : { frame: false }),
     autoHideMenuBar: true,
     webPreferences: {
       preload: getPreload(),
@@ -369,7 +370,31 @@ function createOperatorWindow(): void {
       projectorWindow.close();
     }
   });
+
+  const sendMaximized = () => {
+    if (operatorWindow && !operatorWindow.isDestroyed()) {
+      operatorWindow.webContents.send("window:maximized", operatorWindow.isMaximized());
+    }
+  };
+  operatorWindow.on("maximize", sendMaximized);
+  operatorWindow.on("unmaximize", sendMaximized);
 }
+
+// Window controls for the frameless operator window (see the top bar). Only the
+// operator window may drive them, so these stay off the LAN browser RPC.
+ipcMain.handle("window:control", (event, action: "minimize" | "toggle-maximize" | "close") => {
+  const win = operatorWindow;
+  if (!win || win.isDestroyed() || event.sender !== win.webContents) return;
+  if (action === "minimize") win.minimize();
+  else if (action === "toggle-maximize") {
+    if (win.isMaximized()) win.unmaximize();
+    else win.maximize();
+  } else if (action === "close") win.close();
+});
+ipcMain.handle("window:is-maximized", (event) => {
+  const win = operatorWindow;
+  return Boolean(win && !win.isDestroyed() && event.sender === win.webContents && win.isMaximized());
+});
 
 function getTargetDisplay(): Electron.Display {
   const settings = store.get("settings");

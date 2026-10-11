@@ -122,4 +122,13 @@ contextBridge.exposeInMainWorld("proyector", {
     ipcRenderer.on("updater:state", handler);
     return () => ipcRenderer.removeListener("updater:state", handler);
   },
+  windowControls: {
+    control: (action: "minimize" | "toggle-maximize" | "close"): Promise<void> => ipcRenderer.invoke("window:control", action),
+    isMaximized: (): Promise<boolean> => ipcRenderer.invoke("window:is-maximized"),
+    onMaximizedChange: (cb: (maximized: boolean) => void): (() => void) => {
+      const handler = (_: Electron.IpcRendererEvent, maximized: boolean) => cb(maximized);
+      ipcRenderer.on("window:maximized", handler);
+      return () => ipcRenderer.removeListener("window:maximized", handler);
+    },
+  },
 });

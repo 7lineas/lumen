@@ -97,6 +97,11 @@ export interface ProyectorApi {
   onProjectorUpdate: (cb: (p: ProjectorPayload) => void) => () => void;
   onBibleDownloadProgress: (cb: (progress: BibleDownloadProgress) => void) => () => void;
   onOperatorShortcut: (cb: (data: { action: string }) => void) => () => void;
+  windowControls: {
+    control: (action: "minimize" | "toggle-maximize" | "close") => Promise<void>;
+    isMaximized: () => Promise<boolean>;
+    onMaximizedChange: (cb: (maximized: boolean) => void) => () => void;
+  };
 }
 
 declare global {
