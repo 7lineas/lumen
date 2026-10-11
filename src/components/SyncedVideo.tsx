@@ -3,8 +3,14 @@ import { backgroundImageUrl } from "@shared/background-image";
 import { videoPosition } from "@shared/stage";
 import type { MediaFit, VideoPlayback } from "@shared/types";
 
-/** How far a window may drift from the operator's clock before it is corrected (seconds). */
+/** How far a window may be from the operator's clock right after a transport action (seconds). */
 const DRIFT_TOLERANCE = 0.4;
+/**
+ * How far it may drift while simply playing. Wider on purpose: on a slow
+ * computer a seek takes longer than the tolerance, so correcting small drift
+ * would seek again and again and the video would never play.
+ */
+const PLAYING_DRIFT_TOLERANCE = 3;
 
 interface Props {
   playback: VideoPlayback;
@@ -13,6 +19,12 @@ interface Props {
   fit?: MediaFit;
   className?: string;
   onDuration?: (seconds: number) => void;
+  /**
+   * Show the frame of the last transport action instead of playing. The
+   * operator monitors use it: each playing copy is one more full decode of
+   * the video, and older computers cannot afford several next to the projector.
+   */
+  still?: boolean;
 }
 
 /**
@@ -20,37 +32,44 @@ interface Props {
  * same position from `playback` and only seeks when it has drifted, so
  * projector and monitors stay in step without streaming time updates.
  */
-export function SyncedVideo({ playback, muted, fit = "contain", className, onDuration }: Props) {
+export function SyncedVideo({ playback, muted, fit = "contain", className, onDuration, still = false }: Props) {
   const ref = useRef<HTMLVideoElement>(null);
   const { path, playing, startedAt, position, volume } = playback;
 
-  const sync = useCallback(() => {
+  const sync = useCallback((tolerance: number) => {
     const el = ref.current;
     if (!el || el.readyState < HTMLMediaElement.HAVE_METADATA) return;
     const target = videoPosition({ playing, startedAt, position }, Date.now(), el.duration);
-    if (Math.abs(el.currentTime - target) > DRIFT_TOLERANCE) {
+    if (Math.abs(el.currentTime - target) > tolerance) {
       try {
         el.currentTime = target;
       } catch {
         // ignore (seek not possible yet)
       }
     }
+    if (still) return;
     const ended = Number.isFinite(el.duration) && target >= el.duration;
     if (playing && !ended) void el.play().catch(() => undefined);
     else el.pause();
-  }, [playing, startedAt, position]);
+  }, [playing, startedAt, position, still]);
 
-  // Re-check once a second: it corrects drift and retries a play that
-  // Chromium refused (it pauses silent video while the window is covered).
+  // A transport action (play, pause, seek) is followed at once. After that a
+  // playing video is re-checked once a second: it corrects real drift and
+  // retries a play that Chromium refused (it pauses silent video while the
+  // window is covered).
   useEffect(() => {
-    sync();
-    const id = window.setInterval(sync, 1000);
-    document.addEventListener("visibilitychange", sync);
+    sync(DRIFT_TOLERANCE);
+    if (still) return;
+    const check = () => {
+      if (!ref.current?.seeking) sync(PLAYING_DRIFT_TOLERANCE);
+    };
+    const id = window.setInterval(check, 1000);
+    document.addEventListener("visibilitychange", check);
     return () => {
       window.clearInterval(id);
-      document.removeEventListener("visibilitychange", sync);
+      document.removeEventListener("visibilitychange", check);
     };
-  }, [sync, path]);
+  }, [sync, still, path]);
 
   useEffect(() => {
     if (ref.current) ref.current.volume = Math.min(Math.max(volume, 0), 1);
@@ -65,10 +84,10 @@ export function SyncedVideo({ playback, muted, fit = "contain", className, onDur
       src={backgroundImageUrl(path)}
       muted={muted}
       playsInline
-      preload="auto"
+      preload={still ? "metadata" : "auto"}
       onLoadedMetadata={(event) => {
         onDuration?.(event.currentTarget.duration);
-        sync();
+        sync(DRIFT_TOLERANCE);
       }}
       aria-hidden
     />

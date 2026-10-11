@@ -239,8 +239,10 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
         <img src={backgroundImageUrl(slideImage)} alt="" className="monitor-screen-slide" style={{ objectFit: slideFit }} />
       )}
       {video && (
-        <SyncedVideo playback={video} muted fit={slideFit} className="monitor-screen-slide" onDuration={onVideoDuration} />
+        // A still frame: only the projector plays the video (see SyncedVideo's `still`).
+        <SyncedVideo playback={video} muted still fit={slideFit} className="monitor-screen-slide" onDuration={onVideoDuration} />
       )}
+      {video?.playing && <span className="monitor-video-note">Reproduciendo en la pantalla</span>}
       {renderPayload?.mode === "countdown" && renderPayload.countdown && (
         // Container units keep the miniature in the same proportions as the
         // projector's vw/vh sizes.
