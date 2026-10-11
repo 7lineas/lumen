@@ -136,6 +136,41 @@ export function resolveModulePath(bibleDir: string, userDir: string, id: string)
   throw new Error("Esa versión no está instalada");
 }
 
+/** Remote catalog kept in memory so opening Biblias does not wait on the network each time. */
+const CATALOG_TTL_MS = 60 * 60 * 1000;
+let remoteCatalog: { catalog: BibleCatalog; at: number } | null = null;
+let remoteRefresh: Promise<void> | null = null;
+
+function refreshRemoteCatalog(bundled: BibleCatalog, fetchImpl: FetchLike): Promise<void> {
+  remoteRefresh ??= resolveCatalog(bundled, fetchImpl)
+    .then((resolved) => {
+      if (resolved.source === "remote") remoteCatalog = { catalog: resolved.catalog, at: Date.now() };
+    })
+    .finally(() => {
+      remoteRefresh = null;
+    });
+  return remoteRefresh;
+}
+
+/**
+ * Answers from the last remote catalog right away and refreshes it in the
+ * background once it is older than the TTL. Without a cached copy it waits
+ * for one fetch, then falls back to the bundled list.
+ */
+export async function resolveCatalogCached(
+  bundled: BibleCatalog,
+  fetchImpl: FetchLike,
+): Promise<{ catalog: BibleCatalog; source: "remote" | "bundled" }> {
+  if (remoteCatalog) {
+    if (Date.now() - remoteCatalog.at > CATALOG_TTL_MS) void refreshRemoteCatalog(bundled, fetchImpl);
+    return { catalog: remoteCatalog.catalog, source: "remote" };
+  }
+  await refreshRemoteCatalog(bundled, fetchImpl);
+  // TS cannot see the assignment made inside the refresh, so read it again.
+  const fetched = remoteCatalog as { catalog: BibleCatalog; at: number } | null;
+  return fetched ? { catalog: fetched.catalog, source: "remote" } : { catalog: bundled, source: "bundled" };
+}
+
 export async function buildLibraryView(
   bibleDir: string,
   userDir: string,
@@ -143,7 +178,7 @@ export async function buildLibraryView(
   fetchImpl: FetchLike,
 ): Promise<LibraryView> {
   const bundledCatalog = readCatalogFile(catalogFile);
-  const resolved = await resolveCatalog(bundledCatalog, fetchImpl);
+  const resolved = await resolveCatalogCached(bundledCatalog, fetchImpl);
   return describeLibrary({
     bundled: bundledLibraryEntries(bibleDir),
     catalog: resolved.catalog,

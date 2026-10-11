@@ -3816,6 +3816,125 @@ body.win.electron .top-right {
   margin: -0.25rem -0.5rem;
 }
 
+/* Biblias: one compact line per version (name + meta left, action right) */
+.bibles .bible-section + .bible-section {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+}
+
+.bibles .bible-section > h2 {
+  margin: 0 0 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.bibles .bible-intro,
+.bibles .bible-banner {
+  margin: 0 0 0.6rem;
+  font-size: 0.82rem;
+}
+
+.bibles .bible-list {
+  margin-top: 0;
+  gap: 0;
+}
+
+.bibles .bible-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  column-gap: 0.75rem;
+  align-items: center;
+  margin: 0;
+  padding: 0.45rem 0.1rem;
+  border: 0;
+  border-bottom: 1px solid #292d34;
+  border-radius: 0;
+  background: transparent;
+}
+
+.bibles .bible-row > .bible-abbr {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  width: 4.25rem;
+  padding: 0.2rem 0;
+  border-radius: 5px;
+  background: #1f2228;
+  color: #e6b35c;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.bibles .bible-row > h3 {
+  grid-column: 2;
+  grid-row: 1;
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.25;
+}
+
+.bibles .bible-row > .bible-meta {
+  grid-column: 2;
+  grid-row: 2;
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.3;
+}
+
+/* Placeholder rows while the catalog loads: same height as a real row, so nothing jumps */
+.bibles .bible-skeleton-row {
+  height: 3.1rem;
+  border-bottom: 1px solid #292d34;
+  background: linear-gradient(90deg, #171a1f 25%, #20242b 50%, #171a1f 75%);
+  background-size: 200% 100%;
+  animation: bible-shimmer 1.4s linear infinite;
+}
+
+@keyframes bible-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+.bibles .bible-row > .bible-actions {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  gap: 0.4rem;
+}
+
+.bibles .bible-row > .error {
+  grid-column: 1 / -1;
+  margin: 0.3rem 0 0;
+  font-size: 0.8rem;
+}
+
+.bibles .bible-row .bible-actions button {
+  height: 1.75rem;
+  padding-inline: 0.6rem;
+  font-size: 0.8rem;
+}
+
+.bibles .bible-row .bible-status {
+  font-size: 0.8rem;
+}
+
+.bibles .online-toolbar {
+  margin-bottom: 0.6rem;
+}
+
+.bibles .online-list-title {
+  margin: 1rem 0 0.25rem;
+  font-size: 0.8rem;
+}
+
 /* ---- Live state ---- */
 .live-timer {
   margin-left: 0.5rem;
