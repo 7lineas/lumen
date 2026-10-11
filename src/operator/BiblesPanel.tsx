@@ -215,7 +215,7 @@ export function BiblesPanel({
         {online?.configured && (
           <>
             <p className="bible-intro">
-              Por defecto aparecen NVI, NBLA, LBLA y RVES. Puede buscar otras versiones del catálogo y
+              Por defecto aparecen NVI 2025, NBLA, LBLA y RVES. Puede buscar otras versiones del catálogo y
               añadirlas a esta instalación. Se consultan al elegirlas y cada capítulo se guarda en este
               equipo por 30 días. El texto lleva siempre el copyright de la editorial. Si una versión pide
               licencia, acéptela en el portal de YouVersion Platform de esta app.
