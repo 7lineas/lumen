@@ -34,7 +34,23 @@ export interface BibleData {
 /** How an image/video fills the projector: crop to fill ("cover") or show it whole ("contain"). */
 export type MediaFit = "cover" | "contain";
 
-export type ProjectorMode = "verse" | "slides" | "blank" | "logo";
+export type ProjectorMode = "verse" | "slides" | "video" | "blank" | "logo" | "countdown";
+
+/**
+ * Playback of the video on screen. The operator owns the clock: every window
+ * seeks to the same position from these fields, so they stay in step.
+ */
+export interface VideoPlayback {
+  /** Managed video file (copied into app data). */
+  path: string;
+  playing: boolean;
+  /** Epoch ms at which position 0 was (or would have been) on screen while playing. */
+  startedAt: number;
+  /** Position in seconds while paused. */
+  position: number;
+  /** 0–1, applied on the projector only; the operator monitors are always silent. */
+  volume: number;
+}
 
 export interface ProjectorPayload {
   mode: ProjectorMode;
@@ -60,6 +76,10 @@ export interface ProjectorPayload {
   backgroundImagePath?: string | null;
   /** Managed per-slide image (PNG) for diapositivas. */
   slideImagePath?: string | null;
+  /** Countdown on screen: the caption above the time, and when it reaches zero (epoch ms). */
+  countdown?: { caption: string; endsAt: number };
+  /** Video on screen (mode "video"). */
+  video?: VideoPlayback;
 }
 
 export interface AppSettings {
@@ -132,19 +152,40 @@ export const MAX_QUEUE_ITEMS = 99;
 export interface StoredSong {
   id: string;
   title: string;
+  /** Author or credit, shown in the library only (never projected). */
+  author?: string;
   lyrics: string;
+  updatedAt: number;
+  pinned: boolean;
+  /**
+   * Part keys (see shared/song-sections.ts) in projection order, repeats
+   * included. Absent means the parts are projected in the order they were written.
+   */
+  arrangement?: string[];
+}
+
+/** What a media item is: a deck of slide images (the default), a video or an audio track. */
+export type MediaKind = "slides" | "video" | "audio";
+
+/**
+ * Media item saved in the application's persistent user data. A slide deck
+ * holds one PNG per slide; a video or audio item holds a single managed file.
+ */
+export interface StoredSlideDeck {
+  id: string;
+  title: string;
+  /** Absent means "slides" (decks saved before audio and video existed). */
+  kind?: "video" | "audio";
+  /** Managed PNG per slide (copied into app data), in presentation order. Empty for video and audio. */
+  images: string[];
+  /** Managed video or audio file (copied into app data). */
+  file?: string;
   updatedAt: number;
   pinned: boolean;
 }
 
-/** Slide deck saved in the application's persistent user data: images only, one PNG per slide. */
-export interface StoredSlideDeck {
-  id: string;
-  title: string;
-  /** Managed PNG per slide (copied into app data), in presentation order. */
-  images: string[];
-  updatedAt: number;
-  pinned: boolean;
+export function mediaKind(item: Pick<StoredSlideDeck, "kind">): MediaKind {
+  return item.kind ?? "slides";
 }
 
 /** An import whose PNGs are still to be generated (never persisted). */
@@ -157,6 +198,6 @@ export interface PendingSlideImport {
 }
 
 export type SlideImportResult =
-  | { kind: "ready"; deck: StoredSlideDeck }
+  | { kind: "ready"; deck: StoredSlideDeck; more?: StoredSlideDeck[] }
   | { kind: "pending"; pending: PendingSlideImport }
   | { kind: "error"; error: string };

@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { MediaFit, ProjectorPayload } from "@shared/types";
 import { DEFAULT_SETTINGS } from "@shared/types";
 import { backgroundImageUrl } from "@shared/background-image";
+import { payloadContentKey } from "@shared/stage";
 import { FadingBackgroundMedia } from "@/components/BackgroundMedia";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CountdownClock, ElapsedClock } from "@/components/Clock";
+import { SyncedVideo } from "@/components/SyncedVideo";
 
 interface Props {
   title: string;
@@ -18,21 +20,23 @@ interface Props {
   aspectRatio?: number;
   /** Real projector display width in px, used to scale fonts proportionally. */
   displayWidth?: number;
-  /** Short label shown next to the title, e.g. "16:9 · 1920×1080". */
+  /** What is on this screen ("Juan 3:16", "Coro"), next to the title. */
+  label?: string;
+  /** Short note at the right of the header, e.g. "16:9 · 1920×1080". */
   ratioLabel?: string;
+  /** Controls under the screen. */
+  children?: ReactNode;
+  /** Length of the video on this screen, once it is known. */
+  onVideoDuration?: (seconds: number) => void;
   /** How background media fills the screen (settings.backgroundFit). */
   backgroundFit?: MediaFit;
   /** How a diapositiva image fills the screen (settings.slideFit). */
   slideFit?: MediaFit;
+  /** When the live content last changed (epoch ms); shown as the time on screen. */
+  liveSince?: number | null;
 }
 
-function contentKey(p: ProjectorPayload | null): string {
-  if (!p || p.mode === "blank") return "blank";
-  if (p.mode === "logo") return `logo:${p.churchName}`;
-  return `${p.mode}:${p.referenceLabel}|${p.slideImagePath ?? ""}|${p.blocks.map((b) => `${b.label ?? ""}=${b.text}`).join("|")}`;
-}
-
-export function StageMonitor({ title, payload, empty, testId, isLive, aspectRatio, displayWidth, ratioLabel, backgroundFit = DEFAULT_SETTINGS.backgroundFit, slideFit = DEFAULT_SETTINGS.slideFit }: Props) {
+export function StageMonitor({ title, payload, empty, testId, isLive, aspectRatio, displayWidth, label, ratioLabel, children, onVideoDuration, backgroundFit = DEFAULT_SETTINGS.backgroundFit, slideFit = DEFAULT_SETTINGS.slideFit, liveSince }: Props) {
   // Live monitor mirrors the projector: fade out old content, swap, fade in.
   // Preview renders instantly (no fade).
   // The inner screen renders at the real projector aspect ratio so the
@@ -56,7 +60,7 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
-    if (ms === 0 || contentKey(payload) === contentKey(displayedRef.current)) {
+    if (ms === 0 || payloadContentKey(payload) === payloadContentKey(displayedRef.current)) {
       displayedRef.current = payload;
       setDisplayed(payload);
       if (!visibleRef.current) {
@@ -95,23 +99,46 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
     if (timerRef.current !== null) clearTimeout(timerRef.current);
   }, []);
 
+  // "Take" flash: the live monitor pulses an on-air ring whenever new content
+  // is projected. Web Animations restarts on every take, even back-to-back.
+  // Style-only updates and "Limpiar" do not flash.
+  const takeKey = useRef<string | null>(null);
+  useEffect(() => {
+    if (!isLive) return;
+    const key = payloadContentKey(payload);
+    if (key === takeKey.current) return;
+    takeKey.current = key;
+    const el = monitorRef.current;
+    if (key === "blank" || !el || typeof el.animate !== "function") return;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    el.animate(
+      [
+        { boxShadow: "inset 0 0 0 0 rgba(255, 59, 48, 0)" },
+        { boxShadow: "inset 0 0 0 3px rgba(255, 59, 48, 0.9)", offset: 0.25 },
+        { boxShadow: "inset 0 0 0 0 rgba(255, 59, 48, 0)" },
+      ],
+      { duration: 700, easing: "ease-out" },
+    );
+  }, [payload, isLive]);
+
   const renderPayload = isLive ? displayed : payload;
   const theme = renderPayload?.theme === "light" ? "light" : "dark";
   const brightness = renderPayload?.brightness ?? 1;
   const projectorFontPx = renderPayload?.fontSize ?? DEFAULT_SETTINGS.fontSize;
   const fadeMs = Math.max(0, renderPayload?.fadeMs ?? DEFAULT_SETTINGS.fadeMs);
   const isLogo = renderPayload?.mode === "logo";
-  const projecting = renderPayload?.mode === "verse" || renderPayload?.mode === "slides" || renderPayload?.mode === "logo";
-  const label = renderPayload?.referenceLabel ?? "";
-  const sep = label.lastIndexOf(" — ");
-  const ref = sep < 0 ? label : label.slice(0, sep);
-  const version = sep < 0 ? "" : label.slice(sep + 3);
+  const projecting = renderPayload != null && renderPayload.mode !== "blank";
+  const referenceLabel = renderPayload?.referenceLabel ?? "";
+  const sep = referenceLabel.lastIndexOf(" — ");
+  const ref = sep < 0 ? referenceLabel : referenceLabel.slice(0, sep);
+  const version = sep < 0 ? "" : referenceLabel.slice(sep + 3);
   const referenceColor = renderPayload?.referenceColor ?? "#f6a623";
   const versionColor = renderPayload?.versionColor ?? "#f6a623";
   // Same rule as the projector: slides => solid color background, switched
   // from the incoming payload (not the lagging displayed one) so it fades in
   // parallel with the slide.
-  const slidesActive = (isLive ? payload : renderPayload)?.mode === "slides";
+  const incomingMode = (isLive ? payload : renderPayload)?.mode;
+  const slidesActive = incomingMode === "slides" || incomingMode === "video";
   const backgroundPath = slidesActive ? undefined : renderPayload?.backgroundImagePath;
   const backgroundFadeMs = Math.max(0, renderPayload?.backgroundFadeMs ?? DEFAULT_SETTINGS.backgroundFadeMs);
   const pad = renderPayload?.padding ?? DEFAULT_SETTINGS.padding;
@@ -202,12 +229,25 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
   const metaPx = bodyFitPx * 0.75;
 
   const slideImage = renderPayload?.mode === "slides" ? renderPayload.slideImagePath ?? null : null;
+  const video = renderPayload?.mode === "video" ? renderPayload.video ?? null : null;
+  const fullBleed = slideImage != null || video != null;
   const screenContent = (
     <>
       {!renderPayload && empty && <p className="monitor-screen-empty">{empty}</p>}
       {isLogo && <p className="monitor-screen-logo" style={{ fontSize: `${fitPx * 0.65}px` }}>{renderPayload?.churchName}</p>}
       {slideImage && (
         <img src={backgroundImageUrl(slideImage)} alt="" className="monitor-screen-slide" style={{ objectFit: slideFit }} />
+      )}
+      {video && (
+        <SyncedVideo playback={video} muted fit={slideFit} className="monitor-screen-slide" onDuration={onVideoDuration} />
+      )}
+      {renderPayload?.mode === "countdown" && renderPayload.countdown && (
+        // Container units keep the miniature in the same proportions as the
+        // projector's vw/vh sizes.
+        <div className="monitor-countdown">
+          {renderPayload.countdown.caption && <p className="monitor-countdown-caption">{renderPayload.countdown.caption}</p>}
+          <p className="monitor-countdown-time"><CountdownClock endsAt={renderPayload.countdown.endsAt} /></p>
+        </div>
       )}
       {renderPayload?.mode === "verse" && (
         <>
@@ -240,19 +280,23 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
   );
 
   return (
-    <Card className="monitor-card">
-      <CardHeader>
-        <CardTitle>
-          {isLive && <span className={`live-dot ${projecting ? "on" : ""}`} aria-hidden />}
+    <section className={isLive ? "lx-mon-sec live" : "lx-mon-sec"}>
+      <header>
+        <span className={isLive ? "lx-mon-tag live" : "lx-mon-tag"}>
+          {isLive && <span className={`lx-dot${projecting ? " on" : ""}`} aria-hidden />}
           {title}
-          {ratioLabel && <span className="monitor-ratio" title="Relación real del proyector">{ratioLabel}</span>}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="monitor-content">
+        </span>
+        <span className="lx-mon-label" title={label}>{label}</span>
+        {isLive && liveSince != null && (renderPayload?.mode === "verse" || renderPayload?.mode === "slides" || renderPayload?.mode === "video") && (
+          <ElapsedClock since={liveSince} className="lx-mon-time" title="Tiempo en pantalla con este contenido" />
+        )}
+        {ratioLabel && <span className="lx-mon-time" title="Relación real del proyector">{ratioLabel}</span>}
+      </header>
       <div
         ref={monitorRef}
         className={`monitor ${theme}`}
         data-testid={testId}
+        style={{ aspectRatio: screenAspect }}
       >
         <div
           ref={screenRef}
@@ -261,8 +305,8 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
             width: screenSize ? `${screenSize.width}px` : "100%",
             height: screenSize ? `${screenSize.height}px` : "auto",
             aspectRatio: screenAspect,
-            // A diapositiva image is full-bleed: the text padding must not shrink it.
-            padding: slideImage ? 0 : `${pad}%`,
+            // A slide image or a video is full-bleed: the text padding must not shrink it.
+            padding: fullBleed ? 0 : `${pad}%`,
           }}
         >
           <div
@@ -282,7 +326,7 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
           </div>
         </div>
       </div>
-      </CardContent>
-    </Card>
+      {children}
+    </section>
   );
 }

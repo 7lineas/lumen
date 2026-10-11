@@ -77,6 +77,18 @@ export function fetchRangeTexts(
   };
 }
 
+// Keyed by the array itself: online Bibles replace `searchIndex` when a chapter is merged.
+const normalizedCache = new WeakMap<BibleData["searchIndex"], string[]>();
+
+function normalizedIndex(index: BibleData["searchIndex"]): string[] {
+  let texts = normalizedCache.get(index);
+  if (!texts || texts.length !== index.length) {
+    texts = index.map((entry) => normalizeSearchText(entry.text));
+    normalizedCache.set(index, texts);
+  }
+  return texts;
+}
+
 export function searchVerses(
   versionId: string,
   query: string,
@@ -87,9 +99,11 @@ export function searchVerses(
 
   const q = normalizeSearchText(query);
   const results: Array<{ book: string; chapter: number; verse: number; text: string; snippet: string }> = [];
+  const normalized = normalizedIndex(bible.searchIndex);
 
-  for (const entry of bible.searchIndex) {
-    if (normalizeSearchText(entry.text).includes(q)) {
+  for (let i = 0; i < bible.searchIndex.length; i++) {
+    const entry = bible.searchIndex[i];
+    if (normalized[i].includes(q)) {
       const snippet =
         entry.text.length > 120 ? `${entry.text.slice(0, 117)}…` : entry.text;
       results.push({

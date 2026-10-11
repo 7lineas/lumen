@@ -1,73 +1,82 @@
-import { useEffect, useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { DragEvent } from "react";
+import { Pencil, Pin, Plus, RotateCcw, X } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import { Pin, Pencil } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import type { StoredSong } from "@shared/types";
+import { parseSong, pruneArrangement, shortLabel, songParts, type SongSection } from "@shared/song-sections";
+import { SearchIcon, SongIcon } from "./icons";
+import { SlideTile } from "./SlideTile";
+import { SongDialog, type SongDraft } from "./SongDialog";
 
 export type Song = StoredSong;
 
 export interface SongStage {
   title: string;
   slides: string[];
+  /** Label of each part ("Coro"), empty for unlabelled parts. */
+  labels: string[];
   index: number;
 }
+
+/** What the workspace hands up when a song (or its arrangement) changes. */
+export type SongSelection = Omit<SongStage, "index"> & { index?: number };
 
 interface Props {
   staged: SongStage | null;
   selectedId: string | null;
+  /** Text on the projector right now, when it is a song part. */
+  liveText?: string | null;
+  /** Position of that part in the staged song, when it was projected from it (a repeated chorus is live only once). */
+  liveIndex?: number | null;
   projectOnClick: boolean;
   onToggleProjectOnClick: (value: boolean) => void;
-  onSelectSong: (songId: string, title: string, slides: string[]) => void;
+  onSelectSong: (songId: string | null, selection: SongSelection | null) => void;
   onSelectPart: (index: number) => void;
+  /** Double-click: stage the part and project it. */
+  onTakePart: (index: number) => void;
 }
 
 function id() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export function slidesFor(song: Song | null) {
-  return song?.lyrics.split(/\n\s*\n/).map((slide) => slide.trim()).filter(Boolean) ?? [];
+function withArrangement(song: Song, arrangement: string[] | undefined): Song {
+  const next = { ...song };
+  if (arrangement) next.arrangement = arrangement;
+  else delete next.arrangement;
+  return next;
 }
 
-export function slidesForLyrics(lyrics: string) {
-  return lyrics.split(/\n\s*\n/).map((slide) => slide.trim()).filter(Boolean);
+/** The staged selection for a song: its projected parts, clamped to a valid index. */
+function stageOf(song: Song, index = 0): SongSelection {
+  const parts = songParts(song);
+  return {
+    title: song.title,
+    slides: parts.map((part) => part.text),
+    labels: parts.map((part) => part.label),
+    index: Math.min(Math.max(index, 0), Math.max(parts.length - 1, 0)),
+  };
 }
 
-export function SongsWorkspace({ staged, selectedId, projectOnClick, onToggleProjectOnClick, onSelectSong, onSelectPart }: Props) {
+const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
+
+export function SongsWorkspace({ staged, selectedId, liveText, liveIndex, projectOnClick, onToggleProjectOnClick, onSelectSong, onSelectPart, onTakePart }: Props) {
   const [songs, setSongs] = useState<Song[]>([]);
   const [songsLoaded, setSongsLoaded] = useState(false);
   const [query, setQuery] = useState("");
-  const [draft, setDraft] = useState<Song | null>(null);
-  const [rightTab, setRightTab] = useState<"library" | "creation">("library");
+  // null = closed, "new" = creating, otherwise the id of the song being edited.
+  const [editing, setEditing] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     const api = window.proyector;
     if (!api) {
-      setSongs([]);
       setSongsLoaded(true);
       return () => { cancelled = true; };
     }
     void api.getSongs().then((saved) => {
       if (cancelled) return;
-      if (saved.length > 0) {
-        setSongs(saved);
-      } else {
-        setSongs([]);
-      }
+      setSongs(Array.isArray(saved) ? saved : []);
       setSongsLoaded(true);
     });
     return () => { cancelled = true; };
@@ -77,149 +86,289 @@ export function SongsWorkspace({ staged, selectedId, projectOnClick, onTogglePro
     if (songsLoaded) void window.proyector?.setSongs(songs);
   }, [songs, songsLoaded]);
 
-  const visibleSongs = useMemo(
-    () =>
-      songs
-        .filter((song) => song.title.toLowerCase().includes(query.toLowerCase()))
-        .sort((a, b) => Number(b.pinned) - Number(a.pinned)),
-    [songs, query],
-  );
+  const visibleSongs = useMemo(() => {
+    const q = normalize(query.trim());
+    return songs
+      .filter((song) => !q || normalize(`${song.title} ${song.author ?? ""}`).includes(q))
+      .sort((a, b) => Number(b.pinned) - Number(a.pinned));
+  }, [songs, query]);
 
-  const selectSong = (song: Song) => {
-    onSelectSong(song.id, song.title, slidesFor(song));
-  };
+  const selectedSong = useMemo(() => songs.find((song) => song.id === selectedId) ?? null, [songs, selectedId]);
+  const editingSong = editing && editing !== "new" ? songs.find((song) => song.id === editing) ?? null : null;
+  const sections = useMemo<SongSection[]>(() => (selectedSong ? parseSong(selectedSong.lyrics).sections : []), [selectedSong]);
+  const parts = useMemo<SongSection[]>(() => (selectedSong ? songParts(selectedSong) : []), [selectedSong]);
+  // Until the library has loaded, the staged song is what the operator sees.
+  const shown: SongSection[] = selectedSong
+    ? parts
+    : (staged?.slides ?? []).map((text, i) => ({ key: `staged-${i}`, label: staged?.labels[i] ?? "", text }));
+  const slide = staged?.index ?? 0;
+  const gridRef = useRef<HTMLDivElement>(null);
+  const [dragFrom, setDragFrom] = useState<number | null>(null);
+  const [dragOver, setDragOver] = useState<number | null>(null);
 
-  const editSong = (song: Song) => {
-    setDraft({ ...song });
-    setRightTab("creation");
-  };
+  useEffect(() => {
+    gridRef.current?.querySelector("[data-current]")?.scrollIntoView({ block: "nearest" });
+  }, [slide, staged?.title]);
 
   const togglePin = (songId: string) => {
     setSongs((current) => current.map((song) => (song.id === songId ? { ...song, pinned: !song.pinned } : song)));
   };
 
-  const isNew = draft ? !songs.some((song) => song.id === draft.id) : false;
-
-  const openCreation = () => {
-    if (!draft) {
-      setDraft({ id: id(), title: "", lyrics: "", updatedAt: Date.now(), pinned: false });
-    }
-    setRightTab("creation");
-  };
-
-  // Creation tab always shows the form directly — never the "Nueva canción" placeholder.
-  useEffect(() => {
-    if (rightTab === "creation" && !draft) {
-      setDraft({ id: id(), title: "", lyrics: "", updatedAt: Date.now(), pinned: false });
-    }
-  }, [rightTab, draft]);
-
-  const create = () => {
-    const song = { id: id(), title: "", lyrics: "", updatedAt: Date.now(), pinned: false };
-    setDraft({ ...song });
-    setRightTab("creation");
-  };
-
-  const save = () => {
-    if (!draft || !draft.title.trim()) return;
-    const next = { ...draft, title: draft.title.trim(), updatedAt: Date.now() };
-    setSongs((current) =>
-      current.some((song) => song.id === next.id) ? current.map((song) => (song.id === next.id ? next : song)) : [next, ...current],
+  const save = (draft: SongDraft) => {
+    const stored = editingSong;
+    const base: Song = stored ?? { id: id(), title: "", lyrics: "", updatedAt: 0, pinned: false };
+    // Keep the stored arrangement, minus parts the edited lyrics no longer have.
+    const next = withArrangement(
+      { ...base, title: draft.title, lyrics: draft.lyrics, updatedAt: Date.now() },
+      pruneArrangement(draft.lyrics, stored?.arrangement),
     );
-    setDraft(null);
+    if (draft.author) next.author = draft.author;
+    else delete next.author;
+    setSongs((current) => (stored ? current.map((song) => (song.id === next.id ? next : song)) : [next, ...current]));
+    setEditing(null);
     setQuery("");
-    setRightTab("library");
-    if (next.id === selectedId) {
-      onSelectSong(next.id, next.title, slidesFor(next));
-    }
+    // A new song opens straight away; an edited one keeps the part that was staged.
+    if (!stored) onSelectSong(next.id, stageOf(next));
+    else if (next.id === selectedId) onSelectSong(next.id, stageOf(next, staged?.index ?? 0));
   };
 
   const remove = () => {
-    if (!draft) return;
-    const deletedId = draft.id;
+    if (!editingSong) return;
+    const deletedId = editingSong.id;
     setSongs((current) => current.filter((song) => song.id !== deletedId));
-    setDraft(null);
-    setRightTab("library");
+    setEditing(null);
+    if (deletedId === selectedId) onSelectSong(null, null);
   };
 
-  const slides = staged?.slides ?? [];
-  const slide = staged?.index ?? 0;
+  // Every arrangement change is stored on the song and re-staged, so the
+  // projection follows the new order straight away. The selection stays on
+  // the same part where it still exists.
+  const commitArrangement = (song: Song, index: number, arrangement: string[] | undefined) => {
+    const updated = withArrangement(song, arrangement);
+    setSongs((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+    onSelectSong(updated.id, stageOf(updated, index));
+  };
+
+  const moveSongPart = (from: number, to: number) => {
+    if (!selectedSong || from === to || from < 0 || to < 0 || from >= parts.length || to >= parts.length) return;
+    const keys = parts.map((part) => part.key);
+    const [moved] = keys.splice(from, 1);
+    if (moved === undefined) return;
+    keys.splice(to, 0, moved);
+    let index = slide;
+    if (slide === from) index = to;
+    else if (from < slide && slide <= to) index = slide - 1;
+    else if (to <= slide && slide < from) index = slide + 1;
+    commitArrangement(selectedSong, index, keys);
+  };
+
+  const removeSongPart = (at: number) => {
+    if (!selectedSong || at < 0 || at >= parts.length) return;
+    const keys = parts.map((part) => part.key).filter((_, i) => i !== at);
+    commitArrangement(selectedSong, at < slide ? slide - 1 : slide, keys);
+  };
+
+  const addSongPart = (section: SongSection) => {
+    if (!selectedSong) return;
+    commitArrangement(selectedSong, slide, [...parts.map((part) => part.key), section.key]);
+  };
+
+  const dropPart = (event: DragEvent<HTMLElement>, index: number) => {
+    event.preventDefault();
+    if (dragFrom !== null) moveSongPart(dragFrom, index);
+    setDragFrom(null);
+    setDragOver(null);
+  };
+
+  const sectionBadge = (section: SongSection) =>
+    section.label ? shortLabel(section.label) : `T${sections.findIndex((s) => s.key === section.key) + 1}`;
+
+  const title = selectedSong?.title ?? staged?.title ?? "";
+  const author = selectedSong?.author ?? "";
 
   return (
-    <div className="songs-side-panels">
-      <aside className="songs-left songs-parts">
-        <p className="eyebrow">Partes</p>
-        <h2>{staged?.title || "Canción seleccionada"}</h2>
-        <label className="song-project-toggle">
-          <Switch checked={projectOnClick} onCheckedChange={onToggleProjectOnClick} aria-label="Proyectar al hacer clic" />
-          <span>Proyectar al hacer clic</span>
+    <>
+      <aside className="lx-lib">
+        <div className="lx-lib-head">
+          <span className="lx-h">Canciones</span>
+          <button type="button" className="lx-icon-btn" aria-label="Nueva canción" title="Nueva canción" data-testid="btn-new-song" onClick={() => setEditing("new")}>
+            <Plus />
+          </button>
+        </div>
+        <label className="lx-search">
+          <SearchIcon />
+          <input
+            data-search
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && visibleSongs[0]) onSelectSong(visibleSongs[0].id, stageOf(visibleSongs[0]));
+              else if (event.key === "Escape") {
+                setQuery("");
+                event.currentTarget.blur();
+              }
+            }}
+            placeholder="Buscar canción o autor…"
+            aria-label="Buscar canción"
+            autoComplete="off"
+            spellCheck={false}
+          />
         </label>
-        {staged && slides.length > 0 ? (
-          <ol className="song-parts-list">
-            {slides.map((text, index) => (
-              <li key={`${index}-${text}`}>
-                <Button type="button" variant="ghost" className={index === slide ? "song-part selected" : "song-part"} onClick={() => onSelectPart(index)}>
-                  <span className="song-part-number">{index + 1}</span><span className="song-part-text">{text}</span>
-                </Button>
-              </li>
-            ))}
-          </ol>
-        ) : <p className="muted">Selecciona o crea una canción en el panel derecho.</p>}
+        <div className="lx-lib-scroll">
+          {visibleSongs.map((song) => (
+            <div key={song.id} className={`lx-item${song.id === selectedId ? " on" : ""}`}>
+              <button type="button" className="lx-item-main" aria-label={`Seleccionar ${song.title}`} onClick={() => onSelectSong(song.id, stageOf(song))} onDoubleClick={() => setEditing(song.id)}>
+                <span className="lx-ico"><SongIcon /></span>
+                <span className="lx-item-text">
+                  <span className="t">{song.title}</span>
+                  <span className="s">{song.author || `${songParts(song).length} partes`}</span>
+                </span>
+              </button>
+              <span className={`lx-item-actions${song.pinned ? " keep" : ""}`}>
+                <button type="button" className={song.pinned ? "lx-ghost on" : "lx-ghost"} aria-label={song.pinned ? "Desfijar canción" : "Fijar canción"} aria-pressed={song.pinned} data-testid={`btn-pin-song-${song.id}`} onClick={() => togglePin(song.id)}>
+                  <Pin />
+                </button>
+                <button type="button" className="lx-ghost" aria-label={`Editar ${song.title}`} data-testid={`btn-edit-song-${song.id}`} onClick={() => setEditing(song.id)}>
+                  <Pencil />
+                </button>
+              </span>
+            </div>
+          ))}
+          {songsLoaded && visibleSongs.length === 0 && (
+            <p className="lx-empty">{songs.length === 0 ? "Aún no hay canciones." : `Ninguna canción coincide con “${query.trim()}”.`}</p>
+          )}
+        </div>
       </aside>
 
-      <aside className="song-presenter songs-library-panel">
-        <div className="song-tabs" role="tablist" aria-label="Gestión de canciones">
-          <Button type="button" role="tab" aria-selected={rightTab === "library"} className={rightTab === "library" ? "song-tab active" : "song-tab"} onClick={() => setRightTab("library")}>Biblioteca</Button>
-          <Button type="button" role="tab" aria-selected={rightTab === "creation"} className={rightTab === "creation" ? "song-tab active" : "song-tab"} onClick={openCreation}>{draft && !isNew ? "Edición" : "Nueva"}</Button>
-        </div>
-        {rightTab === "library" ? <>
-          <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar canción" aria-label="Buscar canción" />
-          {visibleSongs.length === 0 ? (
-            songs.length === 0 ? (
-              <div className="song-empty">
-                <p className="muted">Lista vacía</p>
-                <Button type="button" className="primary" onClick={create}>Crear canción</Button>
+      <main className="lx-work">
+        {title ? (
+          <>
+            <div className="lx-ws-head">
+              <div className="lx-ws-heading">
+                <div className="lx-ws-title" title={title}>{title}</div>
+                <div className="lx-ws-sub">
+                  {[author, `${shown.length} ${shown.length === 1 ? "diapositiva" : "diapositivas"}`].filter(Boolean).join(" · ")}
+                </div>
+              </div>
+              <div className="lx-ws-tools">
+                <label className="lx-toggle">
+                  <Switch checked={projectOnClick} onCheckedChange={onToggleProjectOnClick} aria-label="Proyectar al hacer clic" />
+                  <span>Proyectar al clic</span>
+                </label>
+                {selectedSong && (
+                  <button type="button" className="lx-btn" onClick={() => setEditing(selectedSong.id)}>
+                    <Pencil /> Editar
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {selectedSong && sections.length > 0 && (
+              <div className="lx-arr" aria-label="Orden de la canción">
+                <span className="lx-h">Orden</span>
+                {parts.map((part, index) => (
+                  <span
+                    key={`${index}-${part.key}`}
+                    className={[
+                      "lx-arr-chip",
+                      index === slide ? "on" : "",
+                      dragFrom === index ? "drag" : "",
+                      dragOver === index && dragFrom !== null && dragFrom !== index ? "drop" : "",
+                    ].filter(Boolean).join(" ")}
+                    draggable
+                    onDragStart={(event) => {
+                      setDragFrom(index);
+                      event.dataTransfer.effectAllowed = "move";
+                      event.dataTransfer.setData("text/plain", String(index));
+                    }}
+                    onDragOver={(event) => {
+                      if (dragFrom === null) return;
+                      event.preventDefault();
+                      setDragOver(index);
+                    }}
+                    onDrop={(event) => dropPart(event, index)}
+                    onDragEnd={() => {
+                      setDragFrom(null);
+                      setDragOver(null);
+                    }}
+                  >
+                    <button
+                      type="button"
+                      className="lx-arr-pick"
+                      title={`${part.label || "Texto"} · arrastra o usa Alt + ← → para mover`}
+                      onClick={() => onSelectPart(index)}
+                      onKeyDown={(event) => {
+                        if (!event.altKey) return;
+                        if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+                          event.preventDefault();
+                          moveSongPart(index, index - 1);
+                        } else if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+                          event.preventDefault();
+                          moveSongPart(index, index + 1);
+                        }
+                      }}
+                    >
+                      {sectionBadge(part)}
+                    </button>
+                    <button type="button" className="lx-arr-x" aria-label={`Quitar parte ${index + 1}`} title="Quitar del orden (la letra no cambia)" onClick={() => removeSongPart(index)}>
+                      <X />
+                    </button>
+                  </span>
+                ))}
+                <span className="lx-arr-sep" aria-hidden />
+                {sections.map((section) => (
+                  <button key={section.key} type="button" className="lx-chip-add" title={`Añadir ${section.label || "texto"} al orden`} onClick={() => addSongPart(section)}>
+                    <Plus /> {sectionBadge(section)}
+                  </button>
+                ))}
+                {selectedSong.arrangement && (
+                  <button type="button" className="lx-ghost" aria-label="Volver al orden de la letra" title="Volver al orden de la letra" onClick={() => commitArrangement(selectedSong, slide, undefined)}>
+                    <RotateCcw />
+                  </button>
+                )}
+              </div>
+            )}
+
+            {shown.length > 0 ? (
+              <div className="lx-slides" ref={gridRef}>
+                {shown.map((part, index) => {
+                  const isLive = liveText != null && part.text === liveText && (liveIndex == null || liveIndex === index);
+                  return (
+                    <button
+                      key={`${index}-${part.key}`}
+                      type="button"
+                      className={`lx-card${index === slide ? " sel" : ""}${isLive ? " live" : ""}`}
+                      data-current={index === slide ? "" : undefined}
+                      onClick={() => onSelectPart(index)}
+                      onDoubleClick={() => onTakePart(index)}
+                    >
+                      <SlideTile text={part.text} variant="song" />
+                      <span className="lx-tag-live">En vivo</span>
+                      <span className="lx-card-foot">
+                        <span className="num">{index + 1}</span>
+                        <span className="lab">{part.label || part.text.split("\n")[0]}</span>
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             ) : (
-              <p className="muted">Sin resultados para “{query}”.</p>
-            )
-          ) : (
-            <ul className="song-list">{visibleSongs.map((song) => <li key={song.id} className={song.id === selectedId ? "song-row selected" : "song-row"}>
-              <Button type="button" variant="ghost" aria-label={`Seleccionar ${song.title}`} className="song-row-main" onClick={() => selectSong(song)}>
-                <span>{song.title}</span><small>{slidesFor(song).length} partes</small>
-              </Button>
-              <div className="song-row-actions">
-                <Button type="button" size="icon-sm" variant="ghost" aria-label={song.pinned ? "Desfijar canción" : "Fijar canción"} aria-pressed={song.pinned} data-testid={`btn-pin-song-${song.id}`} className={song.pinned ? "song-icon-btn pinned" : "song-icon-btn"} onClick={() => togglePin(song.id)}><Pin /></Button>
-                <Button type="button" size="icon-sm" variant="ghost" aria-label={`Editar ${song.title}`} data-testid={`btn-edit-song-${song.id}`} className="song-icon-btn" onClick={() => editSong(song)}><Pencil /></Button>
-              </div>
-            </li>)}</ul>
-          )}
-        </> : <div className="song-edit-box">
-          {draft && <>
-          <div className="song-edit-actions">{!isNew ? <>
-            <Button type="button" data-testid="btn-cancel-edit-song" onClick={() => { setDraft(null); setRightTab("library"); }}>Cancelar</Button>
-            <AlertDialog>
-            <AlertDialogTrigger render={<Button type="button" data-testid="btn-delete-song">Eliminar</Button>} />
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Eliminar canción</AlertDialogTitle>
-                <AlertDialogDescription>
-                  ¿Eliminar “{draft.title}”? Esta acción no se puede deshacer.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel data-testid="cancel-delete-song">Cancelar</AlertDialogCancel>
-                <AlertDialogAction variant="destructive" data-testid="confirm-delete-song" onClick={remove}>Eliminar</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-          </> : <Button type="button" onClick={() => { setDraft(null); setRightTab("library"); }}>Cancelar</Button>}<Button type="button" className="primary" onClick={save} disabled={!draft.title.trim()}>Guardar</Button></div>
-          <label className="song-field"><span>Título</span><Input value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} placeholder="Título de la canción" /></label>
-          <label className="song-field song-field-lyrics"><span>Letra</span><Textarea className="song-lyrics" value={draft.lyrics} onChange={(event) => setDraft({ ...draft, lyrics: event.target.value })} placeholder={"Verso 1\n\nCoro\n\nPuente"} /></label>
-          <p className="hint song-hint-centered">Separa las partes con una línea en blanco.</p>
-          </>}
-        </div>}
-      </aside>
-    </div>
+              <p className="lx-empty-ws">
+                {sections.length === 0 ? "Esta canción no tiene letra. Edítala para añadir sus partes." : "No hay partes en el orden. Añade una desde la fila de arriba."}
+              </p>
+            )}
+          </>
+        ) : (
+          <div className="lx-empty-ws">
+            <p>{songs.length === 0 ? "Crea tu primera canción para proyectar su letra." : "Elige una canción de la biblioteca."}</p>
+            <button type="button" className="lx-btn pri" onClick={() => setEditing("new")}>
+              <Plus /> Nueva canción
+            </button>
+          </div>
+        )}
+      </main>
+
+      <SongDialog open={editing !== null} song={editingSong} onOpenChange={(open) => !open && setEditing(null)} onSave={save} onDelete={remove} />
+    </>
   );
 }

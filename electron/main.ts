@@ -13,6 +13,7 @@ import {
 import path from "path";
 import { pathToFileURL } from "url";
 import fs from "fs";
+import { Readable } from "node:stream";
 import os from "node:os";
 import { randomInt } from "node:crypto";
 import Store from "electron-store";
@@ -20,8 +21,10 @@ import { isPdfPath } from "../shared/slide-deck";
 import { renderPptxInWorker } from "./pptx-render";
 import {
   countPptxSlides,
+  isAudioPath,
   isPptxPath,
   isSlideImagePath,
+  isVideoPath,
   sanitizeSlideDecks,
   sortImagePathsNumerically,
 } from "./slides-import";
@@ -32,6 +35,76 @@ function slideImagesDir(): string {
 
 function slideDecksDir(): string {
   return path.join(app.getPath("userData"), "slide-decks");
+}
+
+/** Video and audio imported in the Media workspace. */
+function mediaFilesDir(): string {
+  return path.join(app.getPath("userData"), "media-files");
+}
+
+/** Folders under userData whose files may be shown or played in the app windows. */
+const SERVED_MEDIA_DIRS = ["background-images", "slide-images", "media-files"];
+
+const MEDIA_CONTENT_TYPES: Record<string, string> = {
+  ".mp4": "video/mp4", ".m4v": "video/mp4", ".mov": "video/quicktime", ".webm": "video/webm", ".ogv": "video/ogg",
+  ".mp3": "audio/mpeg", ".wav": "audio/wav", ".m4a": "audio/mp4", ".aac": "audio/aac", ".ogg": "application/ogg",
+  ".oga": "audio/ogg", ".opus": "audio/ogg", ".flac": "audio/flac",
+  ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp",
+};
+
+/**
+ * Serve part of a managed file. Chromium asks for audio and video with a
+ * Range header and can only seek when it gets a 206 back, which net.fetch on
+ * a file:// URL does not give.
+ */
+function rangeResponse(target: string, rangeHeader: string): Response | null {
+  const size = fs.statSync(target).size;
+  const match = /^bytes=(\d*)-(\d*)$/.exec(rangeHeader.trim());
+  if (!match || (!match[1] && !match[2])) return null;
+  const start = match[1] ? Number(match[1]) : Math.max(0, size - Number(match[2]));
+  const end = match[1] && match[2] ? Math.min(Number(match[2]), size - 1) : size - 1;
+  if (start >= size || end < start) {
+    return new Response(null, { status: 416, headers: { "content-range": `bytes */${size}`, "accept-ranges": "bytes" } });
+  }
+  const stream = Readable.toWeb(fs.createReadStream(target, { start, end })) as unknown as ReadableStream;
+  return new Response(stream, {
+    status: 206,
+    headers: {
+      "content-type": MEDIA_CONTENT_TYPES[path.extname(target).toLowerCase()] ?? "application/octet-stream",
+      "content-length": String(end - start + 1),
+      "content-range": `bytes ${start}-${end}/${size}`,
+      "accept-ranges": "bytes",
+    },
+  });
+}
+
+function copyToMediaFiles(filePath: string): string | null {
+  try {
+    const dir = mediaFilesDir();
+    fs.mkdirSync(dir, { recursive: true });
+    const ext = path.extname(filePath).toLowerCase();
+    const storedPath = path.join(dir, `${Date.now()}-${Math.random().toString(36).slice(2, 9)}${ext}`);
+    fs.copyFileSync(filePath, storedPath);
+    return storedPath;
+  } catch (error) {
+    console.error("[media] copyToMediaFiles failed", error);
+    return null;
+  }
+}
+
+/** Delete managed video/audio files no longer referenced by any stored item. */
+function pruneOrphanMediaFiles(next: Array<{ file?: string }>): void {
+  try {
+    const dir = path.resolve(mediaFilesDir());
+    if (!fs.existsSync(dir)) return;
+    const referenced = new Set(next.flatMap((item) => (item.file ? [item.file] : [])));
+    for (const name of fs.readdirSync(dir)) {
+      const full = path.join(dir, name);
+      if (!referenced.has(full) && !isRecent(full)) fs.rmSync(full, { force: true });
+    }
+  } catch {
+    // pruning is best-effort
+  }
 }
 
 /** Copy an original .pptx into app data so the renderer can rasterize it. */
@@ -263,6 +336,11 @@ function createOperatorWindow(): void {
     minHeight: 680,
     icon: appIconPath(),
     title: "Lumen",
+    // The app's top bar is the window title bar (same as Lectern): macOS keeps
+    // the traffic lights inside it, Windows keeps the window controls on the right.
+    ...(process.platform === "darwin"
+      ? { titleBarStyle: "hiddenInset" as const, trafficLightPosition: { x: 16, y: 16 } }
+      : { titleBarStyle: "hidden" as const, titleBarOverlay: { color: "#1d1d1f", symbolColor: "#ececef", height: 52 } }),
     autoHideMenuBar: true,
     webPreferences: {
       preload: getPreload(),
@@ -505,9 +583,18 @@ async function captureScreenshots(): Promise<void> {
     const userData = path.resolve(app.getPath("userData"));
     // Only folders whose files are meant to be shown on screen. slide-decks
     // (original PPTX/PDF sources) is deliberately NOT served.
-    const allowed = ["background-images", "slide-images"].map((dir) => `${path.join(userData, dir)}${path.sep}`);
+    const allowed = SERVED_MEDIA_DIRS.map((dir) => `${path.join(userData, dir)}${path.sep}`);
     if (!allowed.some((root) => target.startsWith(root))) return new Response("Forbidden", { status: 403 });
-    const response = await net.fetch(pathToFileURL(target).toString());
+    const range = request.headers.get("range");
+    let ranged: Response | null = null;
+    if (range) {
+      try {
+        ranged = rangeResponse(target, range);
+      } catch {
+        return new Response("Not found", { status: 404 });
+      }
+    }
+    const response = ranged ?? await net.fetch(pathToFileURL(target).toString());
     const origin = request.headers.get("origin");
     let localAppOrigin = origin === "null";
     if (origin && origin !== "null") {
@@ -732,9 +819,13 @@ registerIpcHandle("songs:set", (_e, songs: StoredSong[]) => {
     ? songs.filter((song) => song && typeof song.id === "string" && typeof song.title === "string" && typeof song.lyrics === "string").map((song) => ({
         id: song.id,
         title: song.title,
+        ...(typeof song.author === "string" && song.author.trim() ? { author: song.author.trim() } : {}),
         lyrics: song.lyrics,
         updatedAt: Number.isFinite(song.updatedAt) ? song.updatedAt : Date.now(),
         pinned: Boolean(song.pinned),
+        ...(Array.isArray(song.arrangement)
+          ? { arrangement: song.arrangement.filter((key): key is string => typeof key === "string") }
+          : {}),
       }))
     : [];
   store.set("songs", next);
@@ -753,6 +844,7 @@ registerIpcHandle("slides:set", (_e, decks: StoredSlideDeck[]) => {
   const next = sanitizeSlideDecks(decks);
   store.set("slideDecks", next);
   pruneOrphanSlideImages(next);
+  pruneOrphanMediaFiles(next);
   pruneStaleSlideSources();
   return next;
 });
@@ -763,13 +855,33 @@ function newDeckId(): string {
 
 const importError = (error: string): SlideImportResult => ({ kind: "error", error });
 
+const VIDEO_EXTENSIONS = ["mp4", "m4v", "webm", "mov", "ogv"];
+const AUDIO_EXTENSIONS = ["mp3", "wav", "m4a", "aac", "ogg", "oga", "opus", "flac"];
+
+/** Copy a video or audio file into app data and describe it as a media item. */
+function importAvFile(filePath: string): StoredSlideDeck | null {
+  const file = copyToMediaFiles(filePath);
+  if (!file) return null;
+  return {
+    id: newDeckId(),
+    title: path.basename(filePath, path.extname(filePath)),
+    kind: isVideoPath(filePath) ? "video" : "audio",
+    images: [],
+    file,
+    updatedAt: Date.now(),
+    pinned: false,
+  };
+}
+
 registerIpcHandle("slides:import", async (): Promise<SlideImportResult | null> => {
   const result = await dialog.showOpenDialog({
     properties: ["openFile", "multiSelections"],
     filters: [
-      { name: "Presentaciones", extensions: ["pptx", "ppsx", "pdf", "png", "jpg", "jpeg", "webp"] },
+      { name: "Media", extensions: ["pptx", "ppsx", "pdf", "png", "jpg", "jpeg", "webp", ...VIDEO_EXTENSIONS, ...AUDIO_EXTENSIONS] },
       { name: "PowerPoint/PDF", extensions: ["pptx", "ppsx", "pdf"] },
       { name: "Imágenes", extensions: ["png", "jpg", "jpeg", "webp"] },
+      { name: "Video", extensions: VIDEO_EXTENSIONS },
+      { name: "Audio", extensions: AUDIO_EXTENSIONS },
       // Lets the user pick Keynote/.ppt/.odp to get a clear "export to PDF" hint instead of a greyed-out file.
       { name: "Todos los archivos", extensions: ["*"] },
     ],
@@ -798,6 +910,13 @@ registerIpcHandle("slides:import", async (): Promise<SlideImportResult | null> =
       kind: "ready",
       deck: { id: newDeckId(), title, images: stored as string[], updatedAt: Date.now(), pinned: false },
     };
+  }
+  // Video and audio: one item per file, so several can be imported at once.
+  const avFiles = result.filePaths.filter((file) => isVideoPath(file) || isAudioPath(file));
+  if (avFiles.length > 0) {
+    const items = avFiles.map(importAvFile).filter((item): item is StoredSlideDeck => item !== null);
+    if (items.length === 0) return importError("read-failed");
+    return { kind: "ready", deck: items[0]!, more: items.slice(1) };
   }
   const filePath = result.filePaths[0]!;
   const title = path.basename(filePath, path.extname(filePath));
