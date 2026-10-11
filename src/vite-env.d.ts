@@ -90,6 +90,7 @@ export interface ProyectorApi {
   saveBackgroundThumbnail: (videoPath: string, jpegBase64: string) => Promise<boolean>;
   deleteBackgroundMedia: (path: string) => Promise<boolean>;
   getAppUpdateState: () => Promise<AppUpdateState>;
+  checkAppUpdate: () => Promise<AppUpdateState>;
   startAppUpdate: () => Promise<AppUpdateState>;
   installAppUpdate: () => Promise<AppUpdateState>;
   onAppUpdateState: (cb: (state: AppUpdateState) => void) => () => void;

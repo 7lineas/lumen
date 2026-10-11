@@ -36,7 +36,7 @@ import { VideoTransport } from "./VideoTransport";
 import { FitToggle } from "./FitToggle";
 import { MODE_ORDER, ModeSwitch, type OperatorMode } from "./ModeSwitch";
 import { ShortcutsDialog } from "./ShortcutsDialog";
-import { UpdateButton } from "./UpdateButton";
+import { UpdateButton, UpdateCheckButton } from "./UpdateButton";
 import { createBackgroundVideoThumbnail } from "./background-thumbnail";
 import lumenLogo from "../lumen-icon.png";
 
@@ -1087,6 +1087,7 @@ export function OperatorApp() {
           <ModeSwitch mode={mode} onSwitch={switchMode} trailing={<UpdateButton />} />
         </div>
         <div className="top-right">
+          <UpdateCheckButton />
           <Button type="button" variant="ghost" size="icon" className="shortcuts-btn" aria-label="Atajos de teclado" title="Atajos de teclado (?)" data-testid="btn-shortcuts" onClick={() => setShortcutsOpen(true)}>
             <Keyboard />
           </Button>
