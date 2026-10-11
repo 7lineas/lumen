@@ -6,7 +6,6 @@ import { MAX_QUEUE_ITEMS } from "@shared/types";
 import { formatRange, type VerseRange } from "@shared/reference";
 import { getBible } from "@shared/bible-service";
 import { SearchIcon } from "./icons";
-import { SlideTile } from "./SlideTile";
 
 interface SearchHit {
   book: string;
@@ -83,10 +82,10 @@ export function BibleWorkspace(props: Props) {
     setExpanded(props.viewBook);
   }, [props.viewBook]);
 
-  // Keep the open chapter in view in the library, and the staged verse in the grid.
+  // Keep the whole open book in view in the library (all its chapters), and the staged verse in the grid.
   useEffect(() => {
     if (filtering) return;
-    listRef.current?.querySelector("[data-current]")?.scrollIntoView({ block: "nearest" });
+    listRef.current?.querySelector(".lx-book.viewing")?.scrollIntoView({ block: "nearest" });
   }, [props.viewBook, props.viewChapter, expanded, filtering]);
 
   useEffect(() => {
@@ -273,30 +272,29 @@ export function BibleWorkspace(props: Props) {
             {props.loadingChapter || !props.ready ? "Cargando capítulo…" : "Este capítulo no está disponible en esta versión."}
           </p>
         ) : (
-          <div className="lx-slides" ref={gridRef}>
-            {verses.map((v) => {
-              const inRange = stagedHere != null && v >= stagedHere.start.verse && v <= stagedHere.end.verse;
-              const isLive = liveHere != null && v >= liveHere.start.verse && v <= liveHere.end.verse;
-              return (
-                <button
-                  key={v}
-                  type="button"
-                  className={`lx-card${inRange ? " sel" : ""}${isLive ? " live" : ""}`}
-                  data-verse-active={inRange ? "1" : undefined}
-                  data-current={inRange ? "" : undefined}
-                  title="Clic prepara el versículo, Mayús+clic marca un rango, doble clic lo proyecta"
-                  onClick={(e) => props.onVerseClick(v, e.shiftKey)}
-                  onDoubleClick={() => props.onVerseTake(v)}
-                >
-                  <SlideTile text={chapterMap?.[String(v)] ?? ""} />
-                  <span className="lx-tag-live">En vivo</span>
-                  <span className="lx-card-foot">
-                    <span className="num">{v}</span>
-                    <span className="lab">{book?.name} {props.viewChapter}:{v}</span>
-                  </span>
-                </button>
-              );
-            })}
+          <div className="lx-results" ref={gridRef}>
+            <ul>
+              {verses.map((v) => {
+                const inRange = stagedHere != null && v >= stagedHere.start.verse && v <= stagedHere.end.verse;
+                const isLive = liveHere != null && v >= liveHere.start.verse && v <= liveHere.end.verse;
+                return (
+                  <li key={v}>
+                    <button
+                      type="button"
+                      className={`lx-result${inRange ? " on" : ""}${isLive ? " live" : ""}`}
+                      data-verse-active={inRange ? "1" : undefined}
+                      data-current={inRange ? "" : undefined}
+                      title="Clic prepara el versículo, Mayús+clic marca un rango, doble clic lo proyecta"
+                      onClick={(e) => props.onVerseClick(v, e.shiftKey)}
+                      onDoubleClick={() => props.onVerseTake(v)}
+                    >
+                      <strong>{book?.name} {props.viewChapter}:{v}</strong>
+                      <span>{chapterMap?.[String(v)] ?? ""}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
         )}
       </main>
