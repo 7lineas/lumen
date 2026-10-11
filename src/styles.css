@@ -4414,6 +4414,28 @@ button.primary:not(:disabled):active,
   min-width: 0;
 }
 
+/* Sits where the title line is: same font and line height, and the ring is a shadow so the row height does not change. */
+.lx .lx-item-rename {
+  display: block;
+  width: 100%;
+  height: 1.25em;
+  margin: 0 0 0 -6px;
+  padding: 0 6px;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 4px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--accent);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.lx .lx-item-rename:focus-visible {
+  outline: none;
+}
+
 .lx-item-text .t {
   overflow: hidden;
   color: var(--text);
@@ -4446,6 +4468,15 @@ button.primary:not(:disabled):active,
 
 .lx-item-actions.keep {
   display: flex;
+}
+
+/* While renaming, only the text field shows, and it takes the row's full width. */
+.lx .lx-item.renaming .lx-item-actions {
+  display: none;
+}
+
+.lx .lx-item.renaming .lx-item-text {
+  flex: 1;
 }
 
 .lx-item:not(:hover):not(:focus-within) .lx-item-actions.keep .lx-ghost:not(.on) {

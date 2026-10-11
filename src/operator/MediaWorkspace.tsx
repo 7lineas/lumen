@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Pin, Play, Plus, Trash2, Upload } from "lucide-react";
+import { Pencil, Pin, Play, Plus, Trash2, Upload } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -9,8 +9,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
 import { backgroundImageUrl } from "@shared/background-image";
 import { slideLabel } from "@shared/slide-deck";
@@ -58,6 +58,8 @@ interface Props {
   /** Project the selected video, or play the selected audio. */
   onTake: () => void;
   onRemoved: (item: MediaItem) => void;
+  /** Called with the item after its title changes, so the open selection follows the new name. */
+  onRenamed: (item: MediaItem) => void;
 }
 
 /** A presentation being converted to images (kept in memory only; never persisted as a deck). */
@@ -80,12 +82,18 @@ function describe(item: MediaItem): string {
 
 const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
 
-export function MediaWorkspace({ staged, selected, liveImage, liveVideo, audioId, audioPlaying, slideFit, onSlideFit, projectOnClick, onToggleProjectOnClick, onSelect, onSelectSlide, onTakeSlide, onTake, onRemoved }: Props) {
+export function MediaWorkspace({ staged, selected, liveImage, liveVideo, audioId, audioPlaying, slideFit, onSlideFit, projectOnClick, onToggleProjectOnClick, onSelect, onSelectSlide, onTakeSlide, onTake, onRemoved, onRenamed }: Props) {
   const [items, setItems] = useState<MediaItem[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [query, setQuery] = useState("");
   const [importError, setImportError] = useState<string | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [renameHeight, setRenameHeight] = useState<number | null>(null);
+  const [renameDraft, setRenameDraft] = useState("");
+  // Mirrors renamingId so a blur after Enter or Escape cannot save twice.
+  const renameRef = useRef<string | null>(null);
   const mounted = useRef(true);
   const onSelectRef = useRef(onSelect);
   useEffect(() => { onSelectRef.current = onSelect; }, [onSelect]);
@@ -206,6 +214,25 @@ export function MediaWorkspace({ staged, selected, liveImage, liveVideo, audioId
     if (item.id === selected?.id) onSelect(null);
     onRemoved(item);
   };
+  const startRename = (item: MediaItem, row: HTMLElement) => {
+    renameRef.current = item.id;
+    setRenamingId(item.id);
+    setRenameDraft(item.title);
+    // Keep the row exactly as tall as it was, so editing does not shift the list.
+    setRenameHeight(row.getBoundingClientRect().height);
+  };
+  const finishRename = (id: string, save: boolean) => {
+    if (renameRef.current !== id) return;
+    renameRef.current = null;
+    setRenamingId(null);
+    setRenameHeight(null);
+    const title = renameDraft.trim();
+    const item = items.find((entry) => entry.id === id);
+    if (!save || !item || !title || title === item.title) return;
+    const renamed = { ...item, title };
+    setItems((current) => current.map((entry) => (entry.id === id ? renamed : entry)));
+    onRenamed(renamed);
+  };
 
   const kind = selected ? mediaKind(selected) : null;
   const gridRef = useRef<HTMLDivElement>(null);
@@ -222,7 +249,7 @@ export function MediaWorkspace({ staged, selected, liveImage, liveVideo, audioId
         <div className="lx-lib-head">
           <span className="lx-h">Media</span>
           <button type="button" className="lx-icon-btn" aria-label="Importar media" title="Importar presentación, imágenes, video o audio" data-testid="btn-import-media" disabled={importing} onClick={() => void importMedia()}>
-            <Plus />
+            {importing ? <Spinner /> : <Plus />}
           </button>
         </div>
         <label className="lx-search">
@@ -244,7 +271,6 @@ export function MediaWorkspace({ staged, selected, liveImage, liveVideo, audioId
             spellCheck={false}
           />
         </label>
-        {importing && <p className="lx-note" role="status">Leyendo archivo…</p>}
         {jobs.map((job) => job.status === "running" ? (
           <p key={job.pending.id} className="lx-note" role="status" data-testid="slides-converting">
             Generando imágenes de “{job.pending.title}”… {job.done}{job.total > 0 ? `/${job.total}` : ""}
@@ -263,15 +289,54 @@ export function MediaWorkspace({ staged, selected, liveImage, liveVideo, audioId
           {visible.map((item) => {
             const Icon = KIND_ICON[mediaKind(item)];
             return (
-              <div key={item.id} className={`lx-item${item.id === selected?.id ? " on" : ""}`}>
-                <button type="button" className="lx-item-main" aria-label={`Seleccionar ${item.title}`} onClick={() => onSelect(item)}>
-                  <span className="lx-ico"><Icon /></span>
-                  <span className="lx-item-text">
-                    <span className="t">{item.title}</span>
-                    <span className="s">{describe(item)}</span>
-                  </span>
-                </button>
+              <div
+                key={item.id}
+                className={`lx-item${item.id === selected?.id ? " on" : ""}${item.id === renamingId ? " renaming" : ""}`}
+                style={item.id === renamingId && renameHeight ? { height: renameHeight, boxSizing: "border-box" } : undefined}
+              >
+                {renamingId === item.id ? (
+                  <div className="lx-item-main">
+                    <span className="lx-ico"><Icon /></span>
+                    <span className="lx-item-text">
+                      <input
+                        className="lx-item-rename"
+                        aria-label="Nuevo nombre"
+                        value={renameDraft}
+                        autoFocus
+                        onFocus={(event) => event.currentTarget.select()}
+                        onChange={(event) => setRenameDraft(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            finishRename(item.id, true);
+                          } else if (event.key === "Escape") {
+                            event.preventDefault();
+                            finishRename(item.id, false);
+                          }
+                        }}
+                        onBlur={() => finishRename(item.id, true)}
+                      />
+                    </span>
+                  </div>
+                ) : (
+                  <button type="button" className="lx-item-main" aria-label={`Seleccionar ${item.title}`} onClick={() => onSelect(item)}>
+                    <span className="lx-ico"><Icon /></span>
+                    <span className="lx-item-text">
+                      <span className="t">{item.title}</span>
+                      <span className="s">{describe(item)}</span>
+                    </span>
+                  </button>
+                )}
                 <span className={`lx-item-actions${item.pinned ? " keep" : ""}`}>
+                  <button
+                    type="button"
+                    className="lx-ghost"
+                    aria-label={`Renombrar ${item.title}`}
+                    title="Renombrar"
+                    onClick={(event) => startRename(item, event.currentTarget.closest(".lx-item") as HTMLElement)}
+                  >
+                    <Pencil />
+                  </button>
                   <button
                     type="button"
                     className={item.pinned ? "lx-ghost on" : "lx-ghost"}
@@ -281,8 +346,10 @@ export function MediaWorkspace({ staged, selected, liveImage, liveVideo, audioId
                   >
                     <Pin />
                   </button>
-                  <AlertDialog>
-                    <AlertDialogTrigger render={<button type="button" className="lx-ghost" aria-label={`Eliminar ${item.title}`}><Trash2 /></button>} />
+                  <button type="button" className="lx-ghost" aria-label={`Eliminar ${item.title}`} title="Eliminar" onClick={() => setDeletingId(item.id)}>
+                    <Trash2 />
+                  </button>
+                  <AlertDialog open={deletingId === item.id} onOpenChange={(open) => setDeletingId(open ? item.id : null)}>
                     <AlertDialogContent>
                       <AlertDialogHeader>
                         <AlertDialogTitle>Eliminar de Media</AlertDialogTitle>
@@ -290,7 +357,7 @@ export function MediaWorkspace({ staged, selected, liveImage, liveVideo, audioId
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction variant="destructive" onClick={() => removeItem(item)}>Eliminar</AlertDialogAction>
+                        <AlertDialogAction variant="destructive" onClick={() => { setDeletingId(null); removeItem(item); }}>Eliminar</AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
