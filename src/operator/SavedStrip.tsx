@@ -76,7 +76,7 @@ export function SavedStrip(props: Props) {
         </button>
       </div>
       <div className="lx-svc-row" ref={rowRef}>
-        {props.queue.length === 0 && <p className="lx-svc-empty">Guarda versículos antes del culto y proyéctalos desde aquí con un clic.</p>}
+        {props.queue.length === 0 && <p className="lx-svc-empty">Guarda versículos antes del servicio y proyéctalos desde aquí con un clic.</p>}
         {props.queue.map((item, idx) => (
           <div
             key={item.id}
