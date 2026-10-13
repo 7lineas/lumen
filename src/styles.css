@@ -5022,6 +5022,13 @@ button.primary:not(:disabled):active,
   text-align: left;
 }
 
+/* The row is the only frame: its buttons drop the global button chrome (border, fill, padding). */
+.lx-item button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
 .lx-ico {
   display: grid;
   flex: none;
