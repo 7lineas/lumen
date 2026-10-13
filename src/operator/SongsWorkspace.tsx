@@ -1,6 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { DragEvent } from "react";
-import { Pencil, Pin, Plus, RotateCcw, X } from "lucide-react";
+import { Pencil, Pin, Plus, RotateCcw, Trash2, X } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Switch } from "@/components/ui/switch";
 import type { StoredSong } from "@shared/types";
 import { parseSong, pruneArrangement, shortLabel, songParts, type SongSection } from "@shared/song-sections";
@@ -66,6 +76,8 @@ export function SongsWorkspace({ staged, selectedId, liveText, liveIndex, projec
   const [query, setQuery] = useState("");
   // null = closed, "new" = creating, otherwise the id of the song being edited.
   const [editing, setEditing] = useState<string | null>(null);
+  // The song whose delete confirmation is open from its row.
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -132,12 +144,10 @@ export function SongsWorkspace({ staged, selectedId, liveText, liveIndex, projec
     else if (next.id === selectedId) onSelectSong(next.id, stageOf(next, staged?.index ?? 0));
   };
 
-  const remove = () => {
-    if (!editingSong) return;
-    const deletedId = editingSong.id;
-    setSongs((current) => current.filter((song) => song.id !== deletedId));
+  const removeSong = (song: Song) => {
+    setSongs((current) => current.filter((entry) => entry.id !== song.id));
     setEditing(null);
-    if (deletedId === selectedId) onSelectSong(null, null);
+    if (song.id === selectedId) onSelectSong(null, null);
   };
 
   // Every arrangement change is stored on the song and re-staged, so the
@@ -225,11 +235,26 @@ export function SongsWorkspace({ staged, selectedId, liveText, liveIndex, projec
                 </span>
               </button>
               <span className={`lx-item-actions${song.pinned ? " keep" : ""}`}>
-                <button type="button" className={song.pinned ? "lx-ghost on" : "lx-ghost"} aria-label={song.pinned ? "Desfijar canción" : "Fijar canción"} aria-pressed={song.pinned} data-testid={`btn-pin-song-${song.id}`} onClick={() => togglePin(song.id)}>
-                  <Pin />
+                <button type="button" className="lx-ghost" aria-label={`Eliminar ${song.title}`} title="Eliminar" data-testid={`btn-delete-song-${song.id}`} onClick={() => setDeletingId(song.id)}>
+                  <Trash2 />
                 </button>
-                <button type="button" className="lx-ghost" aria-label={`Editar ${song.title}`} data-testid={`btn-edit-song-${song.id}`} onClick={() => setEditing(song.id)}>
+                <AlertDialog open={deletingId === song.id} onOpenChange={(open) => setDeletingId(open ? song.id : null)}>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Eliminar canción</AlertDialogTitle>
+                      <AlertDialogDescription>¿Eliminar “{song.title}”? Esta acción no se puede deshacer.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction variant="destructive" data-testid={`confirm-delete-song-${song.id}`} onClick={() => { setDeletingId(null); removeSong(song); }}>Eliminar</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                <button type="button" className="lx-ghost" aria-label={`Editar ${song.title}`} title="Editar" data-testid={`btn-edit-song-${song.id}`} onClick={() => setEditing(song.id)}>
                   <Pencil />
+                </button>
+                <button type="button" className={song.pinned ? "lx-ghost on" : "lx-ghost"} aria-label={song.pinned ? "Desfijar canción" : "Fijar canción"} aria-pressed={song.pinned} title={song.pinned ? "Desfijar" : "Fijar"} data-testid={`btn-pin-song-${song.id}`} onClick={() => togglePin(song.id)}>
+                  <Pin />
                 </button>
               </span>
             </div>
@@ -368,7 +393,7 @@ export function SongsWorkspace({ staged, selectedId, liveText, liveIndex, projec
         )}
       </main>
 
-      <SongDialog open={editing !== null} song={editingSong} onOpenChange={(open) => !open && setEditing(null)} onSave={save} onDelete={remove} />
+      <SongDialog open={editing !== null} song={editingSong} onOpenChange={(open) => !open && setEditing(null)} onSave={save} onDelete={() => { if (editingSong) removeSong(editingSong); }} />
     </>
   );
 }

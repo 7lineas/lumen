@@ -328,24 +328,6 @@ export function MediaWorkspace({ staged, selected, liveImage, liveVideo, audioId
                   </button>
                 )}
                 <span className={`lx-item-actions${item.pinned ? " keep" : ""}`}>
-                  <button
-                    type="button"
-                    className="lx-ghost"
-                    aria-label={`Renombrar ${item.title}`}
-                    title="Renombrar"
-                    onClick={(event) => startRename(item, event.currentTarget.closest(".lx-item") as HTMLElement)}
-                  >
-                    <Pencil />
-                  </button>
-                  <button
-                    type="button"
-                    className={item.pinned ? "lx-ghost on" : "lx-ghost"}
-                    aria-label={item.pinned ? `Desfijar ${item.title}` : `Fijar ${item.title}`}
-                    aria-pressed={item.pinned}
-                    onClick={() => setItems((current) => current.map((entry) => (entry.id === item.id ? { ...entry, pinned: !entry.pinned } : entry)))}
-                  >
-                    <Pin />
-                  </button>
                   <button type="button" className="lx-ghost" aria-label={`Eliminar ${item.title}`} title="Eliminar" onClick={() => setDeletingId(item.id)}>
                     <Trash2 />
                   </button>
@@ -361,6 +343,25 @@ export function MediaWorkspace({ staged, selected, liveImage, liveVideo, audioId
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
+                  <button
+                    type="button"
+                    className="lx-ghost"
+                    aria-label={`Renombrar ${item.title}`}
+                    title="Renombrar"
+                    onClick={(event) => startRename(item, event.currentTarget.closest(".lx-item") as HTMLElement)}
+                  >
+                    <Pencil />
+                  </button>
+                  <button
+                    type="button"
+                    className={item.pinned ? "lx-ghost on" : "lx-ghost"}
+                    aria-label={item.pinned ? `Desfijar ${item.title}` : `Fijar ${item.title}`}
+                    aria-pressed={item.pinned}
+                    title={item.pinned ? "Desfijar" : "Fijar"}
+                    onClick={() => setItems((current) => current.map((entry) => (entry.id === item.id ? { ...entry, pinned: !entry.pinned } : entry)))}
+                  >
+                    <Pin />
+                  </button>
                 </span>
               </div>
             );
