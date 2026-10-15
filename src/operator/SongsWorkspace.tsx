@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { DragEvent } from "react";
-import { Pencil, Pin, Plus, RotateCcw, Trash2, X } from "lucide-react";
+import { Pencil, Pin, Plus, Trash2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,7 +12,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Switch } from "@/components/ui/switch";
 import type { StoredSong } from "@shared/types";
-import { parseSong, pruneArrangement, shortLabel, songParts, type SongSection } from "@shared/song-sections";
+import { songParts, type SongSection } from "@shared/song-sections";
 import { SearchIcon, SongIcon } from "./icons";
 import { SlideTile } from "./SlideTile";
 import { SongDialog, type SongDraft } from "./SongDialog";
@@ -28,7 +27,7 @@ export interface SongStage {
   index: number;
 }
 
-/** What the workspace hands up when a song (or its arrangement) changes. */
+/** What the workspace hands up when a song changes. */
 export type SongSelection = Omit<SongStage, "index"> & { index?: number };
 
 interface Props {
@@ -50,16 +49,9 @@ function id() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function withArrangement(song: Song, arrangement: string[] | undefined): Song {
-  const next = { ...song };
-  if (arrangement) next.arrangement = arrangement;
-  else delete next.arrangement;
-  return next;
-}
-
 /** The staged selection for a song: its projected parts, clamped to a valid index. */
 function stageOf(song: Song, index = 0): SongSelection {
-  const parts = songParts(song);
+  const parts = songParts(song.lyrics);
   return {
     title: song.title,
     slides: parts.map((part) => part.text),
@@ -107,16 +99,13 @@ export function SongsWorkspace({ staged, selectedId, liveText, liveIndex, projec
 
   const selectedSong = useMemo(() => songs.find((song) => song.id === selectedId) ?? null, [songs, selectedId]);
   const editingSong = editing && editing !== "new" ? songs.find((song) => song.id === editing) ?? null : null;
-  const sections = useMemo<SongSection[]>(() => (selectedSong ? parseSong(selectedSong.lyrics).sections : []), [selectedSong]);
-  const parts = useMemo<SongSection[]>(() => (selectedSong ? songParts(selectedSong) : []), [selectedSong]);
+  const parts = useMemo<SongSection[]>(() => (selectedSong ? songParts(selectedSong.lyrics) : []), [selectedSong]);
   // Until the library has loaded, the staged song is what the operator sees.
   const shown: SongSection[] = selectedSong
     ? parts
     : (staged?.slides ?? []).map((text, i) => ({ key: `staged-${i}`, label: staged?.labels[i] ?? "", text }));
   const slide = staged?.index ?? 0;
   const gridRef = useRef<HTMLDivElement>(null);
-  const [dragFrom, setDragFrom] = useState<number | null>(null);
-  const [dragOver, setDragOver] = useState<number | null>(null);
 
   useEffect(() => {
     gridRef.current?.querySelector("[data-current]")?.scrollIntoView({ block: "nearest" });
@@ -129,11 +118,7 @@ export function SongsWorkspace({ staged, selectedId, liveText, liveIndex, projec
   const save = (draft: SongDraft) => {
     const stored = editingSong;
     const base: Song = stored ?? { id: id(), title: "", lyrics: "", updatedAt: 0, pinned: false };
-    // Keep the stored arrangement, minus parts the edited lyrics no longer have.
-    const next = withArrangement(
-      { ...base, title: draft.title, lyrics: draft.lyrics, updatedAt: Date.now() },
-      pruneArrangement(draft.lyrics, stored?.arrangement),
-    );
+    const next: Song = { ...base, title: draft.title, lyrics: draft.lyrics, updatedAt: Date.now() };
     if (draft.author) next.author = draft.author;
     else delete next.author;
     setSongs((current) => (stored ? current.map((song) => (song.id === next.id ? next : song)) : [next, ...current]));
@@ -149,49 +134,6 @@ export function SongsWorkspace({ staged, selectedId, liveText, liveIndex, projec
     setEditing(null);
     if (song.id === selectedId) onSelectSong(null, null);
   };
-
-  // Every arrangement change is stored on the song and re-staged, so the
-  // projection follows the new order straight away. The selection stays on
-  // the same part where it still exists.
-  const commitArrangement = (song: Song, index: number, arrangement: string[] | undefined) => {
-    const updated = withArrangement(song, arrangement);
-    setSongs((current) => current.map((item) => (item.id === updated.id ? updated : item)));
-    onSelectSong(updated.id, stageOf(updated, index));
-  };
-
-  const moveSongPart = (from: number, to: number) => {
-    if (!selectedSong || from === to || from < 0 || to < 0 || from >= parts.length || to >= parts.length) return;
-    const keys = parts.map((part) => part.key);
-    const [moved] = keys.splice(from, 1);
-    if (moved === undefined) return;
-    keys.splice(to, 0, moved);
-    let index = slide;
-    if (slide === from) index = to;
-    else if (from < slide && slide <= to) index = slide - 1;
-    else if (to <= slide && slide < from) index = slide + 1;
-    commitArrangement(selectedSong, index, keys);
-  };
-
-  const removeSongPart = (at: number) => {
-    if (!selectedSong || at < 0 || at >= parts.length) return;
-    const keys = parts.map((part) => part.key).filter((_, i) => i !== at);
-    commitArrangement(selectedSong, at < slide ? slide - 1 : slide, keys);
-  };
-
-  const addSongPart = (section: SongSection) => {
-    if (!selectedSong) return;
-    commitArrangement(selectedSong, slide, [...parts.map((part) => part.key), section.key]);
-  };
-
-  const dropPart = (event: DragEvent<HTMLElement>, index: number) => {
-    event.preventDefault();
-    if (dragFrom !== null) moveSongPart(dragFrom, index);
-    setDragFrom(null);
-    setDragOver(null);
-  };
-
-  const sectionBadge = (section: SongSection) =>
-    section.label ? shortLabel(section.label) : `T${sections.findIndex((s) => s.key === section.key) + 1}`;
 
   const title = selectedSong?.title ?? staged?.title ?? "";
   const author = selectedSong?.author ?? "";
@@ -231,7 +173,7 @@ export function SongsWorkspace({ staged, selectedId, liveText, liveIndex, projec
                 <span className="lx-ico"><SongIcon /></span>
                 <span className="lx-item-text">
                   <span className="t">{song.title}</span>
-                  <span className="s">{song.author || `${songParts(song).length} partes`}</span>
+                  <span className="s">{song.author || `${songParts(song.lyrics).length} partes`}</span>
                 </span>
               </button>
               <span className={`lx-item-actions${song.pinned ? " keep" : ""}`}>
@@ -288,72 +230,6 @@ export function SongsWorkspace({ staged, selectedId, liveText, liveIndex, projec
               </div>
             </div>
 
-            {selectedSong && sections.length > 0 && (
-              <div className="lx-arr" aria-label="Orden de la canción">
-                <span className="lx-h">Orden</span>
-                {parts.map((part, index) => (
-                  <span
-                    key={`${index}-${part.key}`}
-                    className={[
-                      "lx-arr-chip",
-                      index === slide ? "on" : "",
-                      dragFrom === index ? "drag" : "",
-                      dragOver === index && dragFrom !== null && dragFrom !== index ? "drop" : "",
-                    ].filter(Boolean).join(" ")}
-                    draggable
-                    onDragStart={(event) => {
-                      setDragFrom(index);
-                      event.dataTransfer.effectAllowed = "move";
-                      event.dataTransfer.setData("text/plain", String(index));
-                    }}
-                    onDragOver={(event) => {
-                      if (dragFrom === null) return;
-                      event.preventDefault();
-                      setDragOver(index);
-                    }}
-                    onDrop={(event) => dropPart(event, index)}
-                    onDragEnd={() => {
-                      setDragFrom(null);
-                      setDragOver(null);
-                    }}
-                  >
-                    <button
-                      type="button"
-                      className="lx-arr-pick"
-                      title={`${part.label || "Texto"} · arrastra o usa Alt + ← → para mover`}
-                      onClick={() => onSelectPart(index)}
-                      onKeyDown={(event) => {
-                        if (!event.altKey) return;
-                        if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
-                          event.preventDefault();
-                          moveSongPart(index, index - 1);
-                        } else if (event.key === "ArrowRight" || event.key === "ArrowDown") {
-                          event.preventDefault();
-                          moveSongPart(index, index + 1);
-                        }
-                      }}
-                    >
-                      {sectionBadge(part)}
-                    </button>
-                    <button type="button" className="lx-arr-x" aria-label={`Quitar parte ${index + 1}`} title="Quitar del orden (la letra no cambia)" onClick={() => removeSongPart(index)}>
-                      <X />
-                    </button>
-                  </span>
-                ))}
-                <span className="lx-arr-sep" aria-hidden />
-                {sections.map((section) => (
-                  <button key={section.key} type="button" className="lx-chip-add" title={`Añadir ${section.label || "texto"} al orden`} onClick={() => addSongPart(section)}>
-                    <Plus /> {sectionBadge(section)}
-                  </button>
-                ))}
-                {selectedSong.arrangement && (
-                  <button type="button" className="lx-ghost" aria-label="Volver al orden de la letra" title="Volver al orden de la letra" onClick={() => commitArrangement(selectedSong, slide, undefined)}>
-                    <RotateCcw />
-                  </button>
-                )}
-              </div>
-            )}
-
             {shown.length > 0 ? (
               <div className="lx-slides" ref={gridRef}>
                 {shown.map((part, index) => {
@@ -378,9 +254,7 @@ export function SongsWorkspace({ staged, selectedId, liveText, liveIndex, projec
                 })}
               </div>
             ) : (
-              <p className="lx-empty-ws">
-                {sections.length === 0 ? "Esta canción no tiene letra. Edítala para añadir sus partes." : "No hay partes en el orden. Añade una desde la fila de arriba."}
-              </p>
+              <p className="lx-empty-ws">Esta canción no tiene letra. Edítala para añadir sus partes.</p>
             )}
           </>
         ) : (

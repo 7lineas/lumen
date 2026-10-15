@@ -857,9 +857,6 @@ registerIpcHandle("songs:set", (_e, songs: StoredSong[]) => {
         lyrics: song.lyrics,
         updatedAt: Number.isFinite(song.updatedAt) ? song.updatedAt : Date.now(),
         pinned: Boolean(song.pinned),
-        ...(Array.isArray(song.arrangement)
-          ? { arrangement: song.arrangement.filter((key): key is string => typeof key === "string") }
-          : {}),
       }))
     : [];
   store.set("songs", next);

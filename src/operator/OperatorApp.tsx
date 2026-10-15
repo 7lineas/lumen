@@ -46,7 +46,7 @@ function newId(): string {
 }
 
 /** Library and slide buttons where Enter projects the preview instead of pressing the button again. */
-const TAKE_ON_ENTER = ".lx-card, .lx-item-main, .lx-chaps button, .lx-arr-pick, .lx-result";
+const TAKE_ON_ENTER = ".lx-card, .lx-item-main, .lx-chaps button, .lx-result";
 
 /** Columns of the slide grid on screen, so ↑ and ↓ move by one row. */
 function gridColumns(): number {
