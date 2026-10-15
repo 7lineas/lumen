@@ -101,6 +101,8 @@ export interface AppSettings {
   fadeMs: number;
   /** Songs text transition duration in ms. */
   songFadeMs: number;
+  /** Project song lyrics in capitals. Songs only: Bible text is never changed. */
+  songUppercase: boolean;
   backgroundFadeMs: number;
   /** Name shown on the logo screen. */
   churchName: string;
@@ -128,6 +130,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   projectorDisplayId: null,
   fadeMs: 400,
   songFadeMs: 100,
+  songUppercase: false,
   backgroundFadeMs: 100,
   churchName: "Iglesia",
   brightness: 0.4,

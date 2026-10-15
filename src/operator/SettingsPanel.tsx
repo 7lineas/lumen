@@ -318,6 +318,13 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
           </Select>
         </SettingRow>
 
+        <SettingRow label="Canciones en mayúsculas" hint="Solo en canciones, no en la Biblia">
+          <Switch
+            checked={local.songUppercase}
+            onCheckedChange={(checked) => setLocal({ ...local, songUppercase: checked === true })}
+          />
+        </SettingRow>
+
         <SettingRow label="Color de acento" hint="Referencia y versión">
           <label className="ajustes-swatch" style={{ background: local.accentColor }}>
             <span className="sr-only">Color de acento</span>
