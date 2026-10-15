@@ -3683,7 +3683,7 @@ body.win.electron .top-bar::after {
 }
 
 /* ==========================================================================
-   Operator polish: mode switch, live state, song arrangement, special screens
+   Operator polish: mode switch, live state, special screens
    and motion. Appended last so it refines the rules above.
    ========================================================================== */
 
@@ -5278,78 +5278,6 @@ button.primary:not(:disabled):active,
   cursor: pointer;
 }
 
-/* Song arrangement */
-.lx-arr {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  padding: 0 26px 14px;
-}
-
-.lx-arr > .lx-h {
-  margin-right: 6px;
-}
-
-.lx-arr-chip {
-  display: flex;
-  align-items: center;
-  height: 28px;
-  border: 1px solid var(--line2);
-  border-radius: 7px;
-  background: var(--surface2);
-  cursor: grab;
-}
-
-.lx-arr-chip.on {
-  border-color: var(--accent);
-  background: var(--accent-d);
-  color: var(--accent-l);
-}
-
-.lx-arr-chip.drag {
-  opacity: 0.35;
-}
-
-.lx-arr-chip.drop {
-  box-shadow: -2px 0 0 var(--accent);
-}
-
-.lx .lx-arr-pick {
-  height: 100%;
-  padding: 0 4px 0 10px;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: inherit;
-}
-
-.lx .lx-arr-x {
-  display: grid;
-  place-items: center;
-  width: 16px;
-  height: 16px;
-  margin-right: 5px;
-  border-radius: 4px;
-  color: var(--lx-dim);
-}
-
-.lx .lx-arr-x:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text);
-}
-
-.lx-arr-x svg {
-  width: 11px;
-  height: 11px;
-}
-
-.lx-arr-sep {
-  width: 1px;
-  height: 20px;
-  margin: 0 4px;
-  background: var(--line2);
-}
-
 .lx-chip-add {
   display: inline-flex;
   align-items: center;
@@ -6245,8 +6173,7 @@ button.primary:not(:disabled):active,
 
   .lx-slides,
   .lx-results,
-  .lx-player,
-  .lx-arr {
+  .lx-player {
     padding-inline: 18px;
   }
 

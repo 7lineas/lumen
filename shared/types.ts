@@ -163,11 +163,6 @@ export interface StoredSong {
   lyrics: string;
   updatedAt: number;
   pinned: boolean;
-  /**
-   * Part keys (see shared/song-sections.ts) in projection order, repeats
-   * included. Absent means the parts are projected in the order they were written.
-   */
-  arrangement?: string[];
 }
 
 /** What a media item is: a deck of slide images (the default), a video or an audio track. */

@@ -13,7 +13,7 @@ const FEATURES = [
   {
     icon: Music,
     title: "Canciones",
-    text: "Letras por partes, con el orden de la canción y un fundido suave entre diapositivas.",
+    text: "Letras por partes, en el orden en que están escritas y un fundido suave entre diapositivas.",
   },
   {
     icon: Film,

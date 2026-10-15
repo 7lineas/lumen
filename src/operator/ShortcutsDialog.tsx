@@ -26,7 +26,6 @@ const SECTIONS: Array<{ title: string; rows: Row[] }> = [
       { keys: ["↑", "↓"], joiner: " ", label: "Fila de arriba o de abajo" },
       { keys: ["Enter"], label: "Proyectar la vista previa" },
       { keys: ["Doble clic"], label: "Proyectar esa diapositiva directamente" },
-      { keys: ["Alt", "←", "→"], label: "Mover la parte seleccionada en el orden de la canción" },
       { keys: ["B"], label: "Limpiar el texto o restaurarlo" },
       { keys: ["L"], label: "Mostrar u ocultar el logo" },
     ],

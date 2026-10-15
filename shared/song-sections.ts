@@ -1,8 +1,8 @@
 /**
  * Song structure: labelled parts ("Verso 1", "Coro", "Puente" or "[Coro]")
- * and the arrangement that decides which parts are projected, and in what
- * order. Lyrics written without labels keep working: every blank-line block
- * is its own part, in the order it was written.
+ * and the order they are projected in, which is the order they are written.
+ * Lyrics written without labels keep working: every blank-line block is its
+ * own part, in the order it was written.
  */
 
 export interface SongSection {
@@ -132,30 +132,14 @@ export function parseSong(lyrics: string): ParsedSong {
   return { sections, order };
 }
 
-/** Projected parts, in arrangement order. Unknown keys are skipped. */
-export function resolveSongParts(parsed: ParsedSong, arrangement?: readonly string[] | null): SongSection[] {
+/** Parts as they are projected: the written order, repeats included. */
+export function songParts(lyrics: string): SongSection[] {
+  const parsed = parseSong(lyrics);
   const byKey = new Map(parsed.sections.map((section) => [section.key, section]));
-  const keys = arrangement ?? parsed.order;
-  return keys.flatMap((key) => {
+  return parsed.order.flatMap((key) => {
     const section = byKey.get(key);
     return section ? [section] : [];
   });
-}
-
-/** Parts of a song as the operator sees them: the stored arrangement, or the written order. */
-export function songParts(song: { lyrics: string; arrangement?: readonly string[] }): SongSection[] {
-  return resolveSongParts(parseSong(song.lyrics), song.arrangement);
-}
-
-/**
- * Keeps a stored arrangement valid after the lyrics change. Parts that no
- * longer exist are dropped; an undefined arrangement stays undefined so the
- * song keeps following the written order.
- */
-export function pruneArrangement(lyrics: string, arrangement?: readonly string[]): string[] | undefined {
-  if (!arrangement) return undefined;
-  const known = new Set(parseSong(lyrics).sections.map((section) => section.key));
-  return arrangement.filter((key) => known.has(key));
 }
 
 /** Short badge for a part: "Verso 1" → "V1", "Coro" → "C", "Pre-coro" → "PC". */

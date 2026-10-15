@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseSong, pruneArrangement, resolveSongParts, shortLabel, songParts } from "./song-sections";
+import { parseSong, shortLabel, songParts } from "./song-sections";
 
 const LABELLED = `Verso 1
 Sublime gracia del Señor
@@ -59,31 +59,14 @@ describe("parseSong", () => {
   });
 });
 
-describe("resolveSongParts and songParts", () => {
-  it("follows the written order without an arrangement", () => {
-    const parts = songParts({ lyrics: LABELLED });
+describe("songParts", () => {
+  it("projects the parts in the written order, repeats included", () => {
+    const parts = songParts(LABELLED);
     expect(parts.map((p) => p.label)).toEqual(["Verso 1", "Coro", "Verso 2", "Coro"]);
   });
 
-  it("projects the stored arrangement, repeats included, and skips unknown keys", () => {
-    const parsed = parseSong(LABELLED);
-    const parts = resolveSongParts(parsed, ["coro", "verso-2", "fantasma", "coro"]);
-    expect(parts.map((p) => p.key)).toEqual(["coro", "verso-2", "coro"]);
-  });
-
-  it("an empty arrangement projects nothing", () => {
-    expect(songParts({ lyrics: LABELLED, arrangement: [] })).toEqual([]);
-  });
-});
-
-describe("pruneArrangement", () => {
-  it("drops parts that were deleted from the lyrics", () => {
-    const lyrics = "Coro\nuno\n\nVerso 1\ndos";
-    expect(pruneArrangement(lyrics, ["verso-1", "puente", "coro"])).toEqual(["verso-1", "coro"]);
-  });
-
-  it("keeps an undefined arrangement undefined", () => {
-    expect(pruneArrangement(LABELLED, undefined)).toBeUndefined();
+  it("projects nothing for empty lyrics", () => {
+    expect(songParts("  \n\n ")).toEqual([]);
   });
 });
 
