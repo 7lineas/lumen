@@ -461,7 +461,7 @@ export function OperatorApp() {
     mode: "verse",
     // Song titles are never projected; the operator sees them in the library.
     referenceLabel: "",
-    blocks: [{ text }],
+    blocks: [{ text: settings.songUppercase ? text.toUpperCase() : text }],
     churchName: settings.churchName,
     fontSize: settings.fontSize,
     brightness: settings.brightness,
