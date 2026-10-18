@@ -26,7 +26,7 @@ Aplicación de escritorio **offline** para proyectar versículos de la Biblia en
 
 En **Ajustes**, activa **Acceso desde otros dispositivos**. Lumen muestra una dirección local y un código de acceso. Abre esa dirección desde otro equipo conectado a la misma red e ingresa el código cuando se solicite. El dispositivo anfitrión debe permanecer encendido y con Lumen abierto. Desactiva el acceso cuando ya no lo necesites.
 
-La versión de navegador comparte las Biblias instaladas, ajustes, historial, cola, favoritos, canciones y presentaciones con el equipo anfitrión, y recibe en vivo lo que se proyecta. La selección de archivos e importación de Biblias o diapositivas, la selección de pantallas físicas y las actualizaciones de la aplicación siguen siendo funciones de escritorio. El código solo debe compartirse con operadores de confianza en una red privada; no expongas el puerto de Lumen a internet ni a redes públicas.
+La versión de navegador comparte las Biblias instaladas, ajustes, historial, cola, favoritos, canciones, textos y presentaciones con el equipo anfitrión, y recibe en vivo lo que se proyecta. La selección de archivos e importación de Biblias o diapositivas, la selección de pantallas físicas y las actualizaciones de la aplicación siguen siendo funciones de escritorio. El código solo debe compartirse con operadores de confianza en una red privada; no expongas el puerto de Lumen a internet ni a redes públicas.
 
 Detalles de red, contrato del servicio y configuración para desarrollo: [`docs/BROWSER-ACCESS.md`](docs/BROWSER-ACCESS.md).
 

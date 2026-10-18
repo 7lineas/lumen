@@ -209,7 +209,7 @@ function pruneStaleSlideSources(): void {
     // pruning is best-effort
   }
 }
-import type { AppSettings, ProjectorPayload, QueueEntry, HistoryEntry, StoredSong, StoredSlideDeck, SlideImportResult } from "../shared/types";
+import type { AppSettings, ProjectorPayload, QueueEntry, HistoryEntry, StoredSong, StoredText, StoredSlideDeck, SlideImportResult } from "../shared/types";
 import { DEFAULT_SETTINGS } from "../shared/types";
 import { buildBibleDataCandidates, resolveBibleDataDir } from "./bible-data-path";
 import { setupUpdater } from "./updater";
@@ -253,6 +253,7 @@ const store = new Store<{
   queue: QueueEntry[];
   favorites: QueueEntry[];
   songs: StoredSong[];
+  texts: StoredText[];
   slideDecks: StoredSlideDeck[];
   browserAccess: { enabled: boolean; pairingCode: string };
 }>({
@@ -262,6 +263,7 @@ const store = new Store<{
     queue: [],
     favorites: [],
     songs: [],
+    texts: [],
     slideDecks: [],
     browserAccess: { enabled: false, pairingCode: "" },
   },
@@ -860,6 +862,22 @@ registerIpcHandle("songs:set", (_e, songs: StoredSong[]) => {
       }))
     : [];
   store.set("songs", next);
+  return next;
+});
+
+registerIpcHandle("texts:get", () => store.get("texts"));
+
+registerIpcHandle("texts:set", (_e, texts: StoredText[]) => {
+  const next = Array.isArray(texts)
+    ? texts.filter((text) => text && typeof text.id === "string" && typeof text.title === "string" && typeof text.body === "string").map((text) => ({
+        id: text.id,
+        title: text.title,
+        body: text.body,
+        updatedAt: Number.isFinite(text.updatedAt) ? text.updatedAt : Date.now(),
+        pinned: Boolean(text.pinned),
+      }))
+    : [];
+  store.set("texts", next);
   return next;
 });
 

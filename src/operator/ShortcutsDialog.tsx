@@ -16,7 +16,8 @@ const SECTIONS: Array<{ title: string; rows: Row[] }> = [
     rows: [
       { keys: ["1"], label: "Biblia" },
       { keys: ["2"], label: "Canciones" },
-      { keys: ["3"], label: "Media" },
+      { keys: ["3"], label: "Textos" },
+      { keys: ["4"], label: "Media" },
     ],
   },
   {

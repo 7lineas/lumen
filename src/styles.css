@@ -2565,7 +2565,7 @@ button.song-part {
 /* ============================================================
    Lectern look: colours, top bar, buttons and interactions.
    Layout is unchanged. The accent follows the active mode:
-   blue for Bible, amber for songs, green for slides.
+   blue for Bible, amber for songs, violet for texts, green for slides.
    ============================================================ */
 :root {
   --bg: #141415;
@@ -2613,6 +2613,18 @@ button.song-part {
   --primary: #f5a33d;
   --ring: #f5a33d;
   --select: rgba(245, 163, 61, 0.25);
+}
+
+:root:has(.app-shell[data-mode="textos"]) {
+  --accent: #b38cff;
+  --accent-d: rgba(179, 140, 255, 0.15);
+  --accent-l: #d2bfff;
+  --accent-soft: rgba(179, 140, 255, 0.15);
+  --accent-surface: rgba(179, 140, 255, 0.15);
+  --accent-foreground: #d2bfff;
+  --primary: #b38cff;
+  --ring: #b38cff;
+  --select: rgba(179, 140, 255, 0.25);
 }
 
 :root:has(.app-shell[data-mode="media"]) {

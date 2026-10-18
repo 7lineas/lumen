@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BookOpen, Film, Music } from "lucide-react";
+import { BookOpen, FileText, Film, Music } from "lucide-react";
 import bibleLicenses from "../../shared/bible-licenses.json";
 import logo from "../assets/lumen-logo.png";
 import type { BibleLibraryEntry } from "../vite-env.d";
@@ -14,6 +14,11 @@ const FEATURES = [
     icon: Music,
     title: "Canciones",
     text: "Letras por partes, en el orden en que están escritas y un fundido suave entre diapositivas.",
+  },
+  {
+    icon: FileText,
+    title: "Textos",
+    text: "Escribe un texto sobre la marcha y proyéctalo por bloques, igual que una canción.",
   },
   {
     icon: Film,

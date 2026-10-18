@@ -23,6 +23,8 @@ export const SongIcon = svg(
   </>,
 );
 
+export const TextIcon = svg(<path d="M3.5 5h13M3.5 9h13M3.5 13h8M3.5 17h10" />);
+
 export const MediaIcon = svg(
   <>
     <rect x="2.5" y="4" width="15" height="12" rx="2" />

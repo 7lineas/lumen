@@ -7,6 +7,7 @@ const methods: Record<string, string> = {
   removeBible: "bibles:remove", getSettings: "settings:get", setSettings: "settings:set",
   getHistory: "history:get", addHistory: "history:add", getQueue: "queue:get", setQueue: "queue:set",
   getFavorites: "favorites:get", setFavorites: "favorites:set", getSongs: "songs:get", setSongs: "songs:set",
+  getTexts: "texts:get", setTexts: "texts:set",
   getSlideDecks: "slides:get", setSlideDecks: "slides:set", readSlideSource: "slides:readFile",
   saveSlidePngs: "slides:savePngs", convertPptx: "slides:convertPptx", showOnProjector: "projector:show",
   deleteBackgroundMedia: "background:delete",
