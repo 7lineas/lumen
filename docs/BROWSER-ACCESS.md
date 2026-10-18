@@ -13,7 +13,7 @@ The host computer and Lumen must remain running. Scanning the QR opens the opera
 
 ## Browser features
 
-The web operator supports installed and online Bible reading, Bible downloads and removal, settings, history, service queue, favorites, songs, saved slide decks, and live projection control. Browser clients share one operator state on the host. The QR code does not open or expose a projector browser view; the congregation output remains in the host computer's separate Electron projector window.
+The web operator supports installed and online Bible reading, Bible downloads and removal, settings, history, service queue, favorites, songs, texts, saved slide decks, and live projection control. Browser clients share one operator state on the host. The QR code does not open or expose a projector browser view; the congregation output remains in the host computer's separate Electron projector window.
 
 Native file dialogs (Bible/background/slide import), physical display enumeration, desktop auto-update, and operating-system shortcuts remain desktop-only. Import media and select displays on the host before operating remotely. The host projector window can be reopened from the desktop operator app.
 

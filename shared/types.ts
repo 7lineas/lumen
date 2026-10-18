@@ -165,6 +165,16 @@ export interface StoredSong {
   pinned: boolean;
 }
 
+/** Free text saved in the application's persistent user data (the Textos workspace). */
+export interface StoredText {
+  id: string;
+  title: string;
+  /** Text as written; each block separated by a blank line is one slide. */
+  body: string;
+  updatedAt: number;
+  pinned: boolean;
+}
+
 /** What a media item is: a deck of slide images (the default), a video or an audio track. */
 export type MediaKind = "slides" | "video" | "audio";
 

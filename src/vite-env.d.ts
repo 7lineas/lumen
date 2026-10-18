@@ -4,7 +4,7 @@ import type { BibleImportPickResult, BibleImportCommitResult } from "../shared/b
 import type { ImportMetaInput } from "../shared/bible-import/build";
 import type { ChapterResult, OnlineSearchResult, OnlineVersionsResult } from "../shared/youversion";
 import type { AppUpdateState } from "../shared/app-update";
-import type { AppSettings, HistoryEntry, ProjectorPayload, QueueEntry, StoredSong, StoredSlideDeck, SlideImportResult } from "../shared/types";
+import type { AppSettings, HistoryEntry, ProjectorPayload, QueueEntry, StoredSong, StoredText, StoredSlideDeck, SlideImportResult } from "../shared/types";
 
 export interface DisplayInfo {
   id: number;
@@ -73,6 +73,8 @@ export interface ProyectorApi {
   setFavorites: (f: QueueEntry[]) => Promise<QueueEntry[]>;
   getSongs: () => Promise<StoredSong[]>;
   setSongs: (songs: StoredSong[]) => Promise<StoredSong[]>;
+  getTexts: () => Promise<StoredText[]>;
+  setTexts: (texts: StoredText[]) => Promise<StoredText[]>;
   getSlideDecks: () => Promise<StoredSlideDeck[]>;
   setSlideDecks: (decks: StoredSlideDeck[]) => Promise<StoredSlideDeck[]>;
   importSlideDeck: () => Promise<SlideImportResult | null>;

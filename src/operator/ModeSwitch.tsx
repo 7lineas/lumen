@@ -1,15 +1,16 @@
 import { useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { BibleIcon, MediaIcon, SongIcon } from "./icons";
+import { BibleIcon, MediaIcon, SongIcon, TextIcon } from "./icons";
 
-export type OperatorMode = "biblia" | "canciones" | "media";
+export type OperatorMode = "biblia" | "canciones" | "textos" | "media";
 
 /** Order of the workspaces, matching the number keys 1, 2, 3. */
-export const MODE_ORDER: readonly OperatorMode[] = ["biblia", "canciones", "media"];
+export const MODE_ORDER: readonly OperatorMode[] = ["biblia", "canciones", "textos", "media"];
 
 const MODES: Array<{ id: OperatorMode; label: string; testId: string; icon: ReactNode }> = [
   { id: "biblia", label: "Biblia", testId: "mode-biblia", icon: <BibleIcon /> },
   { id: "canciones", label: "Canciones", testId: "mode-canciones", icon: <SongIcon /> },
+  { id: "textos", label: "Textos", testId: "mode-textos", icon: <TextIcon /> },
   { id: "media", label: "Media", testId: "mode-media", icon: <MediaIcon /> },
 ];
 

@@ -3,7 +3,7 @@ import type { BibleImportPickResult, BibleImportCommitResult } from "../shared/b
 import type { ImportMetaInput } from "../shared/bible-import/build";
 import type { AppUpdateState } from "../shared/app-update";
 import type { ChapterResult, OnlineSearchResult, OnlineVersionsResult } from "../shared/youversion";
-import type { AppSettings, HistoryEntry, ProjectorPayload, QueueEntry, StoredSong, StoredSlideDeck, SlideImportResult } from "../shared/types";
+import type { AppSettings, HistoryEntry, ProjectorPayload, QueueEntry, StoredSong, StoredText, StoredSlideDeck, SlideImportResult } from "../shared/types";
 
 export interface BibleLibraryEntry {
   id: string;
@@ -71,6 +71,8 @@ contextBridge.exposeInMainWorld("proyector", {
   setFavorites: (f: QueueEntry[]): Promise<QueueEntry[]> => ipcRenderer.invoke("favorites:set", f),
   getSongs: (): Promise<StoredSong[]> => ipcRenderer.invoke("songs:get"),
   setSongs: (songs: StoredSong[]): Promise<StoredSong[]> => ipcRenderer.invoke("songs:set", songs),
+  getTexts: (): Promise<StoredText[]> => ipcRenderer.invoke("texts:get"),
+  setTexts: (texts: StoredText[]): Promise<StoredText[]> => ipcRenderer.invoke("texts:set", texts),
   getSlideDecks: (): Promise<StoredSlideDeck[]> => ipcRenderer.invoke("slides:get"),
   setSlideDecks: (decks: StoredSlideDeck[]): Promise<StoredSlideDeck[]> => ipcRenderer.invoke("slides:set", decks),
   importSlideDeck: (): Promise<SlideImportResult | null> => ipcRenderer.invoke("slides:import"),

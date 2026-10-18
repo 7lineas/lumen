@@ -30,6 +30,7 @@ import { StageMonitor } from "./StageMonitor";
 import { BibleWorkspace } from "./BibleWorkspace";
 import { SavedStrip } from "./SavedStrip";
 import { SongsWorkspace, type SongSelection, type SongStage } from "./SongsWorkspace";
+import { TextsWorkspace } from "./TextsWorkspace";
 import { MediaWorkspace, type MediaItem, type SlideStage } from "./MediaWorkspace";
 import { AudioDock, type AudioTrack } from "./AudioDock";
 import { VideoTransport } from "./VideoTransport";
@@ -148,6 +149,9 @@ export function OperatorApp() {
   const [songStaged, setSongStaged] = useState<SongStage | null>(null);
   const [songSelectedId, setSongSelectedId] = useState<string | null>(null);
   const [songLive, setSongLive] = useState<SongStage | null>(null);
+  // Textos keep their own staged selection; what is projected is tracked in songLive, the shared lyric-style stage.
+  const [textStaged, setTextStaged] = useState<SongStage | null>(null);
+  const [textSelectedId, setTextSelectedId] = useState<string | null>(null);
   const [slideStaged, setSlideStaged] = useState<SlideStage | null>(null);
   const [mediaSelected, setMediaSelected] = useState<MediaItem | null>(null);
   const [slideLive, setSlideLive] = useState<SlideStage | null>(null);
@@ -555,6 +559,68 @@ export function OperatorApp() {
     await send(songPayload(next.title, text));
   }, [songLive, send, songPayload]);
 
+  // Textos are projected like songs, but the uppercase setting is for songs only.
+  const textPayload = useCallback((text: string): ProjectorPayload => ({
+    ...songPayload("", text),
+    blocks: [{ text }],
+  }), [songPayload]);
+
+  const textPreviewPayload = useMemo<ProjectorPayload | null>(() => {
+    if (!textStaged || textStaged.slides.length === 0) return null;
+    const text = textStaged.slides[textStaged.index] ?? textStaged.slides[0];
+    if (text == null) return null;
+    return textPayload(text);
+  }, [textStaged, textPayload]);
+
+  const selectText = useCallback((textId: string | null, selection: SongSelection | null) => {
+    setTextSelectedId(textId);
+    setTextStaged(
+      selection && selection.slides.length > 0
+        ? { title: selection.title, slides: selection.slides, labels: selection.labels, index: selection.index ?? 0 }
+        : null,
+    );
+  }, []);
+
+  const selectTextPart = useCallback((index: number) => {
+    setTextStaged((current) => {
+      if (!current || current.slides.length === 0) return current;
+      const clamped = Math.min(Math.max(index, 0), current.slides.length - 1);
+      const next = { ...current, index: clamped };
+      const text = next.slides[clamped];
+      if (projectOnClick && text != null) {
+        setSongLive(next);
+        void send(textPayload(text));
+      }
+      return next;
+    });
+  }, [projectOnClick, send, textPayload]);
+
+  const takeTextPart = useCallback((index: number) => {
+    if (!textStaged) return;
+    const text = textStaged.slides[index];
+    if (text == null) return;
+    const next = { ...textStaged, index };
+    setTextStaged(next);
+    setSongLive(next);
+    void send(textPayload(text));
+  }, [textStaged, send, textPayload]);
+
+  const projectTextStaged = useCallback(async () => {
+    if (!textStaged || textStaged.slides.length === 0) return;
+    const text = textStaged.slides[textStaged.index] ?? textStaged.slides[0];
+    if (text == null) return;
+    setSongLive(textStaged);
+    await send(textPayload(text));
+  }, [textStaged, send, textPayload]);
+
+  const navigateTextPreview = useCallback((delta: number) => {
+    setTextStaged((current) => {
+      if (!current || current.slides.length === 0) return current;
+      const clamped = Math.min(Math.max(current.index + delta, 0), current.slides.length - 1);
+      return clamped === current.index ? current : { ...current, index: clamped };
+    });
+  }, []);
+
   const selectMedia = useCallback((item: MediaItem | null) => {
     setMediaSelected(item);
     setSlideStaged(item && mediaKind(item) === "slides" && item.images.length
@@ -683,12 +749,15 @@ export function OperatorApp() {
     else void projectSlideStaged();
   }, [mediaSelected, selectedKind, projectVideo, playAudio, projectSlideStaged]);
 
+  // Songs and textos are both lyric-style: they share the text fade and the blank screen.
+  const lyricsWorkspace = mode === "canciones" || mode === "textos";
+
   const showBlank = useCallback(async () => {
     // "Limpiar" clears only the text (verse/song/slide). Background color and
     // media stay so the projector keeps showing them behind empty content.
     // The blank transition uses the current workspace's fade setting.
-    await send(blankPayload(settings, mode === "media" ? settings.backgroundFadeMs : mode === "canciones" ? settings.songFadeMs : settings.fadeMs));
-  }, [send, settings, mode]);
+    await send(blankPayload(settings, mode === "media" ? settings.backgroundFadeMs : lyricsWorkspace ? settings.songFadeMs : settings.fadeMs));
+  }, [send, settings, mode, lyricsWorkspace]);
 
   const toggleBlank = useCallback(async () => {
     if (live?.mode === "blank") {
@@ -699,7 +768,7 @@ export function OperatorApp() {
   }, [live, send, chrome, showBlank]);
 
   // Fade used by the logo and countdown screens: the workspace on screen decides.
-  const workspaceFadeMs = mode === "media" ? settings.backgroundFadeMs : mode === "canciones" ? settings.songFadeMs : settings.fadeMs;
+  const workspaceFadeMs = mode === "media" ? settings.backgroundFadeMs : lyricsWorkspace ? settings.songFadeMs : settings.fadeMs;
 
   // Logo replaces the text; pressing it again brings back what was on screen.
   const toggleLogo = useCallback(async () => {
@@ -903,15 +972,17 @@ export function OperatorApp() {
   // Arrows move the preview and Enter projects it, in every workspace.
   const stepPreview = useCallback((delta: number) => {
     if (mode === "canciones") navigateSongPreview(delta);
+    else if (mode === "textos") navigateTextPreview(delta);
     else if (mode === "media") navigateSlidePreview(delta);
     else navigateVerse(delta);
-  }, [mode, navigateSongPreview, navigateSlidePreview, navigateVerse]);
+  }, [mode, navigateSongPreview, navigateTextPreview, navigateSlidePreview, navigateVerse]);
 
   const projectPreview = useCallback(() => {
     if (mode === "canciones") void projectSongStaged();
+    else if (mode === "textos") void projectTextStaged();
     else if (mode === "media") takeMedia();
     else void projectStaged();
-  }, [mode, projectSongStaged, takeMedia, projectStaged]);
+  }, [mode, projectSongStaged, projectTextStaged, takeMedia, projectStaged]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -931,6 +1002,7 @@ export function OperatorApp() {
         case "1":
         case "2":
         case "3":
+        case "4":
           switchMode(MODE_ORDER[Number(e.key) - 1]);
           break;
         case "ArrowRight":
@@ -1003,6 +1075,7 @@ export function OperatorApp() {
   // What each monitor is showing, next to its title.
   const songPartLabel = (stage: SongStage) => `${stage.title} · ${stage.labels[stage.index] || `Parte ${stage.index + 1}`}`;
   const previewLabel = mode === "canciones" ? (songStaged ? songPartLabel(songStaged) : "")
+    : mode === "textos" ? (textStaged ? songPartLabel(textStaged) : "")
     : mode === "media" ? (slideStaged ? `${slideStaged.title} · ${slideStaged.index + 1}/${slideStaged.images.length}` : mediaSelected?.title ?? "")
     : staged ? formatRange(staged) : "";
   const liveLabel = !live || live.mode === "blank" ? "Fondo"
@@ -1013,9 +1086,11 @@ export function OperatorApp() {
     : live.referenceLabel ? live.referenceLabel.split(" — ")[0]
     : songLive ? songPartLabel(songLive) : "Canción";
   const previewPayloadForMode = mode === "canciones" ? songPreviewPayload
+    : mode === "textos" ? textPreviewPayload
     : mode === "media" ? (selectedKind === "video" ? videoPreviewPayload : slidePreviewPayload)
     : previewPayload;
   const previewEmpty = mode === "canciones" ? "Elige una parte de la canción"
+    : mode === "textos" ? "Elige un bloque del texto"
     : mode === "media" ? (selectedKind === "audio" ? "El audio suena en esta computadora" : "Elige una diapositiva o un video")
     : "Elige un versículo";
   // Previous / next under the live monitor follow what is on screen, not the workspace that is open.
@@ -1140,6 +1215,18 @@ export function OperatorApp() {
             onSelectSong={selectSong}
             onSelectPart={selectSongPart}
             onTakePart={takeSongPart}
+          />
+        ) : mode === "textos" ? (
+          <TextsWorkspace
+            staged={textStaged}
+            selectedId={textSelectedId}
+            liveText={live?.mode === "verse" && !live.referenceLabel ? live.blocks[0]?.text ?? null : null}
+            liveIndex={songLive && textStaged && songLive.title === textStaged.title && songLive.slides[songLive.index] === textStaged.slides[songLive.index] ? songLive.index : null}
+            projectOnClick={projectOnClick}
+            onToggleProjectOnClick={setProjectOnClick}
+            onSelectText={selectText}
+            onSelectPart={selectTextPart}
+            onTakePart={takeTextPart}
           />
         ) : mode === "media" ? (
           <MediaWorkspace
