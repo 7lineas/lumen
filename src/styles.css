@@ -5009,6 +5009,8 @@ button.primary:not(:disabled):active,
 .lx-item {
   position: relative;
   display: flex;
+  box-sizing: border-box;
+  height: 54px;
   align-items: center;
   margin-bottom: 2px;
   border: 1px solid transparent;
@@ -5022,6 +5024,29 @@ button.primary:not(:disabled):active,
 .lx-item.on {
   border-color: color-mix(in srgb, var(--accent) 45%, transparent);
   background: var(--accent-d);
+}
+
+/* A slide item dragged over another slide item: the target lights up. */
+.lx-item.drop {
+  border-color: var(--accent);
+  background: var(--accent-d);
+}
+
+/* Shown at the top of the sidebar while a slide is dragged out of its deck. */
+/* Shown at the top of the sidebar while a slide is dragged out of its deck. Same height as a row. */
+.lx-slide-out {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  height: 54px;
+  margin-bottom: 2px;
+  padding: 0 10px;
+  border: 1px dashed var(--accent);
+  border-radius: 8px;
+  color: var(--accent-l);
+  font-size: 13px;
+  text-align: center;
 }
 
 .lx .lx-item-main {

@@ -644,6 +644,13 @@ export function OperatorApp() {
     setSlideStaged((current) => (current?.deckId === item.id ? { ...current, title: item.title } : current));
     setAudioTrack((track) => (track?.id === item.id ? { ...track, title: item.title } : track));
   }, []);
+  // A deck whose images changed (merged into, or slides taken out) updates the grid and the preview.
+  const mediaImagesChanged = useCallback((item: MediaItem) => {
+    setMediaSelected((current) => (current?.id === item.id ? item : current));
+    setSlideStaged((current) => (current?.deckId === item.id
+      ? { ...current, images: item.images, index: Math.min(current.index, item.images.length - 1) }
+      : current));
+  }, []);
   const selectSlide = useCallback((index: number) => {
     setSlideStaged((current) => {
       if (!current || current.images.length === 0) return current;
@@ -1246,6 +1253,7 @@ export function OperatorApp() {
             onTake={takeMedia}
             onRemoved={mediaRemoved}
             onRenamed={mediaRenamed}
+            onImagesChanged={mediaImagesChanged}
           />
         ) : (
           <BibleWorkspace

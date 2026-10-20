@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { Pin, Play, Plus, Upload } from "lucide-react";
 import {
   AlertDialog,
@@ -61,6 +61,8 @@ interface Props {
   onRemoved: (item: MediaItem) => void;
   /** Called with the item after its title changes, so the open selection follows the new name. */
   onRenamed: (item: MediaItem) => void;
+  /** Called with a deck after its images changed (merged into, or slides taken out), so the open selection follows. */
+  onImagesChanged: (item: MediaItem) => void;
 }
 
 /** A presentation being converted to images (kept in memory only; never persisted as a deck). */
@@ -83,7 +85,12 @@ function describe(item: MediaItem): string {
 
 const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
 
-export function MediaWorkspace({ staged, selected, liveImage, liveVideo, audioId, audioPlaying, slideFit, onSlideFit, projectOnClick, onToggleProjectOnClick, onSelect, onSelectSlide, onTakeSlide, onTake, onRemoved, onRenamed }: Props) {
+const newDeckId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+
+/** Every item id starts with the time it was created, in milliseconds. */
+const createdAt = (item: MediaItem) => Number(item.id.split("-")[0]) || 0;
+
+export function MediaWorkspace({ staged, selected, liveImage, liveVideo, audioId, audioPlaying, slideFit, onSlideFit, projectOnClick, onToggleProjectOnClick, onSelect, onSelectSlide, onTakeSlide, onTake, onRemoved, onRenamed, onImagesChanged }: Props) {
   const [items, setItems] = useState<MediaItem[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [query, setQuery] = useState("");
@@ -208,7 +215,9 @@ export function MediaWorkspace({ staged, selected, liveImage, liveVideo, audioId
   };
   const visible = useMemo(() => {
     const q = normalize(query.trim());
-    return items.filter((item) => !q || normalize(item.title).includes(q)).sort((a, b) => Number(b.pinned) - Number(a.pinned));
+    return items
+      .filter((item) => !q || normalize(item.title).includes(q))
+      .sort((a, b) => Number(b.pinned) - Number(a.pinned) || createdAt(b) - createdAt(a));
   }, [items, query]);
   const removeItem = (item: MediaItem) => {
     setItems((current) => current.filter((entry) => entry.id !== item.id));
@@ -235,6 +244,67 @@ export function MediaWorkspace({ staged, selected, liveImage, liveVideo, audioId
     onRenamed(renamed);
   };
 
+  // Drag a slide item onto another slide item: the dragged item's images move to the
+  // end of the target, and the dragged item is removed from the list.
+  const dragIdRef = useRef<string | null>(null);
+  const [dropId, setDropId] = useState<string | null>(null);
+  const endItemDrag = () => {
+    dragIdRef.current = null;
+    setDropId(null);
+  };
+  const acceptItem = (event: DragEvent<HTMLElement>, item: MediaItem) => {
+    const dragId = dragIdRef.current;
+    if (!dragId || dragId === item.id || mediaKind(item) !== "slides") return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    setDropId(item.id);
+  };
+  const leaveItem = (event: DragEvent<HTMLElement>) => {
+    if (event.currentTarget.contains(event.relatedTarget as Node | null)) return;
+    setDropId(null);
+  };
+  const mergeItem = (event: DragEvent<HTMLElement>, target: MediaItem) => {
+    const dragId = dragIdRef.current;
+    endItemDrag();
+    if (!dragId || dragId === target.id) return;
+    event.preventDefault();
+    const source = items.find((entry) => entry.id === dragId);
+    if (!source || mediaKind(source) !== "slides") return;
+    const merged: MediaItem = { ...target, images: [...target.images, ...source.images], updatedAt: Date.now() };
+    setItems((current) => current.filter((entry) => entry.id !== dragId).map((entry) => (entry.id === target.id ? merged : entry)));
+    if (selected?.id === dragId) onSelect(merged);
+    else onImagesChanged(merged);
+  };
+
+  // A slide dragged out of the open deck and dropped on the sidebar becomes a new item.
+  // A deck keeps at least one slide, so its only slide cannot leave.
+  const slideDragRef = useRef<{ deckId: string; index: number } | null>(null);
+  const [slideDragging, setSlideDragging] = useState(false);
+  const endSlideDrag = () => {
+    slideDragRef.current = null;
+    setSlideDragging(false);
+  };
+  const acceptSlideOut = (event: DragEvent<HTMLElement>) => {
+    if (!slideDragRef.current) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+  };
+  const dropSlideOut = (event: DragEvent<HTMLElement>) => {
+    const drag = slideDragRef.current;
+    endSlideDrag();
+    if (!drag) return;
+    event.preventDefault();
+    const source = items.find((entry) => entry.id === drag.deckId);
+    const image = source?.images[drag.index];
+    if (!source || image === undefined || source.images.length < 2) return;
+    const now = Date.now();
+    const remaining: MediaItem = { ...source, images: source.images.filter((_, i) => i !== drag.index), updatedAt: now };
+    const deck: MediaItem = { id: newDeckId(), title: `${source.title} · Item ${drag.index + 1}`, images: [image], updatedAt: now, pinned: false };
+    setItems((current) => [deck, ...current.map((entry) => (entry.id === remaining.id ? remaining : entry))]);
+    onImagesChanged(remaining);
+    onSelect(deck);
+  };
+
   const kind = selected ? mediaKind(selected) : null;
   const gridRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -246,7 +316,7 @@ export function MediaWorkspace({ staged, selected, liveImage, liveVideo, audioId
 
   return (
     <>
-      <aside className="lx-lib">
+      <aside className="lx-lib" onDragOver={acceptSlideOut} onDrop={dropSlideOut}>
         <div className="lx-lib-head">
           <span className="lx-h">Media</span>
           <button type="button" className="lx-icon-btn" aria-label="Importar media" title="Importar presentación, imágenes, video o audio" data-testid="btn-import-media" disabled={importing} onClick={() => void importMedia()}>
@@ -287,13 +357,25 @@ export function MediaWorkspace({ staged, selected, liveImage, liveVideo, audioId
         ))}
         {importError && <p className="lx-note lx-note-error" role="alert" data-testid="slides-import-error">{importError}</p>}
         <div className="lx-lib-scroll">
+          {slideDragging && <div className="lx-slide-out">Suelta para desagrupar</div>}
           {visible.map((item) => {
             const Icon = KIND_ICON[mediaKind(item)];
+            const isSlides = mediaKind(item) === "slides";
             return (
               <div
                 key={item.id}
-                className={`lx-item${item.id === selected?.id ? " on" : ""}${item.id === renamingId ? " renaming" : ""}`}
+                className={`lx-item${item.id === selected?.id ? " on" : ""}${item.id === renamingId ? " renaming" : ""}${dropId === item.id ? " drop" : ""}`}
                 style={item.id === renamingId && renameHeight ? { height: renameHeight, boxSizing: "border-box" } : undefined}
+                draggable={isSlides && item.id !== renamingId}
+                onDragStart={isSlides ? (event) => {
+                  dragIdRef.current = item.id;
+                  event.dataTransfer.effectAllowed = "move";
+                  event.dataTransfer.setData("text/plain", item.id);
+                } : undefined}
+                onDragEnd={endItemDrag}
+                onDragOver={(event) => acceptItem(event, item)}
+                onDragLeave={leaveItem}
+                onDrop={(event) => mergeItem(event, item)}
               >
                 {renamingId === item.id ? (
                   <div className="lx-item-main">
@@ -403,6 +485,14 @@ export function MediaWorkspace({ staged, selected, liveImage, liveVideo, audioId
                       data-current={index === staged.index ? "" : undefined}
                       aria-label={slideLabel(index)}
                       data-testid={`slide-part-${index}`}
+                      draggable={staged.images.length > 1}
+                      onDragStart={(event) => {
+                        event.dataTransfer.effectAllowed = "move";
+                        event.dataTransfer.setData("text/plain", `${staged.deckId}:${index}`);
+                        slideDragRef.current = { deckId: staged.deckId, index };
+                        setSlideDragging(true);
+                      }}
+                      onDragEnd={endSlideDrag}
                       onClick={() => onSelectSlide(index)}
                       onDoubleClick={() => onTakeSlide(index)}
                     >
@@ -412,7 +502,6 @@ export function MediaWorkspace({ staged, selected, liveImage, liveVideo, audioId
                       <span className="lx-tag-live">En vivo</span>
                       <span className="lx-card-foot">
                         <span className="num">{index + 1}</span>
-                        <span className="lab">{slideLabel(index)}</span>
                       </span>
                     </button>
                   );
