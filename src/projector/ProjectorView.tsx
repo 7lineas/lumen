@@ -211,13 +211,11 @@ export function ProjectorView() {
   }
 
   if (payload.mode === "logo") {
+    // The logo is shown like a fondo: same layer, brightness and fade, covering the screen.
     return (
       <div className={themeClass} style={style}>
         <div className="projector-background-layer" style={backgroundStyle} />
-        {backgroundMedia}
-        <div className={`projector-inner fade ${visible ? "show" : ""}`} style={fadeStyle}>
-          <p className="projector-logo">{payload.churchName || settings.churchName}</p>
-        </div>
+        <FadingBackgroundMedia path={payload.logoImagePath ?? settings.logoImagePath} brightness={brightness} fadeMs={backgroundFadeMs} fit="cover" className="projector-background-media" />
       </div>
     );
   }

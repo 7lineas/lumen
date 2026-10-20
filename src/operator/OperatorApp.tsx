@@ -5,6 +5,7 @@ import { Slider } from "@/components/ui/slider";
 import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Church, ImagePlus, Keyboard, Timer, Trash2, Video, X } from "lucide-react";
+import { toast } from "sonner";
 import type { AppSettings, HistoryEntry, ProjectorPayload, QueueEntry, VideoPlayback } from "@shared/types";
 import { DEFAULT_SETTINGS, MAX_QUEUE_ITEMS, mediaKind } from "@shared/types";
 import { useBibleLoader } from "../hooks/useBibleLoader";
@@ -781,13 +782,29 @@ export function OperatorApp() {
   const workspaceFadeMs = mode === "media" ? settings.backgroundFadeMs : lyricsWorkspace ? lyricsFadeMs : settings.fadeMs;
 
   // Logo replaces the text; pressing it again brings back what was on screen.
+  // With no logo image yet, the file picker opens straight away.
   const toggleLogo = useCallback(async () => {
     if (live?.mode === "logo") {
       if (lastContent.current) await send(chrome(lastContent.current));
       else await showBlank();
       return;
     }
-    await send({ ...blankPayload(settings, workspaceFadeMs), mode: "logo" });
+    let logoImagePath = settings.logoImagePath;
+    if (!logoImagePath) {
+      try {
+        logoImagePath = (await window.proyector?.pickLogoImage()) ?? null;
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "No se pudo elegir el logo");
+        return;
+      }
+      if (!logoImagePath) return;
+      // Saved directly (not via applyChrome, which is declared below): nothing
+      // else needs a resync because the logo replaces whatever is on screen.
+      const next = { ...settings, logoImagePath };
+      setSettings(next);
+      await window.proyector?.setSettings(next);
+    }
+    await send({ ...blankPayload(settings, workspaceFadeMs), mode: "logo", logoImagePath });
   }, [live, send, chrome, settings, showBlank, workspaceFadeMs]);
 
   const startCountdown = useCallback(async (minutes: number) => {
@@ -815,6 +832,7 @@ export function OperatorApp() {
           theme: next.theme,
           backgroundColor: next.backgroundColor,
           backgroundImagePath: next.backgroundImagePath,
+          logoImagePath: next.logoImagePath,
           referenceColor: next.accentColor,
           versionColor: next.accentColor,
           // Style-only resync of the cleared screen: keep the fade it was
@@ -833,6 +851,7 @@ export function OperatorApp() {
         theme: next.theme,
         backgroundColor: next.backgroundColor,
         backgroundImagePath: next.backgroundImagePath,
+        logoImagePath: next.logoImagePath,
         referenceColor: next.accentColor,
         versionColor: next.accentColor,
         fadeMs: live.fadeMs ?? next.fadeMs,

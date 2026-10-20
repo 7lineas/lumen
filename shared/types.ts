@@ -74,6 +74,8 @@ export interface ProjectorPayload {
    * Managed background media path. Kept optional so blank/logo payloads stay lean.
    */
   backgroundImagePath?: string | null;
+  /** Managed logo image shown on the logo screen. */
+  logoImagePath?: string | null;
   /** Managed per-slide image (PNG) for diapositivas. */
   slideImagePath?: string | null;
   /** Countdown on screen: the caption above the time, and when it reaches zero (epoch ms). */
@@ -104,8 +106,10 @@ export interface AppSettings {
   /** Project song lyrics in capitals. Songs only: Bible text is never changed. */
   songUppercase: boolean;
   backgroundFadeMs: number;
-  /** Name shown on the logo screen. */
+  /** Name shown on the logo screen. Unused now that the logo screen shows an image. */
   churchName: string;
+  /** Managed logo image copied into app data. Null until the operator picks one. */
+  logoImagePath: string | null;
   /** 0.35–1, applied on the projector. */
   brightness: number;
   /** Uniform projector content padding in viewport width units. */
@@ -133,6 +137,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   songUppercase: false,
   backgroundFadeMs: 100,
   churchName: "Iglesia",
+  logoImagePath: null,
   brightness: 0.4,
   padding: 9,
   accentColor: "#f6a623",

@@ -39,7 +39,7 @@ export function rangeFromVerseClick(
  */
 export function payloadContentKey(p: ProjectorPayload | null): string {
   if (!p || p.mode === "blank") return "blank";
-  if (p.mode === "logo") return `logo:${p.churchName}`;
+  if (p.mode === "logo") return `logo:${p.logoImagePath ?? ""}`;
   // Play, pause and seek keep the key: they are not a new take.
   if (p.mode === "video") return `video:${p.video?.path ?? ""}`;
   if (p.mode === "countdown") return `countdown:${p.countdown?.caption ?? ""}|${p.countdown?.endsAt ?? 0}`;

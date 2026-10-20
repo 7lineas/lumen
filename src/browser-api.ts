@@ -96,7 +96,7 @@ const browserApi = new Proxy({} as ProyectorApi, {
     if (property === "listDisplays") return async () => [];
     if (property === "getProjectorBounds") return async () => null;
     if (property === "onProjectorBounds" || property === "onOperatorShortcut" || property === "onAppUpdateState") return () => () => undefined;
-    if (property === "pickBibleImport" || property === "pickBackgroundImage" || property === "importSlideDeck" || property === "startAppUpdate" || property === "installAppUpdate" || property === "checkAppUpdate") {
+    if (property === "pickBibleImport" || property === "pickBackgroundImage" || property === "pickLogoImage" || property === "importSlideDeck" || property === "startAppUpdate" || property === "installAppUpdate" || property === "checkAppUpdate") {
       return async () => { throw new Error("Esta operación requiere la aplicación de escritorio Lumen."); };
     }
     if (property === "cancelBibleImport" || property === "discardSlideSource") return async () => undefined;

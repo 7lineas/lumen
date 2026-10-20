@@ -90,6 +90,7 @@ export interface ProyectorApi {
   onProjectorBounds: (cb: (bounds: { width: number; height: number }) => void) => () => void;
   showOnProjector: (p: ProjectorPayload) => Promise<boolean>;
   pickBackgroundImage: () => Promise<string | null>;
+  pickLogoImage: () => Promise<string | null>;
   saveBackgroundThumbnail: (videoPath: string, jpegBase64: string) => Promise<boolean>;
   deleteBackgroundMedia: (path: string) => Promise<boolean>;
   getAppUpdateState: () => Promise<AppUpdateState>;

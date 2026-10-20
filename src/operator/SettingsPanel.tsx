@@ -5,8 +5,9 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import QRCode from "qrcode";
-import { Check, Copy, MonitorPlay, Palette, Timer, Wifi, type LucideIcon } from "lucide-react";
+import { Check, Church, Copy, MonitorPlay, Palette, Timer, Wifi, type LucideIcon } from "lucide-react";
 import type { AppSettings, BibleVersionMeta } from "@shared/types";
+import { backgroundImageUrl } from "@shared/background-image";
 import type { DisplayInfo } from "../vite-env.d";
 import type { BrowserAccessInfo } from "../vite-env.d";
 import { TransitionRow } from "./TransitionRow";
@@ -121,6 +122,15 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
     void window.proyector?.listDisplays().then(setDisplays);
     if (!window.__LUMEN_BROWSER__ && !browserAccessCache) void window.proyector?.getBrowserAccess().then(setBrowserAccess);
   }, []);
+
+  const pickLogo = async () => {
+    try {
+      const path = await window.proyector?.pickLogoImage();
+      if (path) setLocal((current) => ({ ...current, logoImagePath: path }));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo elegir el logo");
+    }
+  };
 
   const copyPairingCode = async (code: string) => {
     try {
@@ -260,6 +270,19 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
               onChange={(e) => setLocal({ ...local, accentColor: e.target.value })}
             />
           </label>
+        </SettingRow>
+      </SettingsGroup>
+
+      <SettingsGroup icon={Church} title="Logo">
+        <SettingRow label="Imagen del logo" hint="Se muestra con el botón Logo">
+          <div className="ajustes-logo">
+            {local.logoImagePath && (
+              <img className="ajustes-logo-preview" src={backgroundImageUrl(local.logoImagePath)} alt="Logo actual" />
+            )}
+            <Button type="button" variant="outline" size="sm" onClick={() => void pickLogo()}>
+              {local.logoImagePath ? "Cambiar" : "Agregar"}
+            </Button>
+          </div>
         </SettingRow>
       </SettingsGroup>
 
