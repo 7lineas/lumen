@@ -1064,6 +1064,35 @@ registerIpcHandle("slides:readFile", (_e, file: string): string | null => {
   }
 });
 
+/** Copy a media item out of app data: one file for video or audio, numbered PNGs in a folder for slides. */
+registerIpcHandle("media:download", async (_e, item: StoredSlideDeck): Promise<boolean> => {
+  const base = (typeof item?.title === "string" ? item.title : "").replace(/[\\/:*?"<>|]+/g, "_").trim() || "media";
+  try {
+    if (item?.kind === "video" || item?.kind === "audio") {
+      if (!isInDir(item.file, mediaFilesDir())) return false;
+      const result = await dialog.showSaveDialog(operatorWindow!, { defaultPath: `${base}${path.extname(item.file)}` });
+      if (result.canceled || !result.filePath) return false;
+      await fs.promises.copyFile(item.file, result.filePath);
+      return true;
+    }
+    const images = Array.isArray(item?.images) ? item.images : [];
+    if (images.length === 0 || !images.every((image) => isInDir(image, slideImagesDir()))) return false;
+    const result = await dialog.showOpenDialog(operatorWindow!, { properties: ["openDirectory", "createDirectory"] });
+    if (result.canceled || result.filePaths.length === 0) return false;
+    const dir = path.join(result.filePaths[0], base);
+    fs.mkdirSync(dir, { recursive: true });
+    images.forEach((image, index) => fs.copyFileSync(image, path.join(dir, `${String(index + 1).padStart(2, "0")}.png`)));
+    return true;
+  } catch (error) {
+    console.error("[media] could not download item", error);
+    return false;
+  }
+});
+
+function isInDir(file: unknown, dir: string): file is string {
+  return typeof file === "string" && path.resolve(file).startsWith(`${path.resolve(dir)}${path.sep}`);
+}
+
 /** Persist rasterized slide PNGs (base64) as managed images. Returns stored paths. */
 registerIpcHandle("slides:savePngs", (_e, images: string[]): string[] | null => {
   const stored: string[] = [];

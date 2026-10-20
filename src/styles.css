@@ -5119,6 +5119,11 @@ button.primary:not(:disabled):active,
   display: flex;
 }
 
+/* An open row menu keeps its trigger, and so the actions, visible. */
+.lx-item-actions:has(.lx-ghost.on) {
+  display: flex;
+}
+
 .lx-item-actions.keep {
   display: flex;
 }

@@ -79,6 +79,7 @@ contextBridge.exposeInMainWorld("proyector", {
   discardSlideSource: (file: string): Promise<boolean> => ipcRenderer.invoke("slides:discardSource", file),
   readSlideSource: (file: string): Promise<string | null> => ipcRenderer.invoke("slides:readFile", file),
   saveSlidePngs: (images: string[]): Promise<string[] | null> => ipcRenderer.invoke("slides:savePngs", images),
+  downloadMediaItem: (item: StoredSlideDeck): Promise<boolean> => ipcRenderer.invoke("media:download", item),
   convertPptx: (request: { deckId: string; file: string; total: number }): Promise<{ ok: true; images: string[] } | { ok: false; error: string }> =>
     ipcRenderer.invoke("slides:convertPptx", request),
   onSlideProgress: (callback: (progress: { deckId: string; done: number; total: number }) => void): (() => void) => {

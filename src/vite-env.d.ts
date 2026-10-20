@@ -81,6 +81,7 @@ export interface ProyectorApi {
   discardSlideSource: (file: string) => Promise<boolean>;
   readSlideSource: (file: string) => Promise<string | null>;
   saveSlidePngs: (images: string[]) => Promise<string[] | null>;
+  downloadMediaItem: (item: StoredSlideDeck) => Promise<boolean>;
   convertPptx: (request: { deckId: string; file: string; total: number }) => Promise<{ ok: true; images: string[] } | { ok: false; error: string }>;
   onSlideProgress: (callback: (progress: { deckId: string; done: number; total: number }) => void) => () => void;
   listDisplays: () => Promise<DisplayInfo[]>;
