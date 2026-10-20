@@ -15,11 +15,12 @@ interface Props {
   editLabel: string;
   /** Receives the list row that holds the trigger. */
   onEdit: (row: HTMLElement) => void;
-  onDownload: () => void;
+  /** Omit when the item has nothing to download. */
+  onDownload?: () => void;
   onDelete: () => void;
 }
 
-/** Row menu with edit, download and remove, opened from a ⋮ button. */
+/** Row menu with edit, download (when there is one) and remove, opened from a ⋮ button. */
 export function ItemMenu({ label, testId, editLabel, onEdit, onDownload, onDelete }: Props) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -39,9 +40,11 @@ export function ItemMenu({ label, testId, editLabel, onEdit, onDownload, onDelet
         <DropdownMenuItem onClick={() => onEdit(triggerRef.current!.closest(".lx-item") as HTMLElement)}>
           <Pencil /> {editLabel}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={onDownload}>
-          <Download /> Descargar
-        </DropdownMenuItem>
+        {onDownload && (
+          <DropdownMenuItem onClick={onDownload}>
+            <Download /> Descargar
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" onClick={onDelete}>
           <Trash2 /> Eliminar

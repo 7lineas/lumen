@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Pencil, Pin, Plus, Trash2 } from "lucide-react";
+import { Pencil, Pin, Plus } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import type { StoredSong } from "@shared/types";
 import { songParts, type SongSection } from "@shared/song-sections";
 import { SearchIcon, SongIcon } from "./icons";
+import { ItemMenu } from "./ItemMenu";
 import { SlideTile } from "./SlideTile";
 import { SongDialog, type SongDraft } from "./SongDialog";
 
@@ -177,9 +178,13 @@ export function SongsWorkspace({ staged, selectedId, liveText, liveIndex, projec
                 </span>
               </button>
               <span className={`lx-item-actions${song.pinned ? " keep" : ""}`}>
-                <button type="button" className="lx-ghost" aria-label={`Eliminar ${song.title}`} title="Eliminar" data-testid={`btn-delete-song-${song.id}`} onClick={() => setDeletingId(song.id)}>
-                  <Trash2 />
-                </button>
+                <ItemMenu
+                  label={song.title}
+                  testId={`btn-menu-song-${song.id}`}
+                  editLabel="Editar"
+                  onEdit={() => setEditing(song.id)}
+                  onDelete={() => setDeletingId(song.id)}
+                />
                 <AlertDialog open={deletingId === song.id} onOpenChange={(open) => setDeletingId(open ? song.id : null)}>
                   <AlertDialogContent>
                     <AlertDialogHeader>
@@ -192,9 +197,6 @@ export function SongsWorkspace({ staged, selectedId, liveText, liveIndex, projec
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
-                <button type="button" className="lx-ghost" aria-label={`Editar ${song.title}`} title="Editar" data-testid={`btn-edit-song-${song.id}`} onClick={() => setEditing(song.id)}>
-                  <Pencil />
-                </button>
                 <button type="button" className={song.pinned ? "lx-ghost on" : "lx-ghost"} aria-label={song.pinned ? "Desfijar canción" : "Fijar canción"} aria-pressed={song.pinned} title={song.pinned ? "Desfijar" : "Fijar"} data-testid={`btn-pin-song-${song.id}`} onClick={() => togglePin(song.id)}>
                   <Pin />
                 </button>
