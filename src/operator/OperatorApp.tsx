@@ -461,7 +461,8 @@ export function OperatorApp() {
     if (next) setHistory(next);
   }, [previewPayload, staged, send, primaryId]);
 
-  const songPayload = useCallback((_title: string, text: string): ProjectorPayload => ({
+  // A song's own velocity wins over Ajustes > Canciones; textos pass no fadeMs and keep the setting.
+  const songPayload = useCallback((_title: string, text: string, fadeMs?: number): ProjectorPayload => ({
     mode: "verse",
     // Song titles are never projected; the operator sees them in the library.
     referenceLabel: "",
@@ -475,7 +476,7 @@ export function OperatorApp() {
     referenceColor: settings.accentColor,
     versionColor: settings.accentColor,
     backgroundImagePath: settings.backgroundImagePath,
-    fadeMs: settings.songFadeMs,
+    fadeMs: fadeMs ?? settings.songFadeMs,
     backgroundFadeMs: settings.backgroundFadeMs,
   }), [settings]);
 
@@ -495,14 +496,14 @@ export function OperatorApp() {
     if (!songStaged || songStaged.slides.length === 0) return null;
     const text = songStaged.slides[songStaged.index] ?? songStaged.slides[0];
     if (text == null) return null;
-    return songPayload(songStaged.title, text);
+    return songPayload(songStaged.title, text, songStaged.fadeMs);
   }, [songStaged, songPayload]);
 
   const selectSong = useCallback((songId: string | null, selection: SongSelection | null) => {
     setSongSelectedId(songId);
     setSongStaged(
       selection && selection.slides.length > 0
-        ? { title: selection.title, slides: selection.slides, labels: selection.labels, index: selection.index ?? 0 }
+        ? { title: selection.title, slides: selection.slides, labels: selection.labels, index: selection.index ?? 0, fadeMs: selection.fadeMs }
         : null,
     );
   }, []);
@@ -515,7 +516,7 @@ export function OperatorApp() {
       const text = next.slides[clamped];
       if (projectOnClick && text != null) {
         setSongLive(next);
-        void send(songPayload(next.title, text));
+        void send(songPayload(next.title, text, next.fadeMs));
       }
       return next;
     });
@@ -528,7 +529,7 @@ export function OperatorApp() {
     const next = { ...songStaged, index };
     setSongStaged(next);
     setSongLive(next);
-    void send(songPayload(next.title, text));
+    void send(songPayload(next.title, text, next.fadeMs));
   }, [songStaged, send, songPayload]);
 
   const projectSongStaged = useCallback(async () => {
@@ -536,7 +537,7 @@ export function OperatorApp() {
     const text = songStaged.slides[songStaged.index] ?? songStaged.slides[0];
     if (text == null) return;
     setSongLive(songStaged);
-    await send(songPayload(songStaged.title, text));
+    await send(songPayload(songStaged.title, text, songStaged.fadeMs));
   }, [songStaged, send, songPayload]);
 
   const navigateSongPreview = useCallback((delta: number) => {
@@ -556,7 +557,7 @@ export function OperatorApp() {
     const text = next.slides[clamped];
     if (text == null) return;
     setSongLive(next);
-    await send(songPayload(next.title, text));
+    await send(songPayload(next.title, text, next.fadeMs));
   }, [songLive, send, songPayload]);
 
   // Textos are projected like songs, but the uppercase setting is for songs only.
@@ -759,12 +760,15 @@ export function OperatorApp() {
   // Songs and textos are both lyric-style: they share the text fade and the blank screen.
   const lyricsWorkspace = mode === "canciones" || mode === "textos";
 
+  // The song staged on screen uses its own velocity when it has one.
+  const lyricsFadeMs = mode === "canciones" ? (songStaged?.fadeMs ?? settings.songFadeMs) : settings.songFadeMs;
+
   const showBlank = useCallback(async () => {
     // "Limpiar" clears only the text (verse/song/slide). Background color and
     // media stay so the projector keeps showing them behind empty content.
     // The blank transition uses the current workspace's fade setting.
-    await send(blankPayload(settings, mode === "media" ? settings.backgroundFadeMs : lyricsWorkspace ? settings.songFadeMs : settings.fadeMs));
-  }, [send, settings, mode, lyricsWorkspace]);
+    await send(blankPayload(settings, mode === "media" ? settings.backgroundFadeMs : lyricsWorkspace ? lyricsFadeMs : settings.fadeMs));
+  }, [send, settings, mode, lyricsWorkspace, lyricsFadeMs]);
 
   const toggleBlank = useCallback(async () => {
     if (live?.mode === "blank") {
@@ -775,7 +779,7 @@ export function OperatorApp() {
   }, [live, send, chrome, showBlank]);
 
   // Fade used by the logo and countdown screens: the workspace on screen decides.
-  const workspaceFadeMs = mode === "media" ? settings.backgroundFadeMs : lyricsWorkspace ? settings.songFadeMs : settings.fadeMs;
+  const workspaceFadeMs = mode === "media" ? settings.backgroundFadeMs : lyricsWorkspace ? lyricsFadeMs : settings.fadeMs;
 
   // Logo replaces the text; pressing it again brings back what was on screen.
   const toggleLogo = useCallback(async () => {
@@ -1218,6 +1222,7 @@ export function OperatorApp() {
             liveText={live?.mode === "verse" && !live.referenceLabel ? live.blocks[0]?.text ?? null : null}
             liveIndex={songLive && songStaged && songLive.title === songStaged.title && songLive.slides[songLive.index] === songStaged.slides[songLive.index] ? songLive.index : null}
             projectOnClick={projectOnClick}
+            defaultFadeMs={settings.songFadeMs}
             onToggleProjectOnClick={setProjectOnClick}
             onSelectSong={selectSong}
             onSelectPart={selectSongPart}

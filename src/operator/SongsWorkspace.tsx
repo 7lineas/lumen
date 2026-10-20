@@ -26,6 +26,8 @@ export interface SongStage {
   /** Label of each part ("Coro"), empty for unlabelled parts. */
   labels: string[];
   index: number;
+  /** The song's own transition duration; undefined follows Ajustes > Canciones. */
+  fadeMs?: number;
 }
 
 /** What the workspace hands up when a song changes. */
@@ -39,6 +41,8 @@ interface Props {
   /** Position of that part in the staged song, when it was projected from it (a repeated chorus is live only once). */
   liveIndex?: number | null;
   projectOnClick: boolean;
+  /** Ajustes > Canciones transition, shown in the song dialog as the default. */
+  defaultFadeMs: number;
   onToggleProjectOnClick: (value: boolean) => void;
   onSelectSong: (songId: string | null, selection: SongSelection | null) => void;
   onSelectPart: (index: number) => void;
@@ -58,12 +62,13 @@ function stageOf(song: Song, index = 0): SongSelection {
     slides: parts.map((part) => part.text),
     labels: parts.map((part) => part.label),
     index: Math.min(Math.max(index, 0), Math.max(parts.length - 1, 0)),
+    fadeMs: song.fadeMs,
   };
 }
 
 const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
 
-export function SongsWorkspace({ staged, selectedId, liveText, liveIndex, projectOnClick, onToggleProjectOnClick, onSelectSong, onSelectPart, onTakePart }: Props) {
+export function SongsWorkspace({ staged, selectedId, liveText, liveIndex, projectOnClick, defaultFadeMs, onToggleProjectOnClick, onSelectSong, onSelectPart, onTakePart }: Props) {
   const [songs, setSongs] = useState<Song[]>([]);
   const [songsLoaded, setSongsLoaded] = useState(false);
   const [query, setQuery] = useState("");
@@ -122,6 +127,8 @@ export function SongsWorkspace({ staged, selectedId, liveText, liveIndex, projec
     const next: Song = { ...base, title: draft.title, lyrics: draft.lyrics, updatedAt: Date.now() };
     if (draft.author) next.author = draft.author;
     else delete next.author;
+    if (draft.fadeMs !== undefined) next.fadeMs = draft.fadeMs;
+    else delete next.fadeMs;
     setSongs((current) => (stored ? current.map((song) => (song.id === next.id ? next : song)) : [next, ...current]));
     setEditing(null);
     setQuery("");
@@ -269,7 +276,7 @@ export function SongsWorkspace({ staged, selectedId, liveText, liveIndex, projec
         )}
       </main>
 
-      <SongDialog open={editing !== null} song={editingSong} onOpenChange={(open) => !open && setEditing(null)} onSave={save} onDelete={() => { if (editingSong) removeSong(editingSong); }} />
+      <SongDialog open={editing !== null} song={editingSong} defaultFadeMs={defaultFadeMs} onOpenChange={(open) => !open && setEditing(null)} onSave={save} onDelete={() => { if (editingSong) removeSong(editingSong); }} />
     </>
   );
 }

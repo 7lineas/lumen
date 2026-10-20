@@ -857,6 +857,7 @@ registerIpcHandle("songs:set", (_e, songs: StoredSong[]) => {
         title: song.title,
         ...(typeof song.author === "string" && song.author.trim() ? { author: song.author.trim() } : {}),
         lyrics: song.lyrics,
+        ...(typeof song.fadeMs === "number" && Number.isFinite(song.fadeMs) ? { fadeMs: Math.min(Math.max(song.fadeMs, 0), 2000) } : {}),
         updatedAt: Number.isFinite(song.updatedAt) ? song.updatedAt : Date.now(),
         pinned: Boolean(song.pinned),
       }))
