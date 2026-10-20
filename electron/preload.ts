@@ -98,6 +98,7 @@ contextBridge.exposeInMainWorld("proyector", {
   },
   showOnProjector: (p: ProjectorPayload): Promise<boolean> => ipcRenderer.invoke("projector:show", p),
   pickBackgroundImage: (): Promise<string | null> => ipcRenderer.invoke("dialog:openImage"),
+  pickLogoImage: (): Promise<string | null> => ipcRenderer.invoke("logo:pick"),
   saveBackgroundThumbnail: (filePath: string, jpegBase64: string): Promise<boolean> =>
     ipcRenderer.invoke("background:saveThumbnail", filePath, jpegBase64),
   deleteBackgroundMedia: (filePath: string): Promise<boolean> => ipcRenderer.invoke("background:delete", filePath),

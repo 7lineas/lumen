@@ -43,7 +43,7 @@ function mediaFilesDir(): string {
 }
 
 /** Folders under userData whose files may be shown or played in the app windows. */
-const SERVED_MEDIA_DIRS = ["background-images", "slide-images", "media-files"];
+const SERVED_MEDIA_DIRS = ["background-images", "logo-images", "slide-images", "media-files"];
 
 const MEDIA_CONTENT_TYPES: Record<string, string> = {
   ".mp4": "video/mp4", ".m4v": "video/mp4", ".mov": "video/quicktime", ".webm": "video/webm", ".ogv": "video/ogg",
@@ -1157,6 +1157,28 @@ registerIpcHandle("dialog:openImage", async () => {
     fs.copyFileSync(filePath, storedPath);
     // Persist the managed copy path, never the user's original location.
     // The renderer converts this path to a file URL when it needs to display it.
+    return storedPath;
+  } catch {
+    return null;
+  }
+});
+
+// The logo image is a single managed copy: picking a new one adds a file and
+// the settings point at it. Old copies are left in place (they are small).
+registerIpcHandle("logo:pick", async (): Promise<string | null> => {
+  const result = await dialog.showOpenDialog(operatorWindow!, {
+    title: "Elegir logo",
+    filters: [{ name: "Imágenes", extensions: ["png", "jpg", "jpeg", "webp"] }],
+    properties: ["openFile"],
+  });
+  if (result.canceled || !result.filePaths[0]) return null;
+  const filePath = result.filePaths[0];
+  try {
+    const logosDir = path.join(app.getPath("userData"), "logo-images");
+    fs.mkdirSync(logosDir, { recursive: true });
+    const ext = path.extname(filePath).toLowerCase();
+    const storedPath = path.join(logosDir, `${Date.now()}-${Math.random().toString(36).slice(2, 9)}${ext}`);
+    fs.copyFileSync(filePath, storedPath);
     return storedPath;
   } catch {
     return null;

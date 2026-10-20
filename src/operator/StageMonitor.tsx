@@ -139,7 +139,8 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
   // parallel with the slide.
   const incomingMode = (isLive ? payload : renderPayload)?.mode;
   const slidesActive = incomingMode === "slides" || incomingMode === "video";
-  const backgroundPath = slidesActive ? undefined : renderPayload?.backgroundImagePath;
+  // The logo takes the fondo's place (covering), as on the projector.
+  const backgroundPath = isLogo ? renderPayload?.logoImagePath : slidesActive ? undefined : renderPayload?.backgroundImagePath;
   const backgroundFadeMs = Math.max(0, renderPayload?.backgroundFadeMs ?? DEFAULT_SETTINGS.backgroundFadeMs);
   const pad = renderPayload?.padding ?? DEFAULT_SETTINGS.padding;
 
@@ -234,7 +235,6 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
   const screenContent = (
     <>
       {!renderPayload && empty && <p className="monitor-screen-empty">{empty}</p>}
-      {isLogo && <p className="monitor-screen-logo" style={{ fontSize: `${fitPx * 0.65}px` }}>{renderPayload?.churchName}</p>}
       {slideImage && (
         <img src={backgroundImageUrl(slideImage)} alt="" className="monitor-screen-slide" style={{ objectFit: slideFit }} />
       )}
@@ -319,7 +319,7 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
               filter: `brightness(${brightness})`,
             }}
           />
-          <FadingBackgroundMedia path={backgroundPath} brightness={brightness} fadeMs={backgroundFadeMs} fit={backgroundFit} className="monitor-background-media" />
+          <FadingBackgroundMedia path={backgroundPath} brightness={brightness} fadeMs={backgroundFadeMs} fit={isLogo ? "cover" : backgroundFit} className="monitor-background-media" />
           <div
             className={`monitor-screen-fade ${!isLive || visible ? "show" : ""}`}
             style={{ transitionDuration: `${fadeMs}ms` }}
