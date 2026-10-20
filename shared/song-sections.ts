@@ -22,27 +22,6 @@ export interface ParsedSong {
 
 const LABEL_WORD = /^(verso|estrofa|coro|puente|pre-?coro|estribillo|refr[áa]n|intro|outro|final|tag|interludio|verse|chorus|bridge|pre-?chorus|refrain)(\s+\d+)?\s*:?$/i;
 
-/** Part names offered when writing a song; numbered ones count up as they are added. */
-export const SECTION_PRESETS: ReadonlyArray<{ label: string; numbered: boolean }> = [
-  { label: "Verso", numbered: true },
-  { label: "Coro", numbered: false },
-  { label: "Pre-coro", numbered: false },
-  { label: "Puente", numbered: false },
-  { label: "Intro", numbered: false },
-  { label: "Final", numbered: false },
-];
-
-/** Label for the next part of a kind: "Verso 3" after two verses, plain "Coro" for unnumbered kinds. */
-export function nextSectionLabel(lyrics: string, preset: { label: string; numbered: boolean }): string {
-  if (!preset.numbered) return preset.label;
-  const prefix = `${slug(preset.label)}-`;
-  const used = parseSong(lyrics).sections
-    .map((section) => slug(section.label))
-    .filter((key) => key.startsWith(prefix))
-    .map((key) => Number(key.slice(prefix.length)))
-    .filter(Number.isFinite);
-  return `${preset.label} ${Math.max(0, ...used) + 1}`;
-}
 const LABEL_BRACKET = /^\[([^\]]+)\]$/;
 
 /** Label written on the first line of a block, or null when the block has none. */

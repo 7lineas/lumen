@@ -234,7 +234,6 @@ export function TextsWorkspace({ staged, selectedId, liveText, liveIndex, projec
                       <span className="lx-tag-live">En vivo</span>
                       <span className="lx-card-foot">
                         <span className="num">{index + 1}</span>
-                        <span className="lab">{text.split("\n")[0]}</span>
                       </span>
                     </button>
                   );

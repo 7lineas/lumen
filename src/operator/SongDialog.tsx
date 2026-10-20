@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Plus } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -12,9 +11,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { StoredSong } from "@shared/types";
-import { SECTION_PRESETS, nextSectionLabel, parseSong } from "@shared/song-sections";
 
 export interface SongDraft {
   title: string;
@@ -38,8 +36,6 @@ export function SongDialog({ open, song, onOpenChange, onSave, onDelete }: Props
   const [author, setAuthor] = useState("");
   const [lyrics, setLyrics] = useState("");
   const lyricsRef = useRef<HTMLTextAreaElement>(null);
-  // Where the caret goes after a part name is inserted (applied once React has written the text).
-  const caret = useRef<number | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -48,28 +44,7 @@ export function SongDialog({ open, song, onOpenChange, onSave, onDelete }: Props
     setLyrics(song?.lyrics ?? "");
   }, [open, song]);
 
-  useEffect(() => {
-    const el = lyricsRef.current;
-    if (!el || caret.current === null) return;
-    el.focus();
-    el.setSelectionRange(caret.current, caret.current);
-    caret.current = null;
-  }, [lyrics]);
-
-  const parsed = useMemo(() => parseSong(lyrics), [lyrics]);
   const canSave = title.trim() !== "";
-
-  // Starts a new part at the caret: a blank line, the name in brackets, and the caret ready for its text.
-  const insertSection = (label: string) => {
-    const el = lyricsRef.current;
-    const start = el?.selectionStart ?? lyrics.length;
-    const end = el?.selectionEnd ?? lyrics.length;
-    const before = lyrics.slice(0, start).replace(/\s+$/, "");
-    const after = lyrics.slice(end).replace(/^\s+/, "");
-    const head = `${before ? `${before}\n\n` : ""}[${label}]\n`;
-    caret.current = head.length;
-    setLyrics(`${head}${after ? `\n\n${after}` : ""}`);
-  };
 
   const submit = () => {
     if (!canSave) return;
@@ -81,7 +56,6 @@ export function SongDialog({ open, song, onOpenChange, onSave, onDelete }: Props
       <DialogContent className="lx-dialog" data-testid="song-dialog">
         <DialogHeader>
           <DialogTitle>{song ? "Editar canción" : "Nueva canción"}</DialogTitle>
-          <DialogDescription>Cada parte es una diapositiva. Sepáralas con una línea en blanco.</DialogDescription>
         </DialogHeader>
         <form
           className="lx-form"
@@ -100,13 +74,6 @@ export function SongDialog({ open, song, onOpenChange, onSave, onDelete }: Props
           </label>
           <div className="lx-field">
             <span id="song-lyrics-label">Letra</span>
-            <div className="lx-insert" role="group" aria-label="Añadir una parte a la letra">
-              {SECTION_PRESETS.map((preset) => (
-                <button key={preset.label} type="button" className="lx-chip-add" onClick={() => insertSection(nextSectionLabel(lyrics, preset))}>
-                  <Plus /> {preset.label}
-                </button>
-              ))}
-            </div>
             <textarea
               ref={lyricsRef}
               aria-labelledby="song-lyrics-label"
@@ -117,10 +84,6 @@ export function SongDialog({ open, song, onOpenChange, onSave, onDelete }: Props
               placeholder={LYRICS_PLACEHOLDER}
               data-testid="song-lyrics"
             />
-            <small>
-              Empieza una parte con su nombre entre corchetes: [Verso 1], [Coro], [Puente]. Para repetir el coro, escribe [Coro] otra vez, sin letra.
-              {parsed.order.length > 0 && ` Ahora: ${parsed.order.length} ${parsed.order.length === 1 ? "diapositiva" : "diapositivas"}.`}
-            </small>
           </div>
           <div className="lx-form-actions">
             {song && (
