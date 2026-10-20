@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Pencil, Pin, Plus, Trash2 } from "lucide-react";
+import { Pencil, Pin, Plus } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import type { StoredText } from "@shared/types";
 import { textSlides } from "@shared/text-slides";
 import { SearchIcon, TextIcon } from "./icons";
+import { ItemMenu } from "./ItemMenu";
 import { SlideTile } from "./SlideTile";
 import { TextDialog, type TextDraft } from "./TextDialog";
 import type { SongSelection, SongStage } from "./SongsWorkspace";
@@ -162,9 +163,13 @@ export function TextsWorkspace({ staged, selectedId, liveText, liveIndex, projec
                 </span>
               </button>
               <span className={`lx-item-actions${text.pinned ? " keep" : ""}`}>
-                <button type="button" className="lx-ghost" aria-label={`Eliminar ${text.title}`} title="Eliminar" data-testid={`btn-delete-text-${text.id}`} onClick={() => setDeletingId(text.id)}>
-                  <Trash2 />
-                </button>
+                <ItemMenu
+                  label={text.title}
+                  testId={`btn-menu-text-${text.id}`}
+                  editLabel="Editar"
+                  onEdit={() => setEditing(text.id)}
+                  onDelete={() => setDeletingId(text.id)}
+                />
                 <AlertDialog open={deletingId === text.id} onOpenChange={(open) => setDeletingId(open ? text.id : null)}>
                   <AlertDialogContent>
                     <AlertDialogHeader>
@@ -177,9 +182,6 @@ export function TextsWorkspace({ staged, selectedId, liveText, liveIndex, projec
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
-                <button type="button" className="lx-ghost" aria-label={`Editar ${text.title}`} title="Editar" data-testid={`btn-edit-text-${text.id}`} onClick={() => setEditing(text.id)}>
-                  <Pencil />
-                </button>
                 <button type="button" className={text.pinned ? "lx-ghost on" : "lx-ghost"} aria-label={text.pinned ? "Desfijar texto" : "Fijar texto"} aria-pressed={text.pinned} title={text.pinned ? "Desfijar" : "Fijar"} data-testid={`btn-pin-text-${text.id}`} onClick={() => togglePin(text.id)}>
                   <Pin />
                 </button>
