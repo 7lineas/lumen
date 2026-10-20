@@ -77,7 +77,7 @@ function describe(item: MediaItem): string {
   const kind = mediaKind(item);
   if (kind === "video") return "Video";
   if (kind === "audio") return "Audio";
-  return `${item.images.length} ${item.images.length === 1 ? "diapositiva" : "diapositivas"}`;
+  return `${item.images.length} ${item.images.length === 1 ? "item" : "items"}`;
 }
 
 const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
