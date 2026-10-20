@@ -7,15 +7,17 @@ interface Props {
   value: MediaFit;
   onChange: (value: MediaFit) => void;
   testId?: string;
+  /** Gap between the two options (ToggleGroup spacing units). Defaults to 0 (joined). */
+  spacing?: number;
 }
 
 /** Two-option segmented control: "Cubrir" (cover) / "Ajustar" (contain). */
-export function FitToggle({ label, value, onChange, testId }: Props) {
+export function FitToggle({ label, value, onChange, testId, spacing = 0 }: Props) {
   return (
     <ToggleGroup
       variant="outline"
       size="sm"
-      spacing={0}
+      spacing={spacing}
       className="fit-toggle"
       aria-label={label}
       data-testid={testId}
