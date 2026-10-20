@@ -161,6 +161,8 @@ export interface StoredSong {
   /** Author or credit, shown in the library only (never projected). */
   author?: string;
   lyrics: string;
+  /** Transition duration in ms for this song. Unset: Ajustes > Canciones applies. */
+  fadeMs?: number;
   updatedAt: number;
   pinned: boolean;
 }

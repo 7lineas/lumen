@@ -1,15 +1,15 @@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import QRCode from "qrcode";
-import { Check, Copy, MonitorPlay, Palette, Play, Rabbit, Timer, Turtle, Wifi, type LucideIcon } from "lucide-react";
+import { Check, Copy, MonitorPlay, Palette, Timer, Wifi, type LucideIcon } from "lucide-react";
 import type { AppSettings, BibleVersionMeta } from "@shared/types";
 import type { DisplayInfo } from "../vite-env.d";
 import type { BrowserAccessInfo } from "../vite-env.d";
+import { TransitionRow } from "./TransitionRow";
 
 /** Read once when the app starts, so opening Ajustes already has the access state and QR codes. */
 let browserAccessCache: BrowserAccessInfo | null = null;
@@ -65,80 +65,6 @@ function SettingRow({ label, hint, children }: { label: string; hint?: string; c
   );
 }
 
-type DemoContent = "hebrew" | "letra" | "gradient";
-
-/** A small sample that fades in and out with the chosen duration. */
-function TransitionDemo({ ms, runKey, content }: { ms: number; runKey: number; content: DemoContent }) {
-  const [shown, setShown] = useState(false);
-
-  useEffect(() => {
-    if (runKey === 0) return;
-    setShown(false);
-    const show = window.setTimeout(() => setShown(true), 250);
-    const hide = window.setTimeout(() => setShown(false), 250 + ms + 900);
-    return () => {
-      window.clearTimeout(show);
-      window.clearTimeout(hide);
-    };
-  }, [runKey, ms]);
-
-  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  return (
-    <div className="ajustes-demo" aria-hidden>
-      <div
-        className={`ajustes-demo-card is-${content}`}
-        style={{ opacity: shown ? 1 : 0, transitionDuration: reduceMotion ? "0ms" : `${ms}ms` }}
-      >
-        {content === "hebrew" && <span className="ajustes-demo-text" lang="he" dir="rtl">ישוע</span>}
-        {content === "letra" && <span className="ajustes-demo-text">Letra</span>}
-      </div>
-    </div>
-  );
-}
-
-/** The slider runs slow (left) to fast (right), so its value is flipped against the stored ms. */
-const MAX_MS = 2000;
-
-function TransitionRow({
-  label,
-  value,
-  content,
-  onChange,
-}: {
-  label: string;
-  value: number;
-  content: DemoContent;
-  onChange: (ms: number) => void;
-}) {
-  const [runKey, setRunKey] = useState(0);
-  return (
-    <div className="ajustes-transition">
-      <div className="ajustes-transition-head">
-        <span>{label}</span>
-      </div>
-      <div className="ajustes-transition-controls">
-        <Turtle size={16} strokeWidth={1.75} aria-hidden />
-        <Slider
-          className="ajustes-slider"
-          min={0}
-          max={MAX_MS}
-          step={50}
-          value={[MAX_MS - value]}
-          onValueChange={(next) => {
-            const slider = Array.isArray(next) ? next[0] : next;
-            onChange(slider === undefined ? value : MAX_MS - slider);
-            setRunKey((k) => k + 1);
-          }}
-        />
-        <Rabbit size={16} strokeWidth={1.75} aria-hidden />
-        <Button type="button" variant="ghost" size="icon-sm" aria-label={`Probar transición de ${label}`} onClick={() => setRunKey((k) => k + 1)}>
-          <Play size={14} aria-hidden />
-        </Button>
-        <TransitionDemo ms={value} runKey={runKey} content={content} />
-      </div>
-    </div>
-  );
-}
 
 export function SettingsPanel({ settings, versions, onSave }: Props) {
   const [local, setLocal] = useState(settings);
