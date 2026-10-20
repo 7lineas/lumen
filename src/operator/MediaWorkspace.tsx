@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Pencil, Pin, Play, Plus, Trash2, Upload } from "lucide-react";
+import { Pin, Play, Plus, Upload } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,6 +17,7 @@ import { slideLabel } from "@shared/slide-deck";
 import { mediaKind, type MediaFit, type PendingSlideImport, type StoredSlideDeck } from "@shared/types";
 import { FitToggle } from "./FitToggle";
 import { AudioIcon, MediaIcon, SearchIcon, SlidesIcon } from "./icons";
+import { ItemMenu } from "./ItemMenu";
 import { rasterizePdfToPngs } from "./pdfConvert";
 
 const IMPORT_ERRORS: Record<string, string> = {
@@ -328,9 +329,14 @@ export function MediaWorkspace({ staged, selected, liveImage, liveVideo, audioId
                   </button>
                 )}
                 <span className={`lx-item-actions${item.pinned ? " keep" : ""}`}>
-                  <button type="button" className="lx-ghost" aria-label={`Eliminar ${item.title}`} title="Eliminar" onClick={() => setDeletingId(item.id)}>
-                    <Trash2 />
-                  </button>
+                  <ItemMenu
+                    label={item.title}
+                    testId={`btn-menu-media-${item.id}`}
+                    editLabel="Renombrar"
+                    onEdit={(row) => startRename(item, row)}
+                    onDownload={() => void window.proyector?.downloadMediaItem(item)}
+                    onDelete={() => setDeletingId(item.id)}
+                  />
                   <AlertDialog open={deletingId === item.id} onOpenChange={(open) => setDeletingId(open ? item.id : null)}>
                     <AlertDialogContent>
                       <AlertDialogHeader>
@@ -343,15 +349,6 @@ export function MediaWorkspace({ staged, selected, liveImage, liveVideo, audioId
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
-                  <button
-                    type="button"
-                    className="lx-ghost"
-                    aria-label={`Renombrar ${item.title}`}
-                    title="Renombrar"
-                    onClick={(event) => startRename(item, event.currentTarget.closest(".lx-item") as HTMLElement)}
-                  >
-                    <Pencil />
-                  </button>
                   <button
                     type="button"
                     className={item.pinned ? "lx-ghost on" : "lx-ghost"}
