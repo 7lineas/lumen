@@ -2,10 +2,9 @@ import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Church, Keyboard, Palette, Timer, Video, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Church, ImagePlus, Keyboard, Timer, Trash2, Video, X } from "lucide-react";
 import type { AppSettings, HistoryEntry, ProjectorPayload, QueueEntry, VideoPlayback } from "@shared/types";
 import { DEFAULT_SETTINGS, MAX_QUEUE_ITEMS, mediaKind } from "@shared/types";
 import { useBibleLoader } from "../hooks/useBibleLoader";
@@ -1414,6 +1413,58 @@ export function OperatorApp() {
           <section className="lx-panel stage-background">
             <span className="lx-h">Fondo</span>
             <div className="stage-background-row">
+              <div className="stage-background-media">
+                <div className="stage-background-actions">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="icon"
+                  title="Añadir fondo"
+                  aria-label="Añadir fondo"
+                  disabled={backgroundImportBusy}
+                  onClick={async () => {
+                    setBackgroundImportBusy(true);
+                    try {
+                      const path = await window.proyector?.pickBackgroundImage();
+                      if (!path) return;
+                      if (isBackgroundVideo(path)) await createBackgroundVideoThumbnail(path);
+                      // New uploads join the library but never auto-project: the
+                      // operator picks explicitly from the gallery.
+                      if ((settings.backgroundImages ?? []).includes(path)) return;
+                      await applyChrome({
+                        ...settings,
+                        backgroundImages: [...(settings.backgroundImages ?? []), path],
+                      });
+                    } finally {
+                      setBackgroundImportBusy(false);
+                    }
+                  }}
+                >
+                  <ImagePlus />
+                </Button>
+                {(settings.backgroundImages ?? []).length > 0 && (
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant={deletingMedia ? "destructive" : "secondary"}
+                    title={deletingMedia ? "Cancelar eliminación" : "Eliminar fondos"}
+                    aria-label={deletingMedia ? "Cancelar eliminación" : "Eliminar fondos"}
+                    aria-pressed={deletingMedia}
+                    onClick={() => setDeletingMedia((value) => !value)}
+                  >
+                    <Trash2 />
+                  </Button>
+                )}
+                </div>
+                <FitToggle
+                  label="Fondo"
+                  testId="media-fit"
+                  spacing={2}
+                  value={settings.backgroundFit}
+                  onChange={(backgroundFit) => void applyChrome({ ...settings, backgroundFit })}
+                />
+              </div>
+              <div className="stage-background-color">
               <span className="background-color-wrap" title="Color de fondo">
                 <Button
                   type="button"
@@ -1421,14 +1472,8 @@ export function OperatorApp() {
                   size="icon"
                   className="background-color-btn"
                   aria-label="Elegir color de fondo"
-                >
-                  <Palette />
-                  <div
-                    className="background-color-ring"
-                    aria-hidden
-                    style={{ borderColor: settings.backgroundColor }}
-                  />
-                </Button>
+                  style={{ backgroundColor: settings.backgroundColor }}
+                />
                 <input
                   type="color"
                   className="background-color-input"
@@ -1450,42 +1495,7 @@ export function OperatorApp() {
               >
                 Color sólido
               </Button>
-              {/* Colors (picker + solid) | media (add / delete / fit) */}
-              <Separator orientation="vertical" className="stage-background-sep" />
-              <Button
-                type="button"
-                disabled={backgroundImportBusy}
-                onClick={async () => {
-                  setBackgroundImportBusy(true);
-                  try {
-                    const path = await window.proyector?.pickBackgroundImage();
-                    if (!path) return;
-                    if (isBackgroundVideo(path)) await createBackgroundVideoThumbnail(path);
-                    // New uploads join the library but never auto-project: the
-                    // operator picks explicitly from the gallery.
-                    if ((settings.backgroundImages ?? []).includes(path)) return;
-                    await applyChrome({
-                      ...settings,
-                      backgroundImages: [...(settings.backgroundImages ?? []), path],
-                    });
-                  } finally {
-                    setBackgroundImportBusy(false);
-                  }
-                }}
-              >
-                {backgroundImportBusy ? "Preparando…" : "Añadir fondo"}
-              </Button>
-              {(settings.backgroundImages ?? []).length > 0 && (
-                <Button type="button" variant={deletingMedia ? "destructive" : "secondary"} onClick={() => setDeletingMedia((value) => !value)}>
-                  {deletingMedia ? "Cancelar" : "Eliminar"}
-                </Button>
-              )}
-              <FitToggle
-                label="Fondo"
-                testId="media-fit"
-                value={settings.backgroundFit}
-                onChange={(backgroundFit) => void applyChrome({ ...settings, backgroundFit })}
-              />
+              </div>
             </div>
             {(settings.backgroundImages ?? []).length > 0 && (
               <div className="background-gallery" aria-label="Fondos guardados">
