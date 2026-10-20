@@ -249,7 +249,7 @@ export function SongsWorkspace({ staged, selectedId, liveText, liveIndex, projec
                       <span className="lx-tag-live">En vivo</span>
                       <span className="lx-card-foot">
                         <span className="num">{index + 1}</span>
-                        <span className="lab">{part.label || part.text.split("\n")[0]}</span>
+                        <span className="lab">{part.label}</span>
                       </span>
                     </button>
                   );

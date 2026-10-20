@@ -5320,34 +5320,6 @@ button.primary:not(:disabled):active,
   cursor: pointer;
 }
 
-.lx-chip-add {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  height: 28px;
-  padding: 0 9px;
-  border: 1px dashed var(--line2);
-  border-radius: 7px;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 600;
-}
-
-:where(.lx-body, .lx-dialog) button.lx-chip-add {
-  padding: 0 9px;
-  border: 1px dashed var(--line2);
-  border-radius: 7px;
-}
-
-.lx-chip-add:hover {
-  border-color: var(--accent);
-  color: var(--accent-l);
-}
-
-.lx-chip-add svg {
-  width: 12px;
-  height: 12px;
-}
 
 /* Slide cards */
 .lx-slides {
@@ -6184,16 +6156,6 @@ button.primary:not(:disabled):active,
   color: var(--muted);
   font-size: 12px;
   line-height: 1.45;
-}
-
-.lx-insert {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.lx-insert .lx-chip-add {
-  height: 26px;
 }
 
 .lx-form-actions {
