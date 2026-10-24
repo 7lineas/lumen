@@ -229,7 +229,7 @@ import {
 } from "./bible-library";
 import { ImportSession } from "./bible-import";
 import { installGoogleFont, installedFontId, loadGoogleFontCatalog, removeInstalledFont, searchGoogleFonts, type GoogleFontEntry } from "./google-fonts";
-import type { InstalledFont } from "../shared/fonts";
+import { isFontFamilyId, type FontFamilyId, type InstalledFont } from "../shared/fonts";
 import type { ImportMetaInput } from "../shared/bible-import/build";
 import { publishBrowserEvent, registerBrowserRpc, rotateBrowserPairingCode, startBrowserService, stopBrowserService } from "./browser-service";
 
@@ -906,6 +906,12 @@ registerIpcHandle("favorites:set", (_e, favorites: QueueEntry[]) => {
   return favorites;
 });
 
+/** A song's or text's own typeface and weight: kept only when the typeface is valid and a weight came with it. */
+function storedTypeface(item: { fontFamily?: unknown; fontWeight?: unknown }): { fontFamily?: FontFamilyId; fontWeight?: number } {
+  if (!isFontFamilyId(item.fontFamily) || typeof item.fontWeight !== "number" || !Number.isFinite(item.fontWeight)) return {};
+  return { fontFamily: item.fontFamily, fontWeight: Math.min(Math.max(Math.round(item.fontWeight), 100), 900) };
+}
+
 registerIpcHandle("songs:get", () => store.get("songs"));
 
 registerIpcHandle("songs:set", (_e, songs: StoredSong[]) => {
@@ -916,6 +922,7 @@ registerIpcHandle("songs:set", (_e, songs: StoredSong[]) => {
         ...(typeof song.author === "string" && song.author.trim() ? { author: song.author.trim() } : {}),
         lyrics: song.lyrics,
         ...(typeof song.fadeMs === "number" && Number.isFinite(song.fadeMs) ? { fadeMs: Math.min(Math.max(song.fadeMs, 0), 2000) } : {}),
+        ...storedTypeface(song),
         updatedAt: Number.isFinite(song.updatedAt) ? song.updatedAt : Date.now(),
         pinned: Boolean(song.pinned),
       }))
@@ -932,6 +939,7 @@ registerIpcHandle("texts:set", (_e, texts: StoredText[]) => {
         id: text.id,
         title: text.title,
         body: text.body,
+        ...storedTypeface(text),
         updatedAt: Number.isFinite(text.updatedAt) ? text.updatedAt : Date.now(),
         pinned: Boolean(text.pinned),
       }))

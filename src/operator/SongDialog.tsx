@@ -14,7 +14,9 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import type { StoredSong } from "@shared/types";
+import { DEFAULT_FONT_WEIGHT, type FontFamilyId } from "@shared/fonts";
 import { TransitionRow } from "./TransitionRow";
+import { OwnTypeface } from "./TypefaceSelect";
 
 export interface SongDraft {
   title: string;
@@ -22,6 +24,9 @@ export interface SongDraft {
   lyrics: string;
   /** Undefined when the song follows Ajustes > Canciones. */
   fadeMs?: number;
+  /** Undefined when the song follows Ajustes > Tipo de letra. */
+  fontFamily?: FontFamilyId;
+  fontWeight?: number;
 }
 
 interface Props {
@@ -30,6 +35,8 @@ interface Props {
   song: StoredSong | null;
   /** Ajustes > Canciones transition, used when the song has no velocity of its own. */
   defaultFadeMs: number;
+  /** Ajustes > Tipo de letra, used when the song turns on its own typeface. */
+  defaultFontFamily: FontFamilyId;
   onOpenChange: (open: boolean) => void;
   onSave: (draft: SongDraft) => void;
   onDelete: () => void;
@@ -37,12 +44,15 @@ interface Props {
 
 const LYRICS_PLACEHOLDER = "[Verso 1]\nSublime gracia del Señor\nque a un infeliz salvó\n\n[Coro]\n…";
 
-export function SongDialog({ open, song, defaultFadeMs, onOpenChange, onSave, onDelete }: Props) {
+export function SongDialog({ open, song, defaultFadeMs, defaultFontFamily, onOpenChange, onSave, onDelete }: Props) {
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
   const [lyrics, setLyrics] = useState("");
   const [ownFade, setOwnFade] = useState(false);
   const [fadeMs, setFadeMs] = useState(defaultFadeMs);
+  const [ownType, setOwnType] = useState(false);
+  const [fontFamily, setFontFamily] = useState<FontFamilyId>(defaultFontFamily);
+  const [fontWeight, setFontWeight] = useState(DEFAULT_FONT_WEIGHT);
   const lyricsRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -52,13 +62,23 @@ export function SongDialog({ open, song, defaultFadeMs, onOpenChange, onSave, on
     setLyrics(song?.lyrics ?? "");
     setOwnFade(song?.fadeMs !== undefined);
     setFadeMs(song?.fadeMs ?? defaultFadeMs);
-  }, [open, song, defaultFadeMs]);
+    setOwnType(song?.fontFamily !== undefined);
+    setFontFamily(song?.fontFamily ?? defaultFontFamily);
+    setFontWeight(song?.fontWeight ?? DEFAULT_FONT_WEIGHT);
+  }, [open, song, defaultFadeMs, defaultFontFamily]);
 
   const canSave = title.trim() !== "";
 
   const submit = () => {
     if (!canSave) return;
-    onSave({ title: title.trim(), author: author.trim(), lyrics, fadeMs: ownFade ? fadeMs : undefined });
+    onSave({
+      title: title.trim(),
+      author: author.trim(),
+      lyrics,
+      fadeMs: ownFade ? fadeMs : undefined,
+      fontFamily: ownType ? fontFamily : undefined,
+      fontWeight: ownType ? fontWeight : undefined,
+    });
   };
 
   return (
@@ -89,6 +109,17 @@ export function SongDialog({ open, song, defaultFadeMs, onOpenChange, onSave, on
             </label>
             {ownFade && <TransitionRow content="letra" value={fadeMs} onChange={setFadeMs} />}
           </div>
+          <OwnTypeface
+            own={ownType}
+            onOwnChange={setOwnType}
+            fontFamily={fontFamily}
+            fontWeight={fontWeight}
+            onChange={({ fontFamily: nextFamily, fontWeight: nextWeight }) => {
+              setFontFamily(nextFamily);
+              setFontWeight(nextWeight);
+            }}
+            testId="song-own-type"
+          />
           <div className="lx-field">
             <span id="song-lyrics-label">Letra</span>
             <textarea

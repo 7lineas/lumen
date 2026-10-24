@@ -14,30 +14,43 @@ import {
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { StoredText } from "@shared/types";
 import { textSlides } from "@shared/text-slides";
+import { DEFAULT_FONT_WEIGHT, type FontFamilyId } from "@shared/fonts";
+import { OwnTypeface } from "./TypefaceSelect";
 
 export interface TextDraft {
   title: string;
   body: string;
+  /** Undefined when the text follows Ajustes > Tipo de letra. */
+  fontFamily?: FontFamilyId;
+  fontWeight?: number;
 }
 
 interface Props {
   open: boolean;
   /** Text being edited; null creates a new one. */
   text: StoredText | null;
+  /** Ajustes > Tipo de letra, used when the text turns on its own typeface. */
+  defaultFontFamily: FontFamilyId;
   onOpenChange: (open: boolean) => void;
   onSave: (draft: TextDraft) => void;
   onDelete: () => void;
 }
 
-export function TextDialog({ open, text, onOpenChange, onSave, onDelete }: Props) {
+export function TextDialog({ open, text, defaultFontFamily, onOpenChange, onSave, onDelete }: Props) {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [ownType, setOwnType] = useState(false);
+  const [fontFamily, setFontFamily] = useState<FontFamilyId>(defaultFontFamily);
+  const [fontWeight, setFontWeight] = useState(DEFAULT_FONT_WEIGHT);
 
   useEffect(() => {
     if (!open) return;
     setTitle(text?.title ?? "");
     setBody(text?.body ?? "");
-  }, [open, text]);
+    setOwnType(text?.fontFamily !== undefined);
+    setFontFamily(text?.fontFamily ?? defaultFontFamily);
+    setFontWeight(text?.fontWeight ?? DEFAULT_FONT_WEIGHT);
+  }, [open, text, defaultFontFamily]);
 
   const slides = textSlides(body).length;
   const canSave = title.trim() !== "";
@@ -53,7 +66,7 @@ export function TextDialog({ open, text, onOpenChange, onSave, onDelete }: Props
           className="lx-form"
           onSubmit={(event) => {
             event.preventDefault();
-            if (canSave) onSave({ title: title.trim(), body });
+            if (canSave) onSave({ title: title.trim(), body, fontFamily: ownType ? fontFamily : undefined, fontWeight: ownType ? fontWeight : undefined });
           }}
         >
           <label className="lx-field">
@@ -72,6 +85,17 @@ export function TextDialog({ open, text, onOpenChange, onSave, onDelete }: Props
             />
             <small>{slides > 0 ? `Ahora: ${slides} ${slides === 1 ? "diapositiva" : "diapositivas"}.` : "Escribe el texto para proyectarlo."}</small>
           </label>
+          <OwnTypeface
+            own={ownType}
+            onOwnChange={setOwnType}
+            fontFamily={fontFamily}
+            fontWeight={fontWeight}
+            onChange={({ fontFamily: nextFamily, fontWeight: nextWeight }) => {
+              setFontFamily(nextFamily);
+              setFontWeight(nextWeight);
+            }}
+            testId="text-own-type"
+          />
           <div className="lx-form-actions">
             {text && (
               <AlertDialog>

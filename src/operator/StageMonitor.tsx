@@ -125,6 +125,8 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
   }, [payload, isLive]);
 
   const renderPayload = isLive ? displayed : payload;
+  // Same rule as the projector: a song's or text's own typeface wins over Ajustes.
+  const monitorFontFamily = renderPayload?.fontFamily ?? fontFamily;
   const theme = renderPayload?.theme === "light" ? "light" : "dark";
   const brightness = renderPayload?.brightness ?? 1;
   const projectorFontPx = renderPayload?.fontSize ?? DEFAULT_SETTINGS.fontSize;
@@ -230,7 +232,7 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
       window.removeEventListener("resize", fit);
       document.fonts?.removeEventListener("loadingdone", fit);
     };
-  }, [renderPayload, projectorFontPx, projectorW, screenAspect, pad, fontFamily]);
+  }, [renderPayload, projectorFontPx, projectorW, screenAspect, pad, monitorFontFamily]);
 
   // The monitor's browser surface has a small extra text-box inset compared
   // with the projector window. Keep the glyphs at the same visual scale so
@@ -318,7 +320,8 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
             width: screenSize ? `${screenSize.width}px` : "100%",
             height: screenSize ? `${screenSize.height}px` : "auto",
             aspectRatio: screenAspect,
-            fontFamily: fontStack(fontFamily),
+            fontFamily: fontStack(monitorFontFamily),
+            fontWeight: renderPayload?.fontWeight,
             // A slide image or a video is full-bleed: the text padding must not shrink it.
             padding: fullBleed ? 0 : `${pad}%`,
           }}

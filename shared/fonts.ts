@@ -52,6 +52,53 @@ export function isInstalledFontId(id: string): boolean {
   return id.startsWith(GOOGLE_FONT_PREFIX);
 }
 
+/** A saved id that names a built-in font or an installed Google font (not a free-form string). */
+export function isFontFamilyId(value: unknown): value is FontFamilyId {
+  return typeof value === "string" && ((BUILTIN_FONT_IDS as readonly string[]).includes(value) || isInstalledFontId(value));
+}
+
+/** Weight used when nothing else is chosen (CSS "normal"). */
+export const DEFAULT_FONT_WEIGHT = 400;
+
+const WEIGHT_LABELS: Record<number, string> = {
+  100: "Delgada",
+  200: "Extraligera",
+  300: "Ligera",
+  400: "Normal",
+  500: "Media",
+  600: "Seminegrita",
+  700: "Negrita",
+  800: "Extranegrita",
+  900: "Negra",
+};
+
+export function weightLabel(weight: number): string {
+  return WEIGHT_LABELS[weight] ?? String(weight);
+}
+
+/**
+ * Weights the operator can pick for a font. Installed fonts offer the upright
+ * weights that were downloaded; Geist is a variable font; the other built-in
+ * fonts are assumed to ship regular and bold only.
+ */
+export function fontWeightChoices(id: FontFamilyId | string | undefined, installed: InstalledFont[]): number[] {
+  if (id && isInstalledFontId(id)) {
+    const font = installed.find((entry) => entry.id === id);
+    const weights = [...new Set((font?.faces ?? []).filter((face) => face.style === "normal").map((face) => Number(face.weight)))]
+      .filter((weight) => Number.isFinite(weight))
+      .sort((a, b) => a - b);
+    return weights.length > 0 ? weights : [DEFAULT_FONT_WEIGHT];
+  }
+  if (id === "geist") return [300, 400, 500, 600, 700, 800];
+  return [DEFAULT_FONT_WEIGHT, 700];
+}
+
+/** Keeps the current weight when the font offers it; otherwise normal, otherwise the lightest offered. */
+export function resolveFontWeight(weight: number, choices: number[]): number {
+  if (choices.includes(weight)) return weight;
+  return choices.includes(DEFAULT_FONT_WEIGHT) ? DEFAULT_FONT_WEIGHT : (choices[0] ?? DEFAULT_FONT_WEIGHT);
+}
+
 /** CSS font-family for a saved id. Unknown built-in ids use the system font. */
 export function fontStack(id: FontFamilyId | string | undefined): string {
   if (id && isInstalledFontId(id)) return `"${id}", system-ui, -apple-system, sans-serif`;

@@ -2,10 +2,15 @@ import { describe, it, expect } from "vitest";
 import {
   BUILTIN_FONT_IDS,
   BUILTIN_FONT_OPTIONS,
+  DEFAULT_FONT_WEIGHT,
   fontChoices,
   fontStack,
+  fontWeightChoices,
   installedFontFaceCss,
+  isFontFamilyId,
   isInstalledFontId,
+  resolveFontWeight,
+  weightLabel,
   type InstalledFont,
 } from "./fonts";
 
@@ -74,5 +79,39 @@ describe("installed fonts", () => {
 
   it("skips files that have no URL", () => {
     expect(installedFontFaceCss([lora], () => undefined)).toBe("");
+  });
+});
+
+describe("typeface of a song or text", () => {
+  it("accepts built-in ids and installed google ids only", () => {
+    expect(isFontFamilyId("georgia")).toBe(true);
+    expect(isFontFamilyId("google-lora")).toBe(true);
+    expect(isFontFamilyId("Comic Sans")).toBe(false);
+    expect(isFontFamilyId(400)).toBe(false);
+    expect(isFontFamilyId(undefined)).toBe(false);
+  });
+
+  it("offers the downloaded upright weights of an installed font", () => {
+    expect(fontWeightChoices("google-lora", [lora])).toEqual([400, 700]);
+  });
+
+  it("falls back to normal when an installed font has no faces", () => {
+    expect(fontWeightChoices("google-missing", [])).toEqual([DEFAULT_FONT_WEIGHT]);
+  });
+
+  it("offers the variable Geist range and regular/bold for the other built-ins", () => {
+    expect(fontWeightChoices("geist", [])).toEqual([300, 400, 500, 600, 700, 800]);
+    expect(fontWeightChoices("arial", [])).toEqual([400, 700]);
+  });
+
+  it("keeps the weight the font offers, otherwise normal, otherwise the lightest", () => {
+    expect(resolveFontWeight(700, [400, 700])).toBe(700);
+    expect(resolveFontWeight(500, [400, 700])).toBe(400);
+    expect(resolveFontWeight(500, [300, 700])).toBe(300);
+  });
+
+  it("labels known weights and shows the number for the rest", () => {
+    expect(weightLabel(700)).toBe("Negrita");
+    expect(weightLabel(450)).toBe("450");
   });
 });

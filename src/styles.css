@@ -5417,6 +5417,13 @@ button.primary:not(:disabled):active,
   height: 15px;
 }
 
+.lx-typeface {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
 .lx-toggle {
   display: flex;
   align-items: center;
