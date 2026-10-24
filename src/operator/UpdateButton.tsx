@@ -124,7 +124,6 @@ export function UpdateButton() {
 
   return (
     <>
-      <span className="top-sep" aria-hidden />
       <Button
         type="button"
         data-testid="btn-update"
