@@ -3,6 +3,7 @@ import type { AppSettings, ProjectorPayload } from "@shared/types";
 import { DEFAULT_SETTINGS } from "@shared/types";
 import { backgroundImageUrl } from "@shared/background-image";
 import { fitFontSize } from "@shared/text-fit";
+import { fontStack } from "@shared/fonts";
 import { payloadContentKey } from "@shared/stage";
 import { FadingBackgroundMedia } from "@/components/BackgroundMedia";
 import { CountdownClock } from "@/components/Clock";
@@ -144,7 +145,7 @@ export function ProjectorView() {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", onResize);
     };
-  }, [payload, fontSize]);
+  }, [payload, fontSize, settings.fontFamily]);
 
   const themeClass = (payload.theme ?? settings.theme) === "light" ? "projector light" : "projector dark";
   const brightness = payload.brightness ?? settings.brightness ?? 1;
@@ -162,6 +163,7 @@ export function ProjectorView() {
   );
   const style: React.CSSProperties = {
     fontSize: `${fitSize}px`,
+    fontFamily: fontStack(settings.fontFamily),
     padding: `${payload.padding ?? settings.padding ?? DEFAULT_SETTINGS.padding}vw`,
   };
   const backgroundStyle: React.CSSProperties = {

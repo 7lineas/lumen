@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { MediaFit, ProjectorPayload } from "@shared/types";
 import { DEFAULT_SETTINGS } from "@shared/types";
+import { fontStack, type FontFamilyId } from "@shared/fonts";
 import { backgroundImageUrl } from "@shared/background-image";
 import { payloadContentKey } from "@shared/stage";
 import { FadingBackgroundMedia } from "@/components/BackgroundMedia";
@@ -34,9 +35,11 @@ interface Props {
   slideFit?: MediaFit;
   /** When the live content last changed (epoch ms); shown as the time on screen. */
   liveSince?: number | null;
+  /** Typeface of the projected text (settings.fontFamily). */
+  fontFamily?: FontFamilyId;
 }
 
-export function StageMonitor({ title, payload, empty, testId, isLive, aspectRatio, displayWidth, label, ratioLabel, children, onVideoDuration, backgroundFit = DEFAULT_SETTINGS.backgroundFit, slideFit = DEFAULT_SETTINGS.slideFit, liveSince }: Props) {
+export function StageMonitor({ title, payload, empty, testId, isLive, aspectRatio, displayWidth, label, ratioLabel, children, onVideoDuration, backgroundFit = DEFAULT_SETTINGS.backgroundFit, slideFit = DEFAULT_SETTINGS.slideFit, liveSince, fontFamily = DEFAULT_SETTINGS.fontFamily }: Props) {
   // Live monitor mirrors the projector: fade out old content, swap, fade in.
   // Preview renders instantly (no fade).
   // The inner screen renders at the real projector aspect ratio so the
@@ -219,7 +222,7 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
     }
     window.addEventListener("resize", fit);
     return () => window.removeEventListener("resize", fit);
-  }, [renderPayload, projectorFontPx, projectorW, screenAspect, pad]);
+  }, [renderPayload, projectorFontPx, projectorW, screenAspect, pad, fontFamily]);
 
   // The monitor's browser surface has a small extra text-box inset compared
   // with the projector window. Keep the glyphs at the same visual scale so
@@ -307,6 +310,7 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
             width: screenSize ? `${screenSize.width}px` : "100%",
             height: screenSize ? `${screenSize.height}px` : "auto",
             aspectRatio: screenAspect,
+            fontFamily: fontStack(fontFamily),
             // A slide image or a video is full-bleed: the text padding must not shrink it.
             padding: fullBleed ? 0 : `${pad}%`,
           }}
