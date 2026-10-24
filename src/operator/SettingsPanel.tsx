@@ -5,14 +5,14 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import QRCode from "qrcode";
-import { Check, Church, Copy, MonitorPlay, Palette, RefreshCw, Timer, Type, Wifi, type LucideIcon } from "lucide-react";
+import { Check, Church, Copy, MonitorPlay, Palette, RefreshCw, Timer, Wifi, type LucideIcon } from "lucide-react";
 import type { AppSettings, BibleVersionMeta } from "@shared/types";
 import { fontChoices, type FontFamilyId } from "@shared/fonts";
 import { backgroundImageUrl } from "@shared/background-image";
 import type { DisplayInfo } from "../vite-env.d";
 import type { BrowserAccessInfo } from "../vite-env.d";
 import { TransitionRow } from "./TransitionRow";
-import { GoogleFontsManager } from "./GoogleFontsManager";
+import { GoogleFontsCombobox } from "./GoogleFontsCombobox";
 import { useInstalledFonts } from "@/hooks/useInstalledFonts";
 
 /** Read once when the app starts, so opening Ajustes already has the access state and QR codes. */
@@ -289,20 +289,28 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
         </SettingRow>
 
         <SettingRow label="Tipo de letra" hint="Se aplica a lo proyectado">
-          <Select
-            value={local.fontFamily}
-            items={fontOptions.map((option) => ({ value: option.id, label: option.label }))}
-            onValueChange={(value) => value && setLocal({ ...local, fontFamily: value as FontFamilyId })}
-          >
-            <SelectTrigger className="ajustes-select"><SelectValue /></SelectTrigger>
-            <SelectContent className="ajustes-select-popup" alignItemWithTrigger={false}>
-              {fontOptions.map((option) => (
-                <SelectItem key={option.id} value={option.id} style={{ fontFamily: option.stack }}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="ajustes-font-control">
+            <Select
+              value={local.fontFamily}
+              items={fontOptions.map((option) => ({ value: option.id, label: option.label }))}
+              onValueChange={(value) => value && setLocal({ ...local, fontFamily: value as FontFamilyId })}
+            >
+              <SelectTrigger className="ajustes-select"><SelectValue /></SelectTrigger>
+              <SelectContent className="ajustes-select-popup" alignItemWithTrigger={false}>
+                {fontOptions.map((option) => (
+                  <SelectItem key={option.id} value={option.id} style={{ fontFamily: option.stack }}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <GoogleFontsCombobox
+              value={local.fontFamily}
+              installed={installedFonts}
+              onSelect={(id) => setLocal({ ...local, fontFamily: id })}
+              onRemoved={forgetFont}
+            />
+          </div>
         </SettingRow>
 
         <SettingRow label="Canciones en mayúsculas" hint="Solo en canciones, no en la Biblia">
@@ -322,10 +330,6 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
             />
           </label>
         </SettingRow>
-      </SettingsGroup>
-
-      <SettingsGroup icon={Type} title="Fuentes de Google">
-        <GoogleFontsManager installed={installedFonts} onRemoved={forgetFont} />
       </SettingsGroup>
 
       <SettingsGroup icon={Church} title="Logo">
