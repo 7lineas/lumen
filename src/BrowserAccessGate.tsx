@@ -15,7 +15,7 @@ export function BrowserAccessGate({ children }: { children: ReactNode }) {
     }
     return code;
   });
-  const [unlocked, setUnlocked] = useState(!remoteBrowser || !!sessionStorage.getItem("lumen-access-token"));
+  const [unlocked, setUnlocked] = useState(!remoteBrowser || !!localStorage.getItem("lumen-access-token"));
   const [accessCode, setAccessCode] = useState(qrPairCode);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -38,7 +38,7 @@ export function BrowserAccessGate({ children }: { children: ReactNode }) {
       }
       const result = await response.json() as { token?: string };
       if (!response.ok || !result.token) throw new Error("El código no es válido. Verifícalo e inténtalo de nuevo.");
-      sessionStorage.setItem("lumen-access-token", result.token);
+      localStorage.setItem("lumen-access-token", result.token);
       setUnlocked(true);
     } catch (reason) {
       setError(reason instanceof DOMException && reason.name === "TimeoutError"

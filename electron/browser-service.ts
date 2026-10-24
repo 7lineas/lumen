@@ -29,9 +29,8 @@ const latestEvents = new Map<string, unknown>();
 const rpcHandlers = new Map<string, RpcHandler>();
 let server: ReturnType<typeof createServer> | null = null;
 let pairingCode = "";
-const sessionTokens = new Map<string, number>();
+const sessionTokens = new Set<string>();
 const pairingFailures = new Map<string, { count: number; retryAt: number }>();
-const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 const MAX_ACTIVE_SESSIONS = 128;
 
 export function registerBrowserRpc(channel: string, handler: RpcHandler): void {
@@ -53,13 +52,7 @@ function authorized(request: IncomingMessage, lan: boolean): boolean {
   const mediaCookie = request.headers.cookie?.split(";").map((entry) => entry.trim())
     .find((entry) => entry.startsWith("lumen_media_session="))?.slice("lumen_media_session=".length);
   const supplied = bearer || (request.url?.startsWith("/media/") ? mediaCookie : undefined) || "";
-  const expiresAt = sessionTokens.get(supplied);
-  if (!expiresAt) return false;
-  if (expiresAt <= Date.now()) {
-    sessionTokens.delete(supplied);
-    return false;
-  }
-  return true;
+  return sessionTokens.has(supplied);
 }
 
 async function readJson(request: IncomingMessage, maxBytes = 4096): Promise<Record<string, unknown> | null> {
@@ -80,7 +73,7 @@ function send(response: ServerResponse, status: number, body: unknown): void {
 }
 
 function setMediaSessionCookie(response: ServerResponse, token: string): void {
-  response.setHeader("set-cookie", `lumen_media_session=${token}; HttpOnly; SameSite=Strict; Path=/media; Max-Age=${Math.floor(SESSION_TTL_MS / 1000)}`);
+  response.setHeader("set-cookie", `lumen_media_session=${token}; HttpOnly; SameSite=Strict; Path=/media`);
 }
 
 function contentType(file: string): string {
@@ -92,6 +85,14 @@ function contentType(file: string): string {
     ".mp3": "audio/mpeg", ".wav": "audio/wav", ".m4a": "audio/mp4", ".aac": "audio/aac", ".oga": "audio/ogg",
     ".opus": "audio/ogg", ".flac": "audio/flac", ".woff2": "font/woff2", ".ico": "image/x-icon",
   } as Record<string, string>)[path.extname(file).toLowerCase()] ?? "application/octet-stream";
+}
+
+/**
+ * Replace the pairing PIN of a running service. The old PIN stops working at once;
+ * sessions already paired keep working. Turning access off is what revokes them.
+ */
+export function rotateBrowserPairingCode(code: string): void {
+  pairingCode = code;
 }
 
 /** Start only when explicitly enabled. LAN sessions must first exchange the pairing PIN. */
@@ -133,12 +134,9 @@ export function startBrowserService(options: { root: string; userData: string; h
         return send(response, 401, { error: "invalid_pairing_code" });
       }
       pairingFailures.delete(sourceIp);
-      for (const [activeToken, expiresAt] of sessionTokens) {
-        if (expiresAt <= now) sessionTokens.delete(activeToken);
-      }
       if (sessionTokens.size >= MAX_ACTIVE_SESSIONS) return send(response, 429, { error: "too_many_sessions" });
       const token = randomBytes(32).toString("base64url");
-      sessionTokens.set(token, now + SESSION_TTL_MS);
+      sessionTokens.add(token);
       setMediaSessionCookie(response, token);
       response.writeHead(200, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
       response.end(JSON.stringify({ token }));

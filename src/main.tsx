@@ -22,7 +22,7 @@ function renderApp() {
 
 if (!window.proyector) {
   installBrowserApi();
-  void refreshBrowserSession().catch(() => sessionStorage.removeItem("lumen-access-token")).finally(renderApp);
+  void refreshBrowserSession().catch(() => localStorage.removeItem("lumen-access-token")).finally(renderApp);
 } else {
   renderApp();
 }

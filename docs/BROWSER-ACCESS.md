@@ -9,7 +9,7 @@ Lumen's desktop process remains the owner of its local database, Bible files, an
 3. Scan the QR code from a device on the same private network to connect automatically. Or open the displayed address and enter the access code manually.
 4. Disable access in Lumen when finished.
 
-The host computer and Lumen must remain running. Scanning the QR opens the operator/controller app with the short pairing code in a query parameter. The browser immediately exchanges it for a high-entropy session token and removes the query parameter from the address bar. Manually opened addresses use the same six-digit code in the access screen. Browser sessions are held in that tab's session storage. Disabling access closes the LAN listener and invalidates all paired sessions and the code.
+The host computer and Lumen must remain running. Scanning the QR opens the operator/controller app with the short pairing code in a query parameter. The browser immediately exchanges it for a high-entropy session token and removes the query parameter from the address bar. Manually opened addresses use the same six-digit code in the access screen. Browser sessions are kept in the browser's local storage and do not expire by time, so a device stays connected across tab and browser restarts. **Cambiar código** in Ajustes replaces the six-digit code at once; the old code stops working, but devices that are already paired stay connected. Disabling access closes the LAN listener and invalidates all paired sessions and the code. Restarting Lumen on the host also ends all sessions, because they are held in memory.
 
 ## Browser features
 
@@ -27,7 +27,7 @@ The current contract is versioned under `/api/v1`:
 - `GET /api/v1/session` refreshes the browser's media authorization for an existing session.
 - `GET /media/<managed-path>` serves only files from Lumen's managed background and slide image directories. Pairing sets a path-scoped, HttpOnly cookie so native `<img>` and `<video>` requests can authenticate without exposing the session token to media elements; video byte-range requests are supported.
 
-Every API call from a LAN client requires `Authorization: Bearer <session-token>`. Media requests use the scoped cookie set during pairing or session refresh. Pairing codes contain six digits and are generated randomly when LAN access is enabled. Five failed attempts from one client address lock out further pairing attempts from that address for 15 minutes. A successful pairing exchanges the short code for a random 256-bit session token, so ordinary API requests do not use the six-digit code. The token is scoped to the current Lumen run and browser tab. Anyone who can pair receives operator-level access; there are no separate viewer/operator roles yet.
+Every API call from a LAN client requires `Authorization: Bearer <session-token>`. Media requests use the scoped cookie set during pairing or session refresh. Pairing codes contain six digits and are generated randomly when LAN access is enabled. Five failed attempts from one client address lock out further pairing attempts from that address for 15 minutes. A successful pairing exchanges the short code for a random 256-bit session token, so ordinary API requests do not use the six-digit code. The token stays valid until access is turned off or Lumen restarts. Anyone who can pair receives operator-level access; there are no separate viewer/operator roles yet.
 
 ## Network and development notes
 
