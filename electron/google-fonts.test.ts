@@ -13,6 +13,7 @@ import {
   parseCatalogMetadata,
   parseFontFaces,
   pickWeights,
+  previewGoogleFont,
   removeInstalledFont,
   searchGoogleFonts,
 } from "./google-fonts";
@@ -216,6 +217,28 @@ describe("installGoogleFont", () => {
   it("fails when Google returns no font faces", async () => {
     const { fetchImpl } = fakeGoogle({ css: "/* empty */" });
     await expect(installGoogleFont({ family: "Lora", catalog: [LORA], fontsDir: tempDir(), fetchImpl })).rejects.toThrow();
+  });
+});
+
+describe("previewGoogleFont", () => {
+  it("returns the remote faces of the first weight without downloading any file", async () => {
+    const { fetchImpl, requested } = fakeGoogle();
+    const faces = await previewGoogleFont({ family: "Lora", catalog: [LORA], fetchImpl });
+
+    expect(requested).toEqual(["https://fonts.googleapis.com/css2?family=Lora:wght@400&display=swap"]);
+    expect(faces.map((face) => face.weight)).toEqual(["400", "700"]);
+    expect(faces[0]).toEqual({
+      weight: "400",
+      style: "normal",
+      unicodeRange: "U+0000-00FF, U+0131",
+      url: "https://fonts.gstatic.com/s/lora/v37/aaa.woff2",
+    });
+  });
+
+  it("refuses a family that is not in the catalog", async () => {
+    const { fetchImpl, requested } = fakeGoogle();
+    await expect(previewGoogleFont({ family: "Nope", catalog: [LORA], fetchImpl })).rejects.toThrow("no está en Google Fonts");
+    expect(requested).toEqual([]);
   });
 });
 

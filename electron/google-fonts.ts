@@ -1,6 +1,12 @@
 import fs from "fs";
 import path from "path";
-import { GOOGLE_FONT_PREFIX, type GoogleFontSearchResult, type InstalledFace, type InstalledFont } from "../shared/fonts";
+import {
+  GOOGLE_FONT_PREFIX,
+  type GoogleFontPreviewFace,
+  type GoogleFontSearchResult,
+  type InstalledFace,
+  type InstalledFont,
+} from "../shared/fonts";
 
 /** Public catalog of every family on Google Fonts (no API key needed). */
 export const GOOGLE_FONTS_METADATA_URL = "https://fonts.google.com/metadata/fonts";
@@ -212,6 +218,18 @@ export async function installGoogleFont(options: {
     fs.rmSync(dir, { recursive: true, force: true });
     throw error;
   }
+}
+
+/** Remote faces of the family's first weight, so the picker can draw its name before anything is saved. Nothing is downloaded here. */
+export async function previewGoogleFont(options: {
+  family: string;
+  catalog: GoogleFontEntry[];
+  fetchImpl: FontFetch;
+}): Promise<GoogleFontPreviewFace[]> {
+  const entry = options.catalog.find((font) => font.family === options.family);
+  if (!entry) throw new Error("Esa fuente no está en Google Fonts");
+  const css = await (await fetchOk(options.fetchImpl, googleFontsCssUrl(entry.family, entry.weights.slice(0, 1)))).text();
+  return parseFontFaces(css);
 }
 
 export function removeInstalledFont(fontsDir: string, font: InstalledFont): void {

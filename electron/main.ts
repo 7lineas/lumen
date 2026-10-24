@@ -228,7 +228,7 @@ import {
   resolveModulePath,
 } from "./bible-library";
 import { ImportSession } from "./bible-import";
-import { installGoogleFont, installedFontId, loadGoogleFontCatalog, removeInstalledFont, searchGoogleFonts, type GoogleFontEntry } from "./google-fonts";
+import { installGoogleFont, installedFontId, loadGoogleFontCatalog, previewGoogleFont, removeInstalledFont, searchGoogleFonts, type GoogleFontEntry } from "./google-fonts";
 import { isFontFamilyId, type FontFamilyId, type InstalledFont } from "../shared/fonts";
 import type { ImportMetaInput } from "../shared/bible-import/build";
 import { publishBrowserEvent, registerBrowserRpc, rotateBrowserPairingCode, startBrowserService, stopBrowserService } from "./browser-service";
@@ -849,6 +849,11 @@ registerIpcHandle("fonts:list", () => store.get("installedFonts"));
 registerIpcHandle("fonts:search", async (_e, query?: string) => {
   const catalog = await loadGoogleFontCatalog({ cacheFile: googleFontsCatalogFile(), fetchImpl: fetch });
   return searchGoogleFonts(catalog, String(query ?? ""));
+});
+
+registerIpcHandle("fonts:preview", async (_e, family: string) => {
+  const catalog = await loadGoogleFontCatalog({ cacheFile: googleFontsCatalogFile(), fetchImpl: fetch });
+  return previewGoogleFont({ family: String(family), catalog, fetchImpl: fetch });
 });
 
 registerIpcHandle("fonts:install", async (_e, family: string) => {
