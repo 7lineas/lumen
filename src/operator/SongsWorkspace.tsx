@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Switch } from "@/components/ui/switch";
 import type { StoredSong } from "@shared/types";
+import type { FontFamilyId } from "@shared/fonts";
 import { songParts, type SongSection } from "@shared/song-sections";
 import { SearchIcon, SongIcon } from "./icons";
 import { ItemMenu } from "./ItemMenu";
@@ -28,6 +29,9 @@ export interface SongStage {
   index: number;
   /** The song's own transition duration; undefined follows Ajustes > Canciones. */
   fadeMs?: number;
+  /** The song's own typeface and weight; undefined follows Ajustes > Tipo de letra. */
+  fontFamily?: FontFamilyId;
+  fontWeight?: number;
 }
 
 /** What the workspace hands up when a song changes. */
@@ -43,6 +47,8 @@ interface Props {
   projectOnClick: boolean;
   /** Ajustes > Canciones transition, shown in the song dialog as the default. */
   defaultFadeMs: number;
+  /** Ajustes > Tipo de letra, shown in the song dialog as the default typeface. */
+  defaultFontFamily: FontFamilyId;
   onToggleProjectOnClick: (value: boolean) => void;
   onSelectSong: (songId: string | null, selection: SongSelection | null) => void;
   onSelectPart: (index: number) => void;
@@ -63,12 +69,14 @@ function stageOf(song: Song, index = 0): SongSelection {
     labels: parts.map((part) => part.label),
     index: Math.min(Math.max(index, 0), Math.max(parts.length - 1, 0)),
     fadeMs: song.fadeMs,
+    fontFamily: song.fontFamily,
+    fontWeight: song.fontWeight,
   };
 }
 
 const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
 
-export function SongsWorkspace({ staged, selectedId, liveText, liveIndex, projectOnClick, defaultFadeMs, onToggleProjectOnClick, onSelectSong, onSelectPart, onTakePart }: Props) {
+export function SongsWorkspace({ staged, selectedId, liveText, liveIndex, projectOnClick, defaultFadeMs, defaultFontFamily, onToggleProjectOnClick, onSelectSong, onSelectPart, onTakePart }: Props) {
   const [songs, setSongs] = useState<Song[]>([]);
   const [songsLoaded, setSongsLoaded] = useState(false);
   const [query, setQuery] = useState("");
@@ -129,6 +137,13 @@ export function SongsWorkspace({ staged, selectedId, liveText, liveIndex, projec
     else delete next.author;
     if (draft.fadeMs !== undefined) next.fadeMs = draft.fadeMs;
     else delete next.fadeMs;
+    if (draft.fontFamily !== undefined && draft.fontWeight !== undefined) {
+      next.fontFamily = draft.fontFamily;
+      next.fontWeight = draft.fontWeight;
+    } else {
+      delete next.fontFamily;
+      delete next.fontWeight;
+    }
     setSongs((current) => (stored ? current.map((song) => (song.id === next.id ? next : song)) : [next, ...current]));
     setEditing(null);
     setQuery("");
@@ -276,7 +291,7 @@ export function SongsWorkspace({ staged, selectedId, liveText, liveIndex, projec
         )}
       </main>
 
-      <SongDialog open={editing !== null} song={editingSong} defaultFadeMs={defaultFadeMs} onOpenChange={(open) => !open && setEditing(null)} onSave={save} onDelete={() => { if (editingSong) removeSong(editingSong); }} />
+      <SongDialog open={editing !== null} song={editingSong} defaultFadeMs={defaultFadeMs} defaultFontFamily={defaultFontFamily} onOpenChange={(open) => !open && setEditing(null)} onSave={save} onDelete={() => { if (editingSong) removeSong(editingSong); }} />
     </>
   );
 }

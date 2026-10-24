@@ -108,6 +108,8 @@ export function ProjectorView() {
   }, []);
 
   const fontSize = payload.fontSize || settings.fontSize;
+  // Songs and texts can bring their own typeface; everything else uses Ajustes.
+  const fontFamily = payload.fontFamily ?? settings.fontFamily;
 
   useEffect(() => {
     const el = textRef.current;
@@ -142,7 +144,7 @@ export function ProjectorView() {
       observer.disconnect();
       document.fonts?.removeEventListener("loadingdone", fit);
     };
-  }, [payload, fontSize, settings.fontFamily]);
+  }, [payload, fontSize, fontFamily]);
 
   const themeClass = (payload.theme ?? settings.theme) === "light" ? "projector light" : "projector dark";
   const brightness = payload.brightness ?? settings.brightness ?? 1;
@@ -160,7 +162,8 @@ export function ProjectorView() {
   );
   const style: React.CSSProperties = {
     fontSize: `${fitSize}px`,
-    fontFamily: fontStack(settings.fontFamily),
+    fontFamily: fontStack(fontFamily),
+    fontWeight: payload.fontWeight,
     padding: `${payload.padding ?? settings.padding ?? DEFAULT_SETTINGS.padding}vw`,
   };
   const backgroundStyle: React.CSSProperties = {

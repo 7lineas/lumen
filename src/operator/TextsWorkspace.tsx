@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Switch } from "@/components/ui/switch";
 import type { StoredText } from "@shared/types";
+import type { FontFamilyId } from "@shared/fonts";
 import { textSlides } from "@shared/text-slides";
 import { SearchIcon, TextIcon } from "./icons";
 import { ItemMenu } from "./ItemMenu";
@@ -30,6 +31,8 @@ interface Props {
   /** Position of that block in the staged text, when it was projected from it. */
   liveIndex?: number | null;
   projectOnClick: boolean;
+  /** Ajustes > Tipo de letra, shown in the text dialog as the default typeface. */
+  defaultFontFamily: FontFamilyId;
   onToggleProjectOnClick: (value: boolean) => void;
   onSelectText: (textId: string | null, selection: SongSelection | null) => void;
   onSelectPart: (index: number) => void;
@@ -49,12 +52,14 @@ function stageOf(text: Text, index = 0): SongSelection {
     slides,
     labels: slides.map(() => ""),
     index: Math.min(Math.max(index, 0), Math.max(slides.length - 1, 0)),
+    fontFamily: text.fontFamily,
+    fontWeight: text.fontWeight,
   };
 }
 
 const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
 
-export function TextsWorkspace({ staged, selectedId, liveText, liveIndex, projectOnClick, onToggleProjectOnClick, onSelectText, onSelectPart, onTakePart }: Props) {
+export function TextsWorkspace({ staged, selectedId, liveText, liveIndex, projectOnClick, defaultFontFamily, onToggleProjectOnClick, onSelectText, onSelectPart, onTakePart }: Props) {
   const [texts, setTexts] = useState<Text[]>([]);
   const [textsLoaded, setTextsLoaded] = useState(false);
   const [query, setQuery] = useState("");
@@ -108,6 +113,13 @@ export function TextsWorkspace({ staged, selectedId, liveText, liveIndex, projec
     const stored = editingText;
     const base: Text = stored ?? { id: id(), title: "", body: "", updatedAt: 0, pinned: false };
     const next: Text = { ...base, title: draft.title, body: draft.body, updatedAt: Date.now() };
+    if (draft.fontFamily !== undefined && draft.fontWeight !== undefined) {
+      next.fontFamily = draft.fontFamily;
+      next.fontWeight = draft.fontWeight;
+    } else {
+      delete next.fontFamily;
+      delete next.fontWeight;
+    }
     setTexts((current) => (stored ? current.map((text) => (text.id === next.id ? next : text)) : [next, ...current]));
     setEditing(null);
     setQuery("");
@@ -253,7 +265,7 @@ export function TextsWorkspace({ staged, selectedId, liveText, liveIndex, projec
         )}
       </main>
 
-      <TextDialog open={editing !== null} text={editingText} onOpenChange={(open) => !open && setEditing(null)} onSave={save} onDelete={() => { if (editingText) removeText(editingText); }} />
+      <TextDialog open={editing !== null} text={editingText} defaultFontFamily={defaultFontFamily} onOpenChange={(open) => !open && setEditing(null)} onSave={save} onDelete={() => { if (editingText) removeText(editingText); }} />
     </>
   );
 }

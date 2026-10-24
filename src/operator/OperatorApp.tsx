@@ -472,7 +472,8 @@ export function OperatorApp() {
   }, [previewPayload, staged, send, primaryId]);
 
   // A song's own velocity wins over Ajustes > Canciones; textos pass no fadeMs and keep the setting.
-  const songPayload = useCallback((_title: string, text: string, fadeMs?: number): ProjectorPayload => ({
+  // The typeface comes from the staged song or text; without its own, Ajustes > Tipo de letra applies.
+  const songPayload = useCallback((_title: string, text: string, fadeMs?: number, typeface?: Pick<SongStage, "fontFamily" | "fontWeight">): ProjectorPayload => ({
     mode: "verse",
     // Song titles are never projected; the operator sees them in the library.
     referenceLabel: "",
@@ -488,6 +489,8 @@ export function OperatorApp() {
     backgroundImagePath: settings.backgroundImagePath,
     fadeMs: fadeMs ?? settings.songFadeMs,
     backgroundFadeMs: settings.backgroundFadeMs,
+    fontFamily: typeface?.fontFamily,
+    fontWeight: typeface?.fontWeight,
   }), [settings]);
 
   const slidePayload = useCallback((imagePath: string | null): ProjectorPayload => ({
@@ -506,14 +509,14 @@ export function OperatorApp() {
     if (!songStaged || songStaged.slides.length === 0) return null;
     const text = songStaged.slides[songStaged.index] ?? songStaged.slides[0];
     if (text == null) return null;
-    return songPayload(songStaged.title, text, songStaged.fadeMs);
+    return songPayload(songStaged.title, text, songStaged.fadeMs, songStaged);
   }, [songStaged, songPayload]);
 
   const selectSong = useCallback((songId: string | null, selection: SongSelection | null) => {
     setSongSelectedId(songId);
     setSongStaged(
       selection && selection.slides.length > 0
-        ? { title: selection.title, slides: selection.slides, labels: selection.labels, index: selection.index ?? 0, fadeMs: selection.fadeMs }
+        ? { title: selection.title, slides: selection.slides, labels: selection.labels, index: selection.index ?? 0, fadeMs: selection.fadeMs, fontFamily: selection.fontFamily, fontWeight: selection.fontWeight }
         : null,
     );
   }, []);
@@ -526,7 +529,7 @@ export function OperatorApp() {
       const text = next.slides[clamped];
       if (projectOnClick && text != null) {
         setSongLive(next);
-        void send(songPayload(next.title, text, next.fadeMs));
+        void send(songPayload(next.title, text, next.fadeMs, next));
       }
       return next;
     });
@@ -539,7 +542,7 @@ export function OperatorApp() {
     const next = { ...songStaged, index };
     setSongStaged(next);
     setSongLive(next);
-    void send(songPayload(next.title, text, next.fadeMs));
+    void send(songPayload(next.title, text, next.fadeMs, next));
   }, [songStaged, send, songPayload]);
 
   const projectSongStaged = useCallback(async () => {
@@ -547,7 +550,7 @@ export function OperatorApp() {
     const text = songStaged.slides[songStaged.index] ?? songStaged.slides[0];
     if (text == null) return;
     setSongLive(songStaged);
-    await send(songPayload(songStaged.title, text, songStaged.fadeMs));
+    await send(songPayload(songStaged.title, text, songStaged.fadeMs, songStaged));
   }, [songStaged, send, songPayload]);
 
   const navigateSongPreview = useCallback((delta: number) => {
@@ -567,12 +570,12 @@ export function OperatorApp() {
     const text = next.slides[clamped];
     if (text == null) return;
     setSongLive(next);
-    await send(songPayload(next.title, text, next.fadeMs));
+    await send(songPayload(next.title, text, next.fadeMs, next));
   }, [songLive, send, songPayload]);
 
   // Textos are projected like songs, but the uppercase setting is for songs only.
-  const textPayload = useCallback((text: string): ProjectorPayload => ({
-    ...songPayload("", text),
+  const textPayload = useCallback((text: string, typeface?: Pick<SongStage, "fontFamily" | "fontWeight">): ProjectorPayload => ({
+    ...songPayload("", text, undefined, typeface),
     blocks: [{ text }],
   }), [songPayload]);
 
@@ -580,14 +583,14 @@ export function OperatorApp() {
     if (!textStaged || textStaged.slides.length === 0) return null;
     const text = textStaged.slides[textStaged.index] ?? textStaged.slides[0];
     if (text == null) return null;
-    return textPayload(text);
+    return textPayload(text, textStaged);
   }, [textStaged, textPayload]);
 
   const selectText = useCallback((textId: string | null, selection: SongSelection | null) => {
     setTextSelectedId(textId);
     setTextStaged(
       selection && selection.slides.length > 0
-        ? { title: selection.title, slides: selection.slides, labels: selection.labels, index: selection.index ?? 0 }
+        ? { title: selection.title, slides: selection.slides, labels: selection.labels, index: selection.index ?? 0, fontFamily: selection.fontFamily, fontWeight: selection.fontWeight }
         : null,
     );
   }, []);
@@ -600,7 +603,7 @@ export function OperatorApp() {
       const text = next.slides[clamped];
       if (projectOnClick && text != null) {
         setSongLive(next);
-        void send(textPayload(text));
+        void send(textPayload(text, next));
       }
       return next;
     });
@@ -613,7 +616,7 @@ export function OperatorApp() {
     const next = { ...textStaged, index };
     setTextStaged(next);
     setSongLive(next);
-    void send(textPayload(text));
+    void send(textPayload(text, next));
   }, [textStaged, send, textPayload]);
 
   const projectTextStaged = useCallback(async () => {
@@ -621,7 +624,7 @@ export function OperatorApp() {
     const text = textStaged.slides[textStaged.index] ?? textStaged.slides[0];
     if (text == null) return;
     setSongLive(textStaged);
-    await send(textPayload(text));
+    await send(textPayload(text, textStaged));
   }, [textStaged, send, textPayload]);
 
   const navigateTextPreview = useCallback((delta: number) => {
@@ -1277,6 +1280,7 @@ export function OperatorApp() {
             liveIndex={songLive && songStaged && songLive.title === songStaged.title && songLive.slides[songLive.index] === songStaged.slides[songLive.index] ? songLive.index : null}
             projectOnClick={projectOnClick}
             defaultFadeMs={settings.songFadeMs}
+            defaultFontFamily={settings.fontFamily}
             onToggleProjectOnClick={setProjectOnClick}
             onSelectSong={selectSong}
             onSelectPart={selectSongPart}
@@ -1289,6 +1293,7 @@ export function OperatorApp() {
             liveText={live?.mode === "verse" && !live.referenceLabel ? live.blocks[0]?.text ?? null : null}
             liveIndex={songLive && textStaged && songLive.title === textStaged.title && songLive.slides[songLive.index] === textStaged.slides[songLive.index] ? songLive.index : null}
             projectOnClick={projectOnClick}
+            defaultFontFamily={settings.fontFamily}
             onToggleProjectOnClick={setProjectOnClick}
             onSelectText={selectText}
             onSelectPart={selectTextPart}

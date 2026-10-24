@@ -84,6 +84,10 @@ export interface ProjectorPayload {
   countdown?: { caption: string; endsAt: number };
   /** Video on screen (mode "video"). */
   video?: VideoPlayback;
+  /** Typeface of this content (a song or text with its own font). Unset: Ajustes > Tipo de letra applies. */
+  fontFamily?: FontFamilyId;
+  /** Weight of this content, with fontFamily. Unset: normal. */
+  fontWeight?: number;
 }
 
 export interface AppSettings {
@@ -173,6 +177,9 @@ export interface StoredSong {
   lyrics: string;
   /** Transition duration in ms for this song. Unset: Ajustes > Canciones applies. */
   fadeMs?: number;
+  /** Typeface and weight of this song. Unset: Ajustes > Tipo de letra applies. */
+  fontFamily?: FontFamilyId;
+  fontWeight?: number;
   updatedAt: number;
   pinned: boolean;
 }
@@ -183,6 +190,9 @@ export interface StoredText {
   title: string;
   /** Text as written; each block separated by a blank line is one slide. */
   body: string;
+  /** Typeface and weight of this text. Unset: Ajustes > Tipo de letra applies. */
+  fontFamily?: FontFamilyId;
+  fontWeight?: number;
   updatedAt: number;
   pinned: boolean;
 }
