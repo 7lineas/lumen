@@ -1637,6 +1637,36 @@ button.song-part.selected, button.song-part.selected:hover { background: #1e3a5f
 .browser-access-card button:disabled { opacity: 0.55; }
 .browser-access-card .browser-access-error { color: var(--danger); }
 
+@media (max-width: 640px) {
+  .browser-access-gate {
+    min-height: 100dvh;
+    padding: 1rem;
+    align-items: center;
+  }
+  .browser-access-card {
+    width: 100%;
+    max-width: 24rem;
+    gap: 0.75rem;
+    padding: 1.25rem;
+  }
+  .browser-access-card h1 { font-size: 1.5rem; }
+  .browser-access-card p { font-size: 0.95rem; line-height: 1.4; }
+  .browser-access-card label { font-size: 0.95rem; }
+  /* 16px minimum stops iOS Safari from zooming the page on focus. */
+  .browser-access-card input {
+    min-height: 3rem;
+    font-size: 1.5rem;
+    letter-spacing: 0.4em;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+  .browser-access-card button {
+    width: 100%;
+    min-height: 3rem;
+    font-size: 1rem;
+  }
+}
+
 /* ============================================================
    Lumen "Affinity" professional theme — soft, rounded, layered.
    Overrides the sharp flat theme above. Everything rounded,
@@ -6219,4 +6249,150 @@ button.primary:not(:disabled):active,
   letter-spacing: 0.02em;
   white-space: nowrap;
   pointer-events: none;
+}
+
+/* ============================================================
+   Phone layout (operator shell). The desktop grid is three
+   fixed-height columns; below 760px the shell scrolls as one
+   column: library, workspace, monitors, then saved verses.
+   ============================================================ */
+@media (max-width: 760px) {
+  .lx {
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  .lx .lx-body {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+    grid-template-areas: "work" "lib" "mon" "svc";
+  }
+
+  .lx .lx-lib {
+    min-height: 0;
+    max-height: 55dvh;
+  }
+
+  /* The verse/song list scrolls inside its own panel so the monitors and
+     saved strip stay reachable below it. */
+  .lx .lx-work {
+    height: 62dvh;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  /* One row on phones: logo and mode picker on the left, menu on the right.
+     Overrides the macOS traffic-light inset (body.mac .top-bar). */
+  .app-shell.lx .top-bar {
+    height: 52px;
+    gap: 8px;
+    padding: 0 10px 0 12px;
+  }
+
+  .top-left {
+    gap: 10px;
+  }
+
+  .top-right {
+    margin-left: auto;
+  }
+
+  .lx .lx-desktop-only,
+  .lx .shortcuts-btn {
+    display: none;
+  }
+
+  .lx .lx-phone-only {
+    display: flex;
+    align-items: center;
+  }
+
+  /* Mode picker and menu button: one toolbar of matching 36px controls. */
+  .app-shell.lx .top-bar .lx-phone-control {
+    height: 36px;
+    border: 1px solid #30353e;
+    border-radius: 10px;
+    background: var(--muted-surface);
+    color: var(--foreground);
+    box-shadow: none;
+  }
+
+  .app-shell.lx .top-bar .lx-phone-control[data-slot="select-trigger"] {
+    min-width: 136px;
+    padding: 0 10px 0 12px;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .app-shell.lx .top-bar button.lx-phone-control {
+    width: 36px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .app-shell.lx .top-bar .lx-phone-control svg {
+    display: block;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* Phone bottom tabs: "Modos" (library + workspace) and "En vivo"
+   (monitors + saved strip). Only one of the two is shown at a time. */
+.lx-phone-tabs,
+.lx-phone-only {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .lx {
+    padding-bottom: calc(60px + env(safe-area-inset-bottom));
+  }
+
+  .lx .lx-phone-tabs {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 20;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    height: calc(60px + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+    background: var(--surface);
+    border-top: 1px solid #000;
+  }
+
+  .lx .lx-phone-tabs button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .lx .lx-phone-tabs button svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .lx .lx-phone-tabs button.on {
+    color: var(--accent);
+  }
+
+  .lx[data-phone-view="modes"] .lx-mon,
+  .lx[data-phone-view="modes"] .lx-svc,
+  .lx[data-phone-view="live"] .lx-lib,
+  .lx[data-phone-view="live"] .lx-work {
+    display: none;
+  }
 }

@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { Slider } from "@/components/ui/slider";
 import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Church, ImagePlus, Keyboard, Timer, Trash2, Video, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Church, EllipsisVertical, ImagePlus, Keyboard, LayoutGrid, Radio, Timer, Trash2, Video, X } from "lucide-react";
 import { toast } from "sonner";
 import type { AppSettings, HistoryEntry, ProjectorPayload, QueueEntry, VideoPlayback } from "@shared/types";
 import { DEFAULT_SETTINGS, MAX_QUEUE_ITEMS, mediaKind } from "@shared/types";
@@ -36,6 +36,7 @@ import { AudioDock, type AudioTrack } from "./AudioDock";
 import { VideoTransport } from "./VideoTransport";
 import { FitToggle } from "./FitToggle";
 import { MODE_ORDER, ModeSwitch, type OperatorMode } from "./ModeSwitch";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ShortcutsDialog } from "./ShortcutsDialog";
 import { UpdateButton, UpdateCheckButton } from "./UpdateButton";
 import { WindowControls } from "./WindowControls";
@@ -126,6 +127,13 @@ function BackgroundLibraryPreview({ filePath }: { filePath: string }) {
   return <img src={backgroundImageUrl(filePath)} alt="" />;
 }
 
+const PHONE_MODE_ITEMS: Array<{ value: OperatorMode; label: string }> = [
+  { value: "biblia", label: "Biblia" },
+  { value: "canciones", label: "Canciones" },
+  { value: "textos", label: "Textos" },
+  { value: "media", label: "Media" },
+];
+
 export function OperatorApp() {
   const [deletingMedia, setDeletingMedia] = useState(false);
   const [backgroundImportBusy, setBackgroundImportBusy] = useState(false);
@@ -165,6 +173,8 @@ export function OperatorApp() {
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [countdownMinutes, setCountdownMinutes] = useState(5);
   const [overlay, setOverlay] = useState<"ajustes" | "acerca" | "biblias" | null>(null);
+  // Phone only: which of the two panels the bottom tabs show.
+  const [phoneView, setPhoneView] = useState<"modes" | "live">("modes");
   // Keep rendering the last non-null overlay while the sheet plays its
   // close animation. Clearing children/className synchronously on ESC makes
   // the panel go empty (and jump 460px -> 720px when leaving "ajustes")
@@ -1179,6 +1189,7 @@ export function OperatorApp() {
     <div
       className="app-shell lx"
       data-mode={mode}
+      data-phone-view={phoneView}
       style={{
         "--tile-bg": settings.backgroundColor,
         "--tile-fg": settings.theme === "light" ? "#1a1a1a" : "#f5f7fa",
@@ -1189,7 +1200,19 @@ export function OperatorApp() {
           <div className="brand">
             <img className="brand-logo" src={lumenLogo} alt="Lumen" />
           </div>
-          <ModeSwitch mode={mode} onSwitch={switchMode} trailing={<UpdateButton />} />
+          <div className="lx-desktop-only">
+            <ModeSwitch mode={mode} onSwitch={switchMode} trailing={<UpdateButton />} />
+          </div>
+          <div className="lx-phone-only">
+            <Select value={mode} items={PHONE_MODE_ITEMS} onValueChange={(value) => value && switchMode(value as OperatorMode)}>
+              <SelectTrigger className="lx-pill lx-phone-control" aria-label="Modo de trabajo"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {PHONE_MODE_ITEMS.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
         <div className="top-right">
           <UpdateCheckButton />
@@ -1201,8 +1224,8 @@ export function OperatorApp() {
               Abrir proyector
             </Button>
           )}
-          <span className="top-sep" aria-hidden />
-          <div className="tabs">
+          <span className="top-sep lx-desktop-only" aria-hidden />
+          <div className="tabs lx-desktop-only">
             <Button
               type="button"
               data-testid="tab-biblias"
@@ -1228,6 +1251,18 @@ export function OperatorApp() {
             </Button>
           </div>
           <WindowControls />
+          <div className="lx-phone-only">
+            <DropdownMenu>
+              <DropdownMenuTrigger className="lx-phone-control" aria-label="Más opciones" title="Más opciones">
+                <EllipsisVertical aria-hidden />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setOverlay("biblias")}>Biblias</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setOverlay("ajustes")}>Ajustes</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setOverlay("acerca")}>Acerca de</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </header>
 
@@ -1620,6 +1655,17 @@ export function OperatorApp() {
           }}
         />
       </div>
+
+      <nav className="lx-phone-tabs" aria-label="Vista móvil">
+        <button type="button" className={phoneView === "modes" ? "on" : ""} aria-pressed={phoneView === "modes"} onClick={() => setPhoneView("modes")}>
+          <LayoutGrid aria-hidden />
+          <span>Contenido</span>
+        </button>
+        <button type="button" className={phoneView === "live" ? "on" : ""} aria-pressed={phoneView === "live"} onClick={() => setPhoneView("live")}>
+          <Radio aria-hidden />
+          <span>En vivo</span>
+        </button>
+      </nav>
 
       <ShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
 
