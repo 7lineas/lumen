@@ -41,6 +41,7 @@ export interface DisplayInfo {
 contextBridge.exposeInMainWorld("proyector", {
   getBrowserAccess: () => ipcRenderer.invoke("browser:status"),
   setBrowserAccess: (enabled: boolean) => ipcRenderer.invoke("browser:configure", enabled),
+  rotateBrowserAccessCode: () => ipcRenderer.invoke("browser:rotate-code"),
   listBibleVersions: (): Promise<unknown[]> => ipcRenderer.invoke("bibles:list"),
   loadBible: (id: string): Promise<unknown> => ipcRenderer.invoke("bibles:load", id),
   listOnlineBibles: (force?: boolean): Promise<OnlineVersionsResult> => ipcRenderer.invoke("yvp:versions", force === true),

@@ -23,7 +23,7 @@ let reconnectTimer = 0;
 const callbacks = new Map<string, Set<(payload: unknown) => void>>();
 
 function token(): string {
-  return sessionStorage.getItem("lumen-access-token") ?? "";
+  return localStorage.getItem("lumen-access-token") ?? "";
 }
 
 async function rpc(channel: string, args: unknown[]): Promise<unknown> {
@@ -121,5 +121,5 @@ export async function refreshBrowserSession(): Promise<void> {
     headers: { Authorization: `Bearer ${accessToken}` },
     signal: AbortSignal.timeout(10_000),
   });
-  if (!response.ok) sessionStorage.removeItem("lumen-access-token");
+  if (!response.ok) localStorage.removeItem("lumen-access-token");
 }

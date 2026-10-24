@@ -229,7 +229,7 @@ import {
 } from "./bible-library";
 import { ImportSession } from "./bible-import";
 import type { ImportMetaInput } from "../shared/bible-import/build";
-import { publishBrowserEvent, registerBrowserRpc, startBrowserService, stopBrowserService } from "./browser-service";
+import { publishBrowserEvent, registerBrowserRpc, rotateBrowserPairingCode, startBrowserService, stopBrowserService } from "./browser-service";
 
 function registerIpcHandle<TArgs extends unknown[], TResult>(
   channel: string,
@@ -720,6 +720,15 @@ registerIpcHandle("browser:configure", (_event, enabled: boolean) => {
     host: next.enabled ? "0.0.0.0" : "127.0.0.1",
     pairingCode: next.pairingCode,
   });
+  return browserAccessInfo();
+});
+registerIpcHandle("browser:rotate-code", () => {
+  const stored = store.get("browserAccess");
+  if (!stored.enabled) throw new Error("El acceso desde otros dispositivos está apagado.");
+  let pairingCode = stored.pairingCode;
+  while (pairingCode === stored.pairingCode) pairingCode = String(randomInt(0, 1_000_000)).padStart(6, "0");
+  store.set("browserAccess", { enabled: true, pairingCode });
+  rotateBrowserPairingCode(pairingCode);
   return browserAccessInfo();
 });
 

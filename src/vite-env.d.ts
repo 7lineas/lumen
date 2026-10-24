@@ -49,6 +49,7 @@ export interface BrowserAccessInfo {
 export interface ProyectorApi {
   getBrowserAccess: () => Promise<BrowserAccessInfo>;
   setBrowserAccess: (enabled: boolean) => Promise<BrowserAccessInfo>;
+  rotateBrowserAccessCode: () => Promise<BrowserAccessInfo>;
   listBibleVersions: () => Promise<Array<{ id: string; name: string; abbr: string; language: string }>>;
   loadBible: (id: string) => Promise<unknown>;
   listOnlineBibles: (force?: boolean) => Promise<OnlineVersionsResult>;

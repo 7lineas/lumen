@@ -5,7 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import QRCode from "qrcode";
-import { Check, Church, Copy, MonitorPlay, Palette, Timer, Wifi, type LucideIcon } from "lucide-react";
+import { Check, Church, Copy, MonitorPlay, Palette, RefreshCw, Timer, Wifi, type LucideIcon } from "lucide-react";
 import type { AppSettings, BibleVersionMeta } from "@shared/types";
 import { backgroundImageUrl } from "@shared/background-image";
 import type { DisplayInfo } from "../vite-env.d";
@@ -74,6 +74,7 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
   const [browserAccessBusy, setBrowserAccessBusy] = useState(false);
   const [browserQrCodes, setBrowserQrCodes] = useState<Record<string, string>>(browserQrCache);
   const [codeCopied, setCodeCopied] = useState(false);
+  const [codeRotating, setCodeRotating] = useState(false);
 
   useEffect(() => {
     setLocal(settings);
@@ -151,6 +152,19 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
         ? "Activo en la red local"
         : "Apagado";
 
+  const rotateCode = async () => {
+    if (codeRotating) return;
+    setCodeRotating(true);
+    try {
+      setBrowserAccess(await window.proyector?.rotateBrowserAccessCode() ?? browserAccess);
+      toast.success("Código cambiado. El anterior ya no funciona.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo cambiar el código");
+    } finally {
+      setCodeRotating(false);
+    }
+  };
+
   const toggleBrowserAccess = async () => {
     if (browserAccessBusy || !browserAccess) return;
     setBrowserAccessBusy(true);
@@ -213,6 +227,16 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
                     >
                       {codeCopied ? <Check size={14} aria-hidden /> : <Copy size={14} aria-hidden />}
                       {codeCopied ? "Copiado" : "Copiar"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={codeRotating}
+                      onClick={() => void rotateCode()}
+                    >
+                      <RefreshCw size={14} aria-hidden />
+                      Cambiar código
                     </Button>
                   </div>
                   <div className="ajustes-access-split">
