@@ -42,6 +42,7 @@ export function ProjectorView() {
   const displayedRef = useRef<ProjectorPayload>(EMPTY);
   const visibleRef = useRef(false);
   const timerRef = useRef<number | null>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
   const [fitSize, setFitSize] = useState(settings.fontSize);
 
@@ -110,30 +111,35 @@ export function ProjectorView() {
 
   useEffect(() => {
     const el = textRef.current;
-    if (!el || payload.mode !== "verse") return;
+    const inner = innerRef.current;
+    if (!el || !inner || payload.mode !== "verse") return;
     let raf = 0;
     const fit = () => {
       // Always restart from the full size so growing the window grows text back.
       // The body is a flex-1 box with overflow hidden, so fitting to its own
-      // clientHeight keeps header/footer clear at any window ratio.
+      // clientHeight keeps header/footer clear at any window ratio. The header
+      // and footer are em-sized from the inner box, so each candidate size is
+      // set on the inner box before measuring: they grow and shrink with the text.
       const size = fitFontSize(fontSize, (s) => {
-        el.style.fontSize = `${s}px`;
+        inner.style.fontSize = `${s}px`;
         return el.scrollHeight <= el.clientHeight;
       });
-      el.style.fontSize = `${size}px`;
+      inner.style.fontSize = `${size}px`;
       setFitSize(size);
     };
     fit();
-    const onResize = () => {
+    // The body's box also changes with padding, the header/footer, or the window:
+    // observe it instead of only listening for window resizes.
+    const observer = new ResizeObserver(() => {
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(fit);
-    };
-    window.addEventListener("resize", onResize);
+    });
+    observer.observe(el);
     // Webfonts arriving late change metrics: refit each time one finishes loading.
     document.fonts?.addEventListener("loadingdone", fit);
     return () => {
       cancelAnimationFrame(raf);
-      window.removeEventListener("resize", onResize);
+      observer.disconnect();
       document.fonts?.removeEventListener("loadingdone", fit);
     };
   }, [payload, fontSize, settings.fontFamily]);
@@ -226,9 +232,6 @@ export function ProjectorView() {
 
   const slideImage = payload.mode === "slides" ? payload.slideImagePath ?? null : null;
   const slideImageUrl = slideImage ? backgroundImageUrl(slideImage) ?? undefined : undefined;
-  // Floating labels (reference top-left, version® bottom-right) share one
-  // size: 3/4 of the fitted verse text.
-  const metaSize = fitSize * 0.75;
 
   if (slideImage && slideImageUrl) {
     return (
@@ -248,8 +251,10 @@ export function ProjectorView() {
       <div className={themeClass} style={style}>
         <div className="projector-background-layer" style={backgroundStyle} />
         {backgroundMedia}
-      <div className={`projector-inner fade ${visible ? "show" : ""}`} style={fadeStyle}>
-        {ref && <header className="projector-ref" style={{ color: referenceColor, fontSize: `${metaSize}px` }}>{ref}</header>}
+      <div ref={innerRef} className={`projector-inner fade ${visible ? "show" : ""}`} style={{ ...fadeStyle, fontSize: `${fitSize}px` }}>
+        {/* Floating labels (reference top-left, version® bottom-right) share one
+            size: 3/4 of the fitted verse text, so they scale with the inner box. */}
+        {ref && <header className="projector-ref" style={{ color: referenceColor, fontSize: "0.75em" }}>{ref}</header>}
         <div ref={textRef} className={`projector-body ${payload.blocks.length > 1 ? "dual" : ""}`}>
           {payload.blocks.map((block, i) => (
             <section key={i} className="projector-column">
@@ -260,7 +265,7 @@ export function ProjectorView() {
         </div>
         {version && (
           <div className="projector-footer">
-            <div className="projector-version" style={{ color: versionColor, fontSize: `${metaSize}px` }}>{version}®</div>
+            <div className="projector-version" style={{ color: versionColor, fontSize: "0.75em" }}>{version}®</div>
           </div>
         )}
       </div>
