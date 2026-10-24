@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { App } from "./App";
 import { BrowserAccessGate } from "./BrowserAccessGate";
 import { installBrowserApi, refreshBrowserSession } from "./browser-api";
+import "@fontsource-variable/geist";
 import "./styles.css";
 
 // Platform classes for the top bar (traffic-light space on macOS, window

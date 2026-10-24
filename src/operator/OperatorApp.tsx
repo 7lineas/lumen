@@ -1376,6 +1376,7 @@ export function OperatorApp() {
             displayWidth={projectorBounds?.width}
             backgroundFit={settings.backgroundFit}
             slideFit={settings.slideFit}
+            fontFamily={settings.fontFamily}
           >
             <div className="lx-mon-actions">
               <button type="button" className="lx-take" data-testid="btn-project" onClick={projectPreview}>
@@ -1401,6 +1402,7 @@ export function OperatorApp() {
             displayWidth={projectorBounds?.width}
             backgroundFit={settings.backgroundFit}
             slideFit={settings.slideFit}
+            fontFamily={settings.fontFamily}
             onVideoDuration={setVideoDuration}
           >
             {live?.mode === "video" && live.video && (

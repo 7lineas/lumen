@@ -1,3 +1,5 @@
+import type { FontFamilyId } from "./fonts";
+
 export interface BibleVersionMeta {
   id: string;
   name: string;
@@ -105,6 +107,8 @@ export interface AppSettings {
   songFadeMs: number;
   /** Project song lyrics in capitals. Songs only: Bible text is never changed. */
   songUppercase: boolean;
+  /** Typeface for everything projected (text, reference and version). Size stays in fontSize. */
+  fontFamily: FontFamilyId;
   backgroundFadeMs: number;
   /** Name shown on the logo screen. Unused now that the logo screen shows an image. */
   churchName: string;
@@ -135,6 +139,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   fadeMs: 400,
   songFadeMs: 100,
   songUppercase: false,
+  fontFamily: "system",
   backgroundFadeMs: 100,
   churchName: "Iglesia",
   logoImagePath: null,
