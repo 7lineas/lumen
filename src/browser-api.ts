@@ -11,11 +11,12 @@ const methods: Record<string, string> = {
   getSlideDecks: "slides:get", setSlideDecks: "slides:set", readSlideSource: "slides:readFile",
   saveSlidePngs: "slides:savePngs", convertPptx: "slides:convertPptx", showOnProjector: "projector:show",
   deleteBackgroundMedia: "background:delete",
+  listInstalledFonts: "fonts:list", searchGoogleFonts: "fonts:search", installGoogleFont: "fonts:install", removeInstalledFont: "fonts:remove",
 };
 
 const eventNames: Record<string, string> = {
   onProjectorUpdate: "projector:update", onSettingsUpdate: "settings:update",
-  onBibleDownloadProgress: "bibles:download-progress", onSlideProgress: "slides:progress",
+  onBibleDownloadProgress: "bibles:download-progress", onSlideProgress: "slides:progress", onFontsUpdate: "fonts:update",
 };
 
 let eventsController: AbortController | null = null;

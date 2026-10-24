@@ -5,13 +5,15 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import QRCode from "qrcode";
-import { Check, Church, Copy, MonitorPlay, Palette, RefreshCw, Timer, Wifi, type LucideIcon } from "lucide-react";
+import { Check, Church, Copy, MonitorPlay, Palette, RefreshCw, Timer, Type, Wifi, type LucideIcon } from "lucide-react";
 import type { AppSettings, BibleVersionMeta } from "@shared/types";
-import { FONT_FAMILY_OPTIONS, type FontFamilyId } from "@shared/fonts";
+import { fontChoices, type FontFamilyId } from "@shared/fonts";
 import { backgroundImageUrl } from "@shared/background-image";
 import type { DisplayInfo } from "../vite-env.d";
 import type { BrowserAccessInfo } from "../vite-env.d";
 import { TransitionRow } from "./TransitionRow";
+import { GoogleFontsManager } from "./GoogleFontsManager";
+import { useInstalledFonts } from "@/hooks/useInstalledFonts";
 
 /** Read once when the app starts, so opening Ajustes already has the access state and QR codes. */
 let browserAccessCache: BrowserAccessInfo | null = null;
@@ -76,6 +78,7 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
   const [browserQrCodes, setBrowserQrCodes] = useState<Record<string, string>>(browserQrCache);
   const [codeCopied, setCodeCopied] = useState(false);
   const [codeRotating, setCodeRotating] = useState(false);
+  const installedFonts = useInstalledFonts();
 
   useEffect(() => {
     setLocal(settings);
@@ -175,6 +178,12 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
       setBrowserAccessBusy(false);
     }
   };
+
+  const fontOptions = fontChoices(installedFonts);
+
+  // A removed font can no longer be projected: fall back to the system font.
+  const forgetFont = (id: string) =>
+    setLocal((current) => (current.fontFamily === id ? { ...current, fontFamily: "system" } : current));
 
   return (
     <div className="settings">
@@ -282,12 +291,12 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
         <SettingRow label="Tipo de letra" hint="Se aplica a lo proyectado">
           <Select
             value={local.fontFamily}
-            items={FONT_FAMILY_OPTIONS.map((option) => ({ value: option.id, label: option.label }))}
+            items={fontOptions.map((option) => ({ value: option.id, label: option.label }))}
             onValueChange={(value) => value && setLocal({ ...local, fontFamily: value as FontFamilyId })}
           >
             <SelectTrigger className="ajustes-select"><SelectValue /></SelectTrigger>
             <SelectContent className="ajustes-select-popup" alignItemWithTrigger={false}>
-              {FONT_FAMILY_OPTIONS.map((option) => (
+              {fontOptions.map((option) => (
                 <SelectItem key={option.id} value={option.id} style={{ fontFamily: option.stack }}>
                   {option.label}
                 </SelectItem>
@@ -313,6 +322,10 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
             />
           </label>
         </SettingRow>
+      </SettingsGroup>
+
+      <SettingsGroup icon={Type} title="Fuentes de Google">
+        <GoogleFontsManager installed={installedFonts} onRemoved={forgetFont} />
       </SettingsGroup>
 
       <SettingsGroup icon={Church} title="Logo">

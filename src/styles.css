@@ -4476,6 +4476,33 @@ body.win.electron .top-bar::after {
   color: var(--muted);
 }
 
+.ajustes-font-note {
+  padding: 0.55rem 0.1rem;
+}
+
+.ajustes-font-results {
+  display: grid;
+  gap: 0;
+  max-height: 14rem;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ajustes-font-results li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.4rem 0.1rem;
+  border-bottom: 1px solid #292d34;
+}
+
+.ajustes-font-results li:last-child {
+  border-bottom: 0;
+}
+
 /* Dialog and sheet motion is off unless the Ajustes switch turns it on */
 html[data-overlay-motion="off"] [data-slot="dialog-overlay"],
 html[data-overlay-motion="off"] [data-slot="dialog-content"],
