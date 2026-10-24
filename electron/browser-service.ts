@@ -174,7 +174,7 @@ export function startBrowserService(options: { root: string; userData: string; h
       const name = decodeURIComponent(url.pathname.slice("/media/".length));
       const base = path.resolve(options.userData);
       const candidate = path.resolve(base, name);
-      const roots = ["background-images", "slide-images", "media-files"].map((dir) => path.join(base, dir) + path.sep);
+      const roots = ["background-images", "slide-images", "media-files", "fonts"].map((dir) => path.join(base, dir) + path.sep);
       if (!roots.some((root) => candidate.startsWith(root)) || !existsSync(candidate) || !statSync(candidate).isFile()) return send(response, 404, { error: "not_found" });
       const { size } = statSync(candidate);
       const range = request.headers.range;

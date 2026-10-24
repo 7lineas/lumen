@@ -43,7 +43,7 @@ function mediaFilesDir(): string {
 }
 
 /** Folders under userData whose files may be shown or played in the app windows. */
-const SERVED_MEDIA_DIRS = ["background-images", "logo-images", "slide-images", "media-files"];
+const SERVED_MEDIA_DIRS = ["background-images", "logo-images", "slide-images", "media-files", "fonts"];
 
 const MEDIA_CONTENT_TYPES: Record<string, string> = {
   ".mp4": "video/mp4", ".m4v": "video/mp4", ".mov": "video/quicktime", ".webm": "video/webm", ".ogv": "video/ogg",
@@ -228,6 +228,8 @@ import {
   resolveModulePath,
 } from "./bible-library";
 import { ImportSession } from "./bible-import";
+import { installGoogleFont, installedFontId, loadGoogleFontCatalog, removeInstalledFont, searchGoogleFonts, type GoogleFontEntry } from "./google-fonts";
+import type { InstalledFont } from "../shared/fonts";
 import type { ImportMetaInput } from "../shared/bible-import/build";
 import { publishBrowserEvent, registerBrowserRpc, rotateBrowserPairingCode, startBrowserService, stopBrowserService } from "./browser-service";
 
@@ -256,6 +258,7 @@ const store = new Store<{
   texts: StoredText[];
   slideDecks: StoredSlideDeck[];
   browserAccess: { enabled: boolean; pairingCode: string };
+  installedFonts: InstalledFont[];
 }>({
   defaults: {
     settings: DEFAULT_SETTINGS,
@@ -266,6 +269,7 @@ const store = new Store<{
     texts: [],
     slideDecks: [],
     browserAccess: { enabled: false, pairingCode: "" },
+    installedFonts: [],
   },
 });
 
@@ -311,6 +315,23 @@ function biblesPath(): string {
 
 function userBiblesDir(): string {
   return path.join(app.getPath("userData"), "bibles");
+}
+
+function userFontsDir(): string {
+  return path.join(app.getPath("userData"), "fonts");
+}
+
+function googleFontsCatalogFile(): string {
+  return path.join(app.getPath("userData"), "google-fonts-catalog.json");
+}
+
+/** Tells every window which fonts can be used now, so the projector and the operator load the same faces. */
+function broadcastInstalledFonts(): void {
+  const fonts = store.get("installedFonts");
+  for (const window of BrowserWindow.getAllWindows()) {
+    if (!window.isDestroyed()) window.webContents.send("fonts:update", fonts);
+  }
+  publishBrowserEvent("fonts:update", fonts);
 }
 
 function catalogPath(): string {
@@ -821,6 +842,34 @@ registerIpcHandle("bibles:remove", (_e, id: string) => {
   if (settings.secondaryVersionId === safeId) settings.secondaryVersionId = null;
   store.set("settings", settings);
   return { settings };
+});
+
+registerIpcHandle("fonts:list", () => store.get("installedFonts"));
+
+registerIpcHandle("fonts:search", async (_e, query?: string) => {
+  const catalog = await loadGoogleFontCatalog({ cacheFile: googleFontsCatalogFile(), fetchImpl: fetch });
+  return searchGoogleFonts(catalog, String(query ?? ""));
+});
+
+registerIpcHandle("fonts:install", async (_e, family: string) => {
+  const safeFamily = String(family);
+  const installed = store.get("installedFonts");
+  const existing = installed.find((font) => font.id === installedFontId(safeFamily));
+  if (existing) return existing;
+  const catalog: GoogleFontEntry[] = await loadGoogleFontCatalog({ cacheFile: googleFontsCatalogFile(), fetchImpl: fetch });
+  const font = await installGoogleFont({ family: safeFamily, catalog, fontsDir: userFontsDir(), fetchImpl: fetch });
+  store.set("installedFonts", [...installed.filter((item) => item.id !== font.id), font]);
+  broadcastInstalledFonts();
+  return font;
+});
+
+registerIpcHandle("fonts:remove", (_e, id: string) => {
+  const font = store.get("installedFonts").find((item) => item.id === String(id));
+  if (!font) throw new Error("Esa fuente no está instalada");
+  removeInstalledFont(userFontsDir(), font);
+  store.set("installedFonts", store.get("installedFonts").filter((item) => item.id !== font.id));
+  broadcastInstalledFonts();
+  return true;
 });
 
 registerIpcHandle("settings:get", () => currentSettings());

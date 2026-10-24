@@ -215,13 +215,21 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
       setFitPx(size);
     };
     fit();
+    // Installed fonts can finish loading after the text was measured.
+    document.fonts?.addEventListener("loadingdone", fit);
     if (typeof ResizeObserver !== "undefined") {
       const ro = new ResizeObserver(fit);
       ro.observe(screen);
-      return () => ro.disconnect();
+      return () => {
+        ro.disconnect();
+        document.fonts?.removeEventListener("loadingdone", fit);
+      };
     }
     window.addEventListener("resize", fit);
-    return () => window.removeEventListener("resize", fit);
+    return () => {
+      window.removeEventListener("resize", fit);
+      document.fonts?.removeEventListener("loadingdone", fit);
+    };
   }, [renderPayload, projectorFontPx, projectorW, screenAspect, pad, fontFamily]);
 
   // The monitor's browser surface has a small extra text-box inset compared

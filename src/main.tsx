@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { App } from "./App";
 import { BrowserAccessGate } from "./BrowserAccessGate";
 import { installBrowserApi, refreshBrowserSession } from "./browser-api";
+import { InstalledFontFaces } from "./components/InstalledFontFaces";
 import "@fontsource-variable/geist";
 import "./styles.css";
 
@@ -15,7 +16,7 @@ document.body.classList.add(/Mac/.test(navigator.userAgent) ? "mac" : "win");
 function renderApp() {
   createRoot(document.getElementById("root")!).render(
     <StrictMode>
-      <BrowserAccessGate><App /></BrowserAccessGate>
+      <BrowserAccessGate><InstalledFontFaces /><App /></BrowserAccessGate>
       <Toaster position="top-center" />
     </StrictMode>,
   );

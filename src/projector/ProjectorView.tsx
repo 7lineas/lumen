@@ -129,21 +129,12 @@ export function ProjectorView() {
       raf = requestAnimationFrame(fit);
     };
     window.addEventListener("resize", onResize);
-    // Webfonts arriving late change metrics; refit once they're ready.
-    let fontsDone = false;
-    try {
-      void document.fonts?.ready.then(() => {
-        if (!fontsDone) {
-          fontsDone = true;
-          fit();
-        }
-      }).catch(() => undefined);
-    } catch {
-      // ignore
-    }
+    // Webfonts arriving late change metrics: refit each time one finishes loading.
+    document.fonts?.addEventListener("loadingdone", fit);
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", onResize);
+      document.fonts?.removeEventListener("loadingdone", fit);
     };
   }, [payload, fontSize, settings.fontFamily]);
 
