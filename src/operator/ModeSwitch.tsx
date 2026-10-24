@@ -17,15 +17,13 @@ const MODES: Array<{ id: OperatorMode; label: string; testId: string; icon: Reac
 interface Props {
   mode: OperatorMode;
   onSwitch: (mode: OperatorMode) => void;
-  /** Controls shown after the modes, inside the same pill (e.g. the update button). */
-  trailing?: ReactNode;
 }
 
 /**
  * Segmented switch between the workspaces. The highlight is one element that
  * slides from the old mode to the new one, instead of two buttons swapping.
  */
-export function ModeSwitch({ mode, onSwitch, trailing }: Props) {
+export function ModeSwitch({ mode, onSwitch }: Props) {
   const railRef = useRef<HTMLDivElement>(null);
   const indicatorRef = useRef<HTMLSpanElement>(null);
 
@@ -73,7 +71,6 @@ export function ModeSwitch({ mode, onSwitch, trailing }: Props) {
           <kbd>{index + 1}</kbd>
         </Button>
       ))}
-      {trailing}
     </div>
   );
 }

@@ -1293,7 +1293,7 @@ body {
   color: #061018;
 }
 
-.modes .update-button {
+.update-button {
   position: relative;
   overflow: hidden;
   align-self: center;
@@ -1305,13 +1305,13 @@ body {
   font-weight: 600;
 }
 
-.modes .update-button[data-state="install"] {
+.update-button[data-state="install"] {
   color: #061018;
   background: var(--accent);
   border-color: var(--accent);
 }
 
-.modes .update-button[data-state="downloading"] {
+.update-button[data-state="downloading"] {
   opacity: 1;
   background: linear-gradient(
     90deg,
@@ -1776,11 +1776,6 @@ body {
   background: linear-gradient(180deg, #8ec5f5 0%, #5ea3e8 100%);
   color: #0c1a2b;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
-}
-
-.modes .update-button {
-  border-radius: 999px;
-  margin-left: 0.35rem;
 }
 
 /* Right side toolbar groups */

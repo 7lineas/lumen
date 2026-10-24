@@ -1201,7 +1201,7 @@ export function OperatorApp() {
             <img className="brand-logo" src={lumenLogo} alt="Lumen" />
           </div>
           <div className="lx-desktop-only">
-            <ModeSwitch mode={mode} onSwitch={switchMode} trailing={<UpdateButton />} />
+            <ModeSwitch mode={mode} onSwitch={switchMode} />
           </div>
           <div className="lx-phone-only">
             <Select value={mode} items={PHONE_MODE_ITEMS} onValueChange={(value) => value && switchMode(value as OperatorMode)}>
@@ -1215,6 +1215,7 @@ export function OperatorApp() {
           </div>
         </div>
         <div className="top-right">
+          <UpdateButton />
           <UpdateCheckButton />
           <Button type="button" variant="ghost" size="icon" className="shortcuts-btn" aria-label="Atajos de teclado" title="Atajos de teclado (?)" data-testid="btn-shortcuts" onClick={() => setShortcutsOpen(true)}>
             <Keyboard />
