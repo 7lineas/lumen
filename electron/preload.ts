@@ -2,7 +2,7 @@ import { contextBridge, ipcRenderer } from "electron";
 import type { BibleImportPickResult, BibleImportCommitResult } from "../shared/bible-import/types";
 import type { ImportMetaInput } from "../shared/bible-import/build";
 import type { AppUpdateState } from "../shared/app-update";
-import type { GoogleFontSearchResult, InstalledFont } from "../shared/fonts";
+import type { GoogleFontPreviewFace, GoogleFontSearchResult, InstalledFont } from "../shared/fonts";
 import type { ChapterResult, OnlineSearchResult, OnlineVersionsResult } from "../shared/youversion";
 import type { AppSettings, HistoryEntry, ProjectorPayload, QueueEntry, StoredSong, StoredText, StoredSlideDeck, SlideImportResult } from "../shared/types";
 
@@ -60,6 +60,7 @@ contextBridge.exposeInMainWorld("proyector", {
   cancelBibleImport: (): Promise<void> => ipcRenderer.invoke("bibles:import-cancel"),
   listInstalledFonts: (): Promise<InstalledFont[]> => ipcRenderer.invoke("fonts:list"),
   searchGoogleFonts: (query: string): Promise<GoogleFontSearchResult[]> => ipcRenderer.invoke("fonts:search", query),
+  previewGoogleFont: (family: string): Promise<GoogleFontPreviewFace[]> => ipcRenderer.invoke("fonts:preview", family),
   installGoogleFont: (family: string): Promise<InstalledFont> => ipcRenderer.invoke("fonts:install", family),
   removeInstalledFont: (id: string): Promise<boolean> => ipcRenderer.invoke("fonts:remove", id),
   getSettings: (): Promise<AppSettings> => ipcRenderer.invoke("settings:get"),

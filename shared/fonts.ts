@@ -42,6 +42,13 @@ export interface GoogleFontSearchResult {
   hebrew: boolean;
 }
 
+/** One remote file of a Google font, enough to draw it before it is installed. */
+export interface GoogleFontPreviewFace {
+  weight: string;
+  unicodeRange: string;
+  url: string;
+}
+
 export interface FontChoice {
   id: FontFamilyId;
   label: string;

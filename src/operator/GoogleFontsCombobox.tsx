@@ -6,6 +6,7 @@ import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { fontStack, type FontFamilyId, type GoogleFontSearchResult, type InstalledFont } from "@shared/fonts";
+import { useFontPreview } from "@/hooks/useFontPreview";
 
 interface Props {
   /** Typeface currently saved, so its row shows a check mark. */
@@ -18,6 +19,12 @@ interface Props {
 }
 
 const SEARCH_DELAY_MS = 250;
+
+/** Family name drawn in its own typeface, so a font can be seen before it is installed. */
+function FontPreviewName({ family }: { family: string }) {
+  const stack = useFontPreview(family);
+  return <span style={stack ? { fontFamily: stack } : undefined}>{family}</span>;
+}
 
 /** Search icon next to the typeface selector. Opens a search list of installed and Google fonts. */
 export function GoogleFontsCombobox({ value, installed, onSelect, onRemoved }: Props) {
@@ -150,7 +157,7 @@ export function GoogleFontsCombobox({ value, installed, onSelect, onRemoved }: P
             catalogMatches.map((font) => (
               <li key={font.family} className="ajustes-font-item">
                 <button type="button" className="ajustes-font-pick" disabled={busy !== null} onClick={() => void choose(font.family)}>
-                  <span>{font.family}</span>
+                  <FontPreviewName family={font.family} />
                   <small>{[font.category, font.hebrew ? "hebreo" : ""].filter(Boolean).join(" · ")}</small>
                 </button>
                 <span className="ajustes-font-action">{busy === font.family ? "Instalando…" : "Instalar"}</span>

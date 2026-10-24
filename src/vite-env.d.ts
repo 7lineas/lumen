@@ -4,7 +4,7 @@ import type { BibleImportPickResult, BibleImportCommitResult } from "../shared/b
 import type { ImportMetaInput } from "../shared/bible-import/build";
 import type { ChapterResult, OnlineSearchResult, OnlineVersionsResult } from "../shared/youversion";
 import type { AppUpdateState } from "../shared/app-update";
-import type { GoogleFontSearchResult, InstalledFont } from "../shared/fonts";
+import type { GoogleFontPreviewFace, GoogleFontSearchResult, InstalledFont } from "../shared/fonts";
 import type { AppSettings, HistoryEntry, ProjectorPayload, QueueEntry, StoredSong, StoredText, StoredSlideDeck, SlideImportResult } from "../shared/types";
 
 export interface DisplayInfo {
@@ -66,6 +66,7 @@ export interface ProyectorApi {
   cancelBibleImport: () => Promise<void>;
   listInstalledFonts: () => Promise<InstalledFont[]>;
   searchGoogleFonts: (query: string) => Promise<GoogleFontSearchResult[]>;
+  previewGoogleFont: (family: string) => Promise<GoogleFontPreviewFace[]>;
   installGoogleFont: (family: string) => Promise<InstalledFont>;
   removeInstalledFont: (id: string) => Promise<boolean>;
   onFontsUpdate: (cb: (fonts: InstalledFont[]) => void) => () => void;
