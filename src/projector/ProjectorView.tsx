@@ -2,12 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import type { AppSettings, ProjectorPayload } from "@shared/types";
 import { DEFAULT_SETTINGS } from "@shared/types";
 import { backgroundImageUrl } from "@shared/background-image";
-import { fitFontSize } from "@shared/text-fit";
 import { fontStack } from "@shared/fonts";
 import { payloadContentKey } from "@shared/stage";
 import { FadingBackgroundMedia } from "@/components/BackgroundMedia";
 import { CountdownClock } from "@/components/Clock";
 import { SyncedVideo } from "@/components/SyncedVideo";
+import { VerseScreen } from "@/components/VerseScreen";
 
 const EMPTY: ProjectorPayload = {
   mode: "blank",
@@ -20,12 +20,6 @@ const EMPTY: ProjectorPayload = {
   theme: "dark",
   backgroundColor: DEFAULT_SETTINGS.backgroundColor,
 };
-
-function splitReference(label: string): { ref: string; version: string } {
-  const sep = label.lastIndexOf(" — ");
-  if (sep < 0) return { ref: label, version: "" };
-  return { ref: label.slice(0, sep), version: label.slice(sep + 3) };
-}
 
 export function ProjectorView() {
   // `payload` is what is currently displayed (lags behind incoming updates
@@ -42,9 +36,10 @@ export function ProjectorView() {
   const displayedRef = useRef<ProjectorPayload>(EMPTY);
   const visibleRef = useRef(false);
   const timerRef = useRef<number | null>(null);
-  const innerRef = useRef<HTMLDivElement>(null);
-  const textRef = useRef<HTMLDivElement>(null);
-  const [fitSize, setFitSize] = useState(settings.fontSize);
+  // Duration of the fade in progress. The fade-out of the old content must
+  // last as long as the timer that swaps in the new one (whose fadeMs wins),
+  // or the new text lands on top of a half-faded old one.
+  const [fadeMsNow, setFadeMsNow] = useState<number | null>(null);
 
   useEffect(() => {
     const api = window.proyector;
@@ -65,6 +60,7 @@ export function ProjectorView() {
     const off = api.onProjectorUpdate((p) => {
       setSlidesActive(p.mode === "slides" || p.mode === "video");
       const ms = Math.max(0, p.fadeMs ?? settingsRef.current.fadeMs ?? DEFAULT_SETTINGS.fadeMs);
+      setFadeMsNow(ms);
       if (timerRef.current !== null) {
         clearTimeout(timerRef.current);
         timerRef.current = null;
@@ -111,44 +107,9 @@ export function ProjectorView() {
   // Songs and texts can bring their own typeface; everything else uses Ajustes.
   const fontFamily = payload.fontFamily ?? settings.fontFamily;
 
-  useEffect(() => {
-    const el = textRef.current;
-    const inner = innerRef.current;
-    if (!el || !inner || payload.mode !== "verse") return;
-    let raf = 0;
-    const fit = () => {
-      // Always restart from the full size so growing the window grows text back.
-      // The body is a flex-1 box with overflow hidden, so fitting to its own
-      // clientHeight keeps header/footer clear at any window ratio. The header
-      // and footer are em-sized from the inner box, so each candidate size is
-      // set on the inner box before measuring: they grow and shrink with the text.
-      const size = fitFontSize(fontSize, (s) => {
-        inner.style.fontSize = `${s}px`;
-        return el.scrollHeight <= el.clientHeight;
-      });
-      inner.style.fontSize = `${size}px`;
-      setFitSize(size);
-    };
-    fit();
-    // The body's box also changes with padding, the header/footer, or the window:
-    // observe it instead of only listening for window resizes.
-    const observer = new ResizeObserver(() => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(fit);
-    });
-    observer.observe(el);
-    // Webfonts arriving late change metrics: refit each time one finishes loading.
-    document.fonts?.addEventListener("loadingdone", fit);
-    return () => {
-      cancelAnimationFrame(raf);
-      observer.disconnect();
-      document.fonts?.removeEventListener("loadingdone", fit);
-    };
-  }, [payload, fontSize, fontFamily]);
-
   const themeClass = (payload.theme ?? settings.theme) === "light" ? "projector light" : "projector dark";
   const brightness = payload.brightness ?? settings.brightness ?? 1;
-  const fadeMs = payload.fadeMs ?? settings.fadeMs ?? DEFAULT_SETTINGS.fadeMs;
+  const fadeMs = fadeMsNow ?? payload.fadeMs ?? settings.fadeMs ?? DEFAULT_SETTINGS.fadeMs;
   const fadeStyle: React.CSSProperties = { transitionDuration: `${Math.max(0, fadeMs)}ms` };
   // Background media is an application setting, so it must stay identical to
   // the operator's preview/live monitors even when the last payload was sent
@@ -161,7 +122,7 @@ export function ProjectorView() {
     <FadingBackgroundMedia path={backgroundPath} brightness={brightness} fadeMs={backgroundFadeMs} fit={settings.backgroundFit ?? DEFAULT_SETTINGS.backgroundFit} className="projector-background-media" />
   );
   const style: React.CSSProperties = {
-    fontSize: `${fitSize}px`,
+    fontSize: `${fontSize}px`,
     fontFamily: fontStack(fontFamily),
     fontWeight: payload.fontWeight,
     padding: `${payload.padding ?? settings.padding ?? DEFAULT_SETTINGS.padding}vw`,
@@ -222,7 +183,6 @@ export function ProjectorView() {
     );
   }
 
-  const { ref, version } = splitReference(payload.referenceLabel);
   // Settings saved before the accent-color split still carry the legacy keys.
   const legacyColors = settings as Partial<AppSettings> & {
     referenceColor?: string;
@@ -251,27 +211,18 @@ export function ProjectorView() {
   }
 
   return (
-      <div className={themeClass} style={style}>
-        <div className="projector-background-layer" style={backgroundStyle} />
-        {backgroundMedia}
-      <div ref={innerRef} className={`projector-inner fade ${visible ? "show" : ""}`} style={{ ...fadeStyle, fontSize: `${fitSize}px` }}>
-        {/* Floating labels (reference top-left, version® bottom-right) share one
-            size: 3/4 of the fitted verse text, so they scale with the inner box. */}
-        {ref && <header className="projector-ref" style={{ color: referenceColor, fontSize: "0.75em" }}>{ref}</header>}
-        <div ref={textRef} className={`projector-body ${payload.blocks.length > 1 ? "dual" : ""}`}>
-          {payload.blocks.map((block, i) => (
-            <section key={i} className="projector-column">
-              {block.label && <div className="projector-col-label">{block.label}</div>}
-              <p className="projector-text">{block.text}</p>
-            </section>
-          ))}
-        </div>
-        {version && (
-          <div className="projector-footer">
-            <div className="projector-version" style={{ color: versionColor, fontSize: "0.75em" }}>{version}®</div>
-          </div>
-        )}
-      </div>
+    <div className={themeClass} style={style}>
+      <div className="projector-background-layer" style={backgroundStyle} />
+      {backgroundMedia}
+      <VerseScreen
+        payload={payload}
+        fontSize={fontSize}
+        fitKey={`${fontFamily}|${payload.fontWeight ?? ""}`}
+        className={`projector-inner fade ${visible ? "show" : ""}`}
+        style={fadeStyle}
+        referenceColor={referenceColor}
+        versionColor={versionColor}
+      />
     </div>
   );
 }

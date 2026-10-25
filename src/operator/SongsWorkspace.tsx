@@ -32,6 +32,8 @@ export interface SongStage {
   /** The song's own typeface and weight; undefined follows Ajustes > Tipo de letra. */
   fontFamily?: FontFamilyId;
   fontWeight?: number;
+  /** A texto (not a song) staged or live: it is never uppercased. */
+  isText?: boolean;
 }
 
 /** What the workspace hands up when a song changes. */

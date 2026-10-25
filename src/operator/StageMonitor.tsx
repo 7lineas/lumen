@@ -7,6 +7,7 @@ import { payloadContentKey } from "@shared/stage";
 import { FadingBackgroundMedia } from "@/components/BackgroundMedia";
 import { CountdownClock, ElapsedClock } from "@/components/Clock";
 import { SyncedVideo } from "@/components/SyncedVideo";
+import { VerseScreen } from "@/components/VerseScreen";
 
 interface Props {
   title: string;
@@ -51,6 +52,8 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
   const displayedRef = useRef(payload);
   const visibleRef = useRef(true);
   const timerRef = useRef<number | null>(null);
+  // Duration of the fade in progress: the incoming payload's, as on the projector.
+  const [fadeMsNow, setFadeMsNow] = useState<number | null>(null);
 
   useEffect(() => {
     if (!isLive) {
@@ -59,6 +62,7 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
       return;
     }
     const ms = Math.max(0, payload?.fadeMs ?? displayedRef.current?.fadeMs ?? DEFAULT_SETTINGS.fadeMs);
+    setFadeMsNow(ms);
     if (timerRef.current !== null) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
@@ -130,13 +134,9 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
   const theme = renderPayload?.theme === "light" ? "light" : "dark";
   const brightness = renderPayload?.brightness ?? 1;
   const projectorFontPx = renderPayload?.fontSize ?? DEFAULT_SETTINGS.fontSize;
-  const fadeMs = Math.max(0, renderPayload?.fadeMs ?? DEFAULT_SETTINGS.fadeMs);
+  const fadeMs = Math.max(0, (isLive ? fadeMsNow : null) ?? renderPayload?.fadeMs ?? DEFAULT_SETTINGS.fadeMs);
   const isLogo = renderPayload?.mode === "logo";
   const projecting = renderPayload != null && renderPayload.mode !== "blank";
-  const referenceLabel = renderPayload?.referenceLabel ?? "";
-  const sep = referenceLabel.lastIndexOf(" — ");
-  const ref = sep < 0 ? referenceLabel : referenceLabel.slice(0, sep);
-  const version = sep < 0 ? "" : referenceLabel.slice(sep + 3);
   const referenceColor = renderPayload?.referenceColor ?? "#f6a623";
   const versionColor = renderPayload?.versionColor ?? "#f6a623";
   // Same rule as the projector: slides => solid color background, switched
@@ -149,13 +149,21 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
   const backgroundFadeMs = Math.max(0, renderPayload?.backgroundFadeMs ?? DEFAULT_SETTINGS.backgroundFadeMs);
   const pad = renderPayload?.padding ?? DEFAULT_SETTINGS.padding;
 
-  // Scale projector px values down to the miniature screen so type, padding
-  // and footer sizes keep the same proportions as the real projector.
   const screenRef = useRef<HTMLDivElement>(null);
   const monitorRef = useRef<HTMLDivElement>(null);
-  const textRef = useRef<HTMLDivElement>(null);
-  const [fitPx, setFitPx] = useState(projectorFontPx * 0.16);
   const [screenSize, setScreenSize] = useState<{ width: number; height: number } | null>(null);
+  // Inner width of the miniature screen (inside its border): the scale of the
+  // projector replica that draws verse text.
+  const [screenInnerWidth, setScreenInnerWidth] = useState(0);
+  useEffect(() => {
+    const screen = screenRef.current;
+    if (!screen || typeof ResizeObserver === "undefined") return;
+    const measure = () => setScreenInnerWidth(screen.clientWidth);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(screen);
+    return () => observer.disconnect();
+  }, []);
 
   // The card is a fixed-height monitor viewport. Fit the simulated projector
   // screen inside it instead of allowing the aspect ratio to determine the
@@ -184,64 +192,6 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
     return () => window.removeEventListener("resize", measure);
   }, [screenAspect]);
 
-  useEffect(() => {
-    const screen = screenRef.current;
-    if (!screen) return;
-    const fit = () => {
-      const w = screen.clientWidth || 1;
-      // ProjectorView renders its text inside the padded content box. Scale
-      // from that same box instead of the monitor's outer frame; otherwise
-      // the preview uses a smaller font and wraps at different words.
-      const bodyWidth = textRef.current?.clientWidth || w;
-      const projectorContentWidth = Math.min(
-        projectorW * Math.max(0.1, 1 - (2 * pad) / 100),
-        1600,
-      );
-      const s = bodyWidth / Math.max(1, projectorContentWidth);
-      // Always restart from the full size so growing the window grows text back.
-      let size = projectorFontPx * s;
-      const el = textRef.current;
-      if (el && renderPayload?.mode === "verse") {
-        el.style.fontSize = `${size}px`;
-        // Same rule as the projector: the body is a flex-1 box with overflow
-        // hidden, so fitting to its own clientHeight keeps header/footer
-        // clear at any window ratio.
-        const min = Math.max(4, 28 * s);
-        const step = Math.max(0.5, 2 * s);
-        let guard = 200;
-        while (guard-- > 0 && size > min && el.scrollHeight > el.clientHeight) {
-          size -= step;
-          el.style.fontSize = `${size}px`;
-        }
-      }
-      setFitPx(size);
-    };
-    fit();
-    // Installed fonts can finish loading after the text was measured.
-    document.fonts?.addEventListener("loadingdone", fit);
-    if (typeof ResizeObserver !== "undefined") {
-      const ro = new ResizeObserver(fit);
-      ro.observe(screen);
-      return () => {
-        ro.disconnect();
-        document.fonts?.removeEventListener("loadingdone", fit);
-      };
-    }
-    window.addEventListener("resize", fit);
-    return () => {
-      window.removeEventListener("resize", fit);
-      document.fonts?.removeEventListener("loadingdone", fit);
-    };
-  }, [renderPayload, projectorFontPx, projectorW, screenAspect, pad, monitorFontFamily]);
-
-  // The monitor's browser surface has a small extra text-box inset compared
-  // with the projector window. Keep the glyphs at the same visual scale so
-  // line breaks match after the screen is reduced into the fixed card.
-  const bodyFitPx = fitPx * 0.84;
-  // Floating labels (reference top-left, version® bottom-right) share one
-  // size: 3/4 of the verse text.
-  const metaPx = bodyFitPx * 0.75;
-
   const slideImage = renderPayload?.mode === "slides" ? renderPayload.slideImagePath ?? null : null;
   const video = renderPayload?.mode === "video" ? renderPayload.video ?? null : null;
   const fullBleed = slideImage != null || video != null;
@@ -264,32 +214,28 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
           <p className="monitor-countdown-time"><CountdownClock endsAt={renderPayload.countdown.endsAt} /></p>
         </div>
       )}
-      {renderPayload?.mode === "verse" && (
-        <>
-          {ref && <header className="monitor-screen-ref" style={{ color: referenceColor, fontSize: `${metaPx}px` }}>{ref}</header>}
-          <div
-            ref={textRef}
-            className={`monitor-screen-body ${renderPayload.blocks.length > 1 ? "dual" : ""}`}
-            style={{ fontSize: `${bodyFitPx}px` }}
-          >
-            {renderPayload.blocks.map((block, i) => (
-              <section key={i} className="monitor-screen-column">
-                {block.label && <div className="monitor-screen-col-label">{block.label}</div>}
-                <p className="monitor-screen-text">{block.text}</p>
-              </section>
-            ))}
-          </div>
-          {version && (
-            <div className="monitor-screen-footer">
-              <div
-                className="monitor-screen-version"
-                style={{ color: versionColor, fontSize: `${metaPx}px` }}
-              >
-                {version}®
-              </div>
-            </div>
-          )}
-        </>
+      {renderPayload?.mode === "verse" && screenInnerWidth > 0 && (
+        // The projector's own layout at the projector's resolution, scaled down
+        // to the miniature: same fit, wrapping and proportions as the real screen.
+        <div
+          className="monitor-replica"
+          style={{
+            width: `${projectorW}px`,
+            height: `${projectorW / screenAspect}px`,
+            padding: `${(pad / 100) * projectorW}px`,
+            transform: `scale(${screenInnerWidth / projectorW})`,
+          }}
+        >
+          <VerseScreen
+            payload={renderPayload}
+            fontSize={projectorFontPx}
+            fitKey={`${monitorFontFamily}|${renderPayload.fontWeight ?? ""}|${projectorW}|${screenAspect}`}
+            className="projector-inner show"
+            style={{ transition: "none" }}
+            referenceColor={referenceColor}
+            versionColor={versionColor}
+          />
+        </div>
       )}
     </>
   );
@@ -322,8 +268,9 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
             aspectRatio: screenAspect,
             fontFamily: fontStack(monitorFontFamily),
             fontWeight: renderPayload?.fontWeight,
-            // A slide image or a video is full-bleed: the text padding must not shrink it.
-            padding: fullBleed ? 0 : `${pad}%`,
+            // A slide image or a video is full-bleed: the text padding must not
+            // shrink it. Verse text brings its own padding at projector scale.
+            padding: fullBleed || renderPayload?.mode === "verse" ? 0 : `${pad}%`,
           }}
         >
           <div
