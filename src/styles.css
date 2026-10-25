@@ -389,7 +389,9 @@ button.primary {
   width: 100%;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  /* "safe": text too long to fit even at the smallest size keeps its first
+     lines on screen and is cut at the bottom, instead of both ends. */
+  justify-content: safe center;
   text-align: center;
   line-height: 1.35;
   font-weight: 500;
@@ -399,7 +401,7 @@ button.primary {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 2rem;
-  align-content: center;
+  align-content: safe center;
   text-align: left;
 }
 
@@ -415,6 +417,8 @@ button.primary {
 .projector-text {
   white-space: pre-wrap;
   margin: 0;
+  /* A word longer than the line (a URL…) breaks instead of running off the side. */
+  overflow-wrap: anywhere;
 }
 
 .projector-slide {
@@ -790,48 +794,18 @@ button.song-part .song-part-thumb {
   opacity: 1;
 }
 
-.monitor-screen-ref {
-  flex: none;
-  text-align: start;
-  margin: 0 0 0.35em;
-  font-weight: 700;
-  line-height: 1.25;
-  pointer-events: none;
-}
-
-.monitor-screen-body {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow: hidden;
-  width: 100%;
+/* Verse text on a monitor: the projector's own layout (see VerseScreen) at
+   projector resolution, scaled down to the miniature screen. */
+.monitor-replica {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
   display: flex;
-  flex-direction: column;
+  align-items: center;
   justify-content: center;
-  text-align: center;
-  line-height: 1.35;
-  font-weight: 500;
-  margin: 0;
-}
-
-.monitor-screen-body.dual {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5em;
-  align-content: center;
-  text-align: left;
-  font-size: 0.85em;
-}
-
-.monitor-screen-text {
-  white-space: pre-wrap;
-  margin: 0;
-  overflow-wrap: break-word;
-}
-
-.monitor-screen-col-label {
-  font-size: 0.35em;
-  opacity: 0.7;
-  margin-bottom: 0.5em;
+  font-synthesis: none;
+  pointer-events: none;
 }
 
 .monitor-screen-empty {
@@ -840,25 +814,6 @@ button.song-part .song-part-thumb {
   font-size: 0.85rem;
   position: relative;
   z-index: 1;
-}
-
-.monitor-screen-footer {
-  flex: none;
-  display: flex;
-  justify-content: flex-end;
-  align-items: flex-end;
-  gap: 1em;
-  margin-top: 0.5em;
-  position: relative;
-  z-index: 1;
-}
-
-.monitor-screen-version {
-  margin: 0;
-  text-align: end;
-  line-height: 1.35;
-  font-weight: 600;
-  pointer-events: none;
 }
 
 .monitor-ratio {

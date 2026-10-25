@@ -561,6 +561,12 @@ export function OperatorApp() {
     });
   }, []);
 
+  // Textos are projected like songs, but the uppercase setting is for songs only.
+  const textPayload = useCallback((text: string, typeface?: Pick<SongStage, "fontFamily" | "fontWeight">): ProjectorPayload => ({
+    ...songPayload("", text, undefined, typeface),
+    blocks: [{ text }],
+  }), [songPayload]);
+
   const navigateSongLive = useCallback(async (delta: number) => {
     const base = songLive;
     if (!base || base.slides.length === 0) return;
@@ -570,14 +576,9 @@ export function OperatorApp() {
     const text = next.slides[clamped];
     if (text == null) return;
     setSongLive(next);
-    await send(songPayload(next.title, text, next.fadeMs, next));
-  }, [songLive, send, songPayload]);
-
-  // Textos are projected like songs, but the uppercase setting is for songs only.
-  const textPayload = useCallback((text: string, typeface?: Pick<SongStage, "fontFamily" | "fontWeight">): ProjectorPayload => ({
-    ...songPayload("", text, undefined, typeface),
-    blocks: [{ text }],
-  }), [songPayload]);
+    // Stepping a live texto keeps it a texto: no song uppercase.
+    await send(next.isText ? textPayload(text, next) : songPayload(next.title, text, next.fadeMs, next));
+  }, [songLive, send, songPayload, textPayload]);
 
   const textPreviewPayload = useMemo<ProjectorPayload | null>(() => {
     if (!textStaged || textStaged.slides.length === 0) return null;
@@ -602,7 +603,7 @@ export function OperatorApp() {
       const next = { ...current, index: clamped };
       const text = next.slides[clamped];
       if (projectOnClick && text != null) {
-        setSongLive(next);
+        setSongLive({ ...next, isText: true });
         void send(textPayload(text, next));
       }
       return next;
@@ -615,7 +616,7 @@ export function OperatorApp() {
     if (text == null) return;
     const next = { ...textStaged, index };
     setTextStaged(next);
-    setSongLive(next);
+    setSongLive({ ...next, isText: true });
     void send(textPayload(text, next));
   }, [textStaged, send, textPayload]);
 
@@ -623,7 +624,7 @@ export function OperatorApp() {
     if (!textStaged || textStaged.slides.length === 0) return;
     const text = textStaged.slides[textStaged.index] ?? textStaged.slides[0];
     if (text == null) return;
-    setSongLive(textStaged);
+    setSongLive({ ...textStaged, isText: true });
     await send(textPayload(text, textStaged));
   }, [textStaged, send, textPayload]);
 
