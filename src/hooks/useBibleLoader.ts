@@ -45,7 +45,7 @@ export function useBibleLoader(versionIds: string[], refreshKey = 0, onlineVersi
       cancelled = true;
     };
     // refreshKey reloads the list after a download or removal.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // oxlint-disable-next-line react/exhaustive-deps
   }, [refreshKey, versionIds.join(","), onlineVersions]);
 
   return { ready, versions: versions.length ? versions : getVersions(), error };

@@ -100,7 +100,9 @@ pnpm install
 pnpm convert:bibles    # descarga VPL desde eBible.org y genera data/bibles/*.json
 pnpm dev               # modo desarrollo (Electron + Vite en http://localhost:43123)
 pnpm test              # pruebas (referencias y búsqueda)
-pnpm lint
+pnpm lint              # oxlint
+pnpm format            # oxfmt --write
+pnpm format:check      # oxfmt --check
 pnpm build             # compila interfaz y proceso principal
 pnpm pack:win          # instalador NSIS + portable (en Linux hace falta Wine para NSIS)
 pnpm landing           # página de descarga en http://127.0.0.1:44731

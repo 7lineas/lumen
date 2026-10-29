@@ -321,7 +321,7 @@ export function OperatorApp() {
       }
     })();
     return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // oxlint-disable-next-line react/exhaustive-deps
   }, [onlineUnavailable, settings.primaryVersionId, settings.dualView, settings.secondaryVersionId, viewBook, viewChapter, staged, liveRange, onlineBibles.online.configured, onlineBibles.failures]);
 
   const previewContent = useMemo(() => {
@@ -336,7 +336,7 @@ export function OperatorApp() {
       staged,
     );
   // chapterTick: online chapters are merged into the cached Bible in place.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // oxlint-disable-next-line react/exhaustive-deps
   }, [staged, primaryId, settings.dualView, settings.secondaryVersionId, onlineBibles.chapterTick]);
 
   const previewPayload = useMemo<ProjectorPayload | null>(() => {
@@ -1091,7 +1091,7 @@ export function OperatorApp() {
   const searchResults = useMemo(() => {
     if (!keyword.trim() || !ready) return [];
     return searchVerses(primaryId, keyword, 30);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // oxlint-disable-next-line react/exhaustive-deps
   }, [keyword, ready, primaryId, onlineBibles.chapterTick]);
 
   const persistQueue = async (q: QueueEntry[]) => {
