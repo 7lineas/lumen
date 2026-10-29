@@ -22,13 +22,24 @@ function tempDir(): string {
 }
 
 afterEach(() => {
-  for (const dir of dirs.splice(0)) fs.rmSync(dir, { recursive: true, force: true });
+  for (const dir of dirs.splice(0))
+    fs.rmSync(dir, { recursive: true, force: true });
 });
 
-function writeModule(dir: string, id: string, text = "En el principio"): { sha256: string; bytes: number } {
+function writeModule(
+  dir: string,
+  id: string,
+  text = "En el principio",
+): { sha256: string; bytes: number } {
   const body = Buffer.from(
     JSON.stringify({
-      meta: { id, name: id, abbr: id.toUpperCase(), language: "es", copyright: "Prueba" },
+      meta: {
+        id,
+        name: id,
+        abbr: id.toUpperCase(),
+        language: "es",
+        copyright: "Prueba",
+      },
       verses: { GEN: { "1": { "1": text } } },
       searchIndex: [],
     }),
@@ -45,7 +56,14 @@ function seed(root: string) {
   fs.mkdirSync(modules, { recursive: true });
   fs.writeFileSync(
     path.join(bibles, "manifest.json"),
-    JSON.stringify([{ id: "rv1909", name: "Reina-Valera 1909", abbr: "RV1909", language: "es" }]),
+    JSON.stringify([
+      {
+        id: "rv1909",
+        name: "Reina-Valera 1909",
+        abbr: "RV1909",
+        language: "es",
+      },
+    ]),
   );
   fs.writeFileSync(path.join(bibles, "rv1909.json"), "{}");
   const bes = writeModule(modules, "bes");
@@ -71,18 +89,32 @@ function seed(root: string) {
   };
   const catalogFile = path.join(modules, "bibles-catalog.json");
   fs.writeFileSync(catalogFile, JSON.stringify(catalog));
-  return { bibles, modules, user, catalogFile, besBody: fs.readFileSync(path.join(modules, "bes.json")) };
+  return {
+    bibles,
+    modules,
+    user,
+    catalogFile,
+    besBody: fs.readFileSync(path.join(modules, "bes.json")),
+  };
 }
 
 describe("bible library", () => {
   it("uses the bundled catalog when the network fails", async () => {
     const root = tempDir();
     const seeded = seed(root);
-    const view = await buildLibraryView(seeded.bibles, seeded.user, seeded.catalogFile, async () => {
-      throw new Error("offline");
-    });
+    const view = await buildLibraryView(
+      seeded.bibles,
+      seeded.user,
+      seeded.catalogFile,
+      async () => {
+        throw new Error("offline");
+      },
+    );
     expect(view.offline).toBe(true);
-    expect(view.entries.map((entry) => entry.availability)).toEqual(["included", "available"]);
+    expect(view.entries.map((entry) => entry.availability)).toEqual([
+      "included",
+      "available",
+    ]);
     expect(view.entries[0]?.id).toBe("rv1909");
   });
 
@@ -104,13 +136,20 @@ describe("bible library", () => {
           ),
       }),
     });
-    expect(resolveModulePath(seeded.bibles, seeded.user, "bes")).toContain("bes.json");
-    expect(listSelectableVersions(seeded.bibles, seeded.user).map((version) => version.id)).toEqual([
-      "rv1909",
-      "bes",
-    ]);
+    expect(resolveModulePath(seeded.bibles, seeded.user, "bes")).toContain(
+      "bes.json",
+    );
+    expect(
+      listSelectableVersions(seeded.bibles, seeded.user).map(
+        (version) => version.id,
+      ),
+    ).toEqual(["rv1909", "bes"]);
     removeModule(seeded.user, new Set(["rv1909"]), "bes");
-    expect(listSelectableVersions(seeded.bibles, seeded.user).map((version) => version.id)).toEqual(["rv1909"]);
+    expect(
+      listSelectableVersions(seeded.bibles, seeded.user).map(
+        (version) => version.id,
+      ),
+    ).toEqual(["rv1909"]);
   });
 
   it("does not install a file with the wrong hash", async () => {
@@ -142,7 +181,9 @@ describe("bible library", () => {
   it("refuses to remove a bundled version", () => {
     const root = tempDir();
     const seeded = seed(root);
-    expect(() => removeModule(seeded.user, new Set(["rv1909"]), "rv1909")).toThrow(/programa/);
+    expect(() =>
+      removeModule(seeded.user, new Set(["rv1909"]), "rv1909"),
+    ).toThrow(/programa/);
   });
 
   it("keeps the bundled catalog when the remote payload is empty", async () => {
@@ -152,7 +193,8 @@ describe("bible library", () => {
     const resolved = await resolveCatalog(bundled, async () => ({
       ok: true,
       status: 200,
-      arrayBuffer: async () => new TextEncoder().encode('{"versions":[]}').buffer,
+      arrayBuffer: async () =>
+        new TextEncoder().encode('{"versions":[]}').buffer,
     }));
     expect(resolved.source).toBe("bundled");
     expect(resolved.catalog.versions).toHaveLength(1);

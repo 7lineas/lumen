@@ -32,14 +32,19 @@ export function AboutModal() {
   const [appVersion, setAppVersion] = useState<string | null>(null);
 
   useEffect(() => {
-    void window.proyector?.getAppUpdateState().then((state) => setAppVersion(state.currentVersion)).catch(() => undefined);
+    void window.proyector
+      ?.getAppUpdateState()
+      .then((state) => setAppVersion(state.currentVersion))
+      .catch(() => undefined);
   }, []);
 
   useEffect(() => {
     const known = new Set(bibleLicenses.versions.map((version) => version.id));
     void window.proyector
       ?.getBibleCatalog()
-      .then((view) => setExtras(view.entries.filter((entry) => !known.has(entry.id))))
+      .then((view) =>
+        setExtras(view.entries.filter((entry) => !known.has(entry.id))),
+      )
       .catch(() => undefined);
   }, []);
 
@@ -49,7 +54,10 @@ export function AboutModal() {
         <span className="about-beam" aria-hidden />
         <div className="about-hero-text">
           <p className="about-wordmark">Lumen</p>
-          <p className="about-pitch">Todo lo que el servicio necesita en pantalla, desde el primer minuto.</p>
+          <p className="about-pitch">
+            Todo lo que el servicio necesita en pantalla, desde el primer
+            minuto.
+          </p>
           <p className="about-version">Versión {appVersion ?? "1.0"}</p>
         </div>
         <img className="about-hero-logo" src={logo} alt="" aria-hidden />
@@ -59,7 +67,11 @@ export function AboutModal() {
         {FEATURES.map((feature, index) => {
           const Icon = feature.icon;
           return (
-            <li key={feature.title} className="about-feature" style={{ animationDelay: `${180 + index * 90}ms` }}>
+            <li
+              key={feature.title}
+              className="about-feature"
+              style={{ animationDelay: `${180 + index * 90}ms` }}
+            >
               <span className="about-feature-icon">
                 <Icon size={18} strokeWidth={2} aria-hidden />
               </span>
@@ -77,23 +89,29 @@ export function AboutModal() {
         <ul>
           {bibleLicenses.versions.map((version) => (
             <li key={version.id}>
-              <strong>{version.name}</strong> ({version.abbr}). {version.license}. {version.copyright}
+              <strong>{version.name}</strong> ({version.abbr}).{" "}
+              {version.license}. {version.copyright}
             </li>
           ))}
           {extras.map((version) => (
             <li key={version.id}>
-              <strong>{version.name}</strong> ({version.abbr}). {version.license}. {version.copyright}
+              <strong>{version.name}</strong> ({version.abbr}).{" "}
+              {version.license}. {version.copyright}
             </li>
           ))}
         </ul>
         <p>{bibleLicenses.distributionNote}</p>
         <p>
-          {bibleLicenses.excludedNote} Detalle en <code>LICENSES/BIBLES.md</code>.
+          {bibleLicenses.excludedNote} Detalle en{" "}
+          <code>LICENSES/BIBLES.md</code>.
         </p>
         <p>Código fuente bajo licencia MIT.</p>
       </details>
 
-      <p className="about-footnote">Para voluntarios: consulte el archivo README en la carpeta de instalación.</p>
+      <p className="about-footnote">
+        Para voluntarios: consulte el archivo README en la carpeta de
+        instalación.
+      </p>
     </div>
   );
 }

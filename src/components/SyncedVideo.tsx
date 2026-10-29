@@ -32,26 +32,40 @@ interface Props {
  * same position from `playback` and only seeks when it has drifted, so
  * projector and monitors stay in step without streaming time updates.
  */
-export function SyncedVideo({ playback, muted, fit = "contain", className, onDuration, still = false }: Props) {
+export function SyncedVideo({
+  playback,
+  muted,
+  fit = "contain",
+  className,
+  onDuration,
+  still = false,
+}: Props) {
   const ref = useRef<HTMLVideoElement>(null);
   const { path, playing, startedAt, position, volume } = playback;
 
-  const sync = useCallback((tolerance: number) => {
-    const el = ref.current;
-    if (!el || el.readyState < HTMLMediaElement.HAVE_METADATA) return;
-    const target = videoPosition({ playing, startedAt, position }, Date.now(), el.duration);
-    if (Math.abs(el.currentTime - target) > tolerance) {
-      try {
-        el.currentTime = target;
-      } catch {
-        // ignore (seek not possible yet)
+  const sync = useCallback(
+    (tolerance: number) => {
+      const el = ref.current;
+      if (!el || el.readyState < HTMLMediaElement.HAVE_METADATA) return;
+      const target = videoPosition(
+        { playing, startedAt, position },
+        Date.now(),
+        el.duration,
+      );
+      if (Math.abs(el.currentTime - target) > tolerance) {
+        try {
+          el.currentTime = target;
+        } catch {
+          // ignore (seek not possible yet)
+        }
       }
-    }
-    if (still) return;
-    const ended = Number.isFinite(el.duration) && target >= el.duration;
-    if (playing && !ended) void el.play().catch(() => undefined);
-    else el.pause();
-  }, [playing, startedAt, position, still]);
+      if (still) return;
+      const ended = Number.isFinite(el.duration) && target >= el.duration;
+      if (playing && !ended) void el.play().catch(() => undefined);
+      else el.pause();
+    },
+    [playing, startedAt, position, still],
+  );
 
   // A transport action (play, pause, seek) is followed at once. After that a
   // playing video is re-checked once a second: it corrects real drift and

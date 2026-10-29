@@ -58,20 +58,34 @@ export function BibleWorkspace(props: Props) {
   const bible = props.ready ? getBible(props.versionId) : undefined;
   const chapterMap = bible?.verses[props.viewBook]?.[String(props.viewChapter)];
   const verses = useMemo(
-    () => (chapterMap ? Object.keys(chapterMap).map((v) => parseInt(v, 10)).sort((a, b) => a - b) : []),
+    () =>
+      chapterMap
+        ? Object.keys(chapterMap)
+            .map((v) => parseInt(v, 10))
+            .sort((a, b) => a - b)
+        : [],
     [chapterMap],
   );
 
   const filtering = query.trim() !== "";
-  const filter = useMemo(() => filterBooks(query, props.viewBook), [query, props.viewBook]);
-  const openAll = filtering && (filter.hasChapter || filter.matches.length <= AUTO_OPEN_LIMIT);
+  const filter = useMemo(
+    () => filterBooks(query, props.viewBook),
+    [query, props.viewBook],
+  );
+  const openAll =
+    filtering &&
+    (filter.hasChapter || filter.matches.length <= AUTO_OPEN_LIMIT);
 
   const stagedHere =
-    props.staged && props.staged.start.book === props.viewBook && props.staged.start.chapter === props.viewChapter
+    props.staged &&
+    props.staged.start.book === props.viewBook &&
+    props.staged.start.chapter === props.viewChapter
       ? props.staged
       : null;
   const liveHere =
-    props.liveRange && props.liveRange.start.book === props.viewBook && props.liveRange.start.chapter === props.viewChapter
+    props.liveRange &&
+    props.liveRange.start.book === props.viewBook &&
+    props.liveRange.start.chapter === props.viewChapter
       ? props.liveRange
       : null;
   const chapterCount = book?.chapters ?? 0;
@@ -85,12 +99,22 @@ export function BibleWorkspace(props: Props) {
   // Keep the whole open book in view in the library (all its chapters), and the staged verse in the grid.
   useEffect(() => {
     if (filtering) return;
-    listRef.current?.querySelector(".lx-book.viewing")?.scrollIntoView({ block: "nearest" });
+    listRef.current
+      ?.querySelector(".lx-book.viewing")
+      ?.scrollIntoView({ block: "nearest" });
   }, [props.viewBook, props.viewChapter, expanded, filtering]);
 
   useEffect(() => {
-    gridRef.current?.querySelector("[data-current]")?.scrollIntoView({ block: "nearest" });
-  }, [props.viewBook, props.viewChapter, stagedHere?.start.verse, stagedHere?.end.verse, verses.length]);
+    gridRef.current
+      ?.querySelector("[data-current]")
+      ?.scrollIntoView({ block: "nearest" });
+  }, [
+    props.viewBook,
+    props.viewChapter,
+    stagedHere?.start.verse,
+    stagedHere?.end.verse,
+    verses.length,
+  ]);
 
   // Opening a chapter ends the search: the list goes back to every book, open on this one.
   const openChapter = (code: string, chapter: number) => {
@@ -147,25 +171,44 @@ export function BibleWorkspace(props: Props) {
             spellCheck={false}
           />
         </label>
-        {error && <p className="lx-note lx-note-error" role="alert">{error}</p>}
+        {error && (
+          <p className="lx-note lx-note-error" role="alert">
+            {error}
+          </p>
+        )}
         {props.notice && (
           <p className="lx-note" role="status" data-testid="online-notice">
             {props.notice}{" "}
-            {props.onRetryOnline && <button type="button" className="lx-link" onClick={props.onRetryOnline}>Reintentar en línea</button>}
+            {props.onRetryOnline && (
+              <button
+                type="button"
+                className="lx-link"
+                onClick={props.onRetryOnline}
+              >
+                Reintentar en línea
+              </button>
+            )}
           </p>
         )}
         <div className="lx-lib-scroll" ref={listRef}>
-          {filter.matches.length === 0 && <p className="lx-empty">Nada coincide con “{query.trim()}”.</p>}
+          {filter.matches.length === 0 && (
+            <p className="lx-empty">Nada coincide con “{query.trim()}”.</p>
+          )}
           {filter.matches.map(({ book: b, chapters }) => {
             const open = openAll || expanded === b.code;
             const viewing = b.code === props.viewBook;
             return (
-              <div key={b.code} className={`lx-book${viewing ? " viewing" : ""}`}>
+              <div
+                key={b.code}
+                className={`lx-book${viewing ? " viewing" : ""}`}
+              >
                 <button
                   type="button"
                   className="lx-book-name"
                   aria-expanded={open}
-                  onClick={() => setExpanded(expanded === b.code ? null : b.code)}
+                  onClick={() =>
+                    setExpanded(expanded === b.code ? null : b.code)
+                  }
                 >
                   <span>{b.name}</span>
                   <small>{b.chapters}</small>
@@ -198,18 +241,39 @@ export function BibleWorkspace(props: Props) {
       <main className="lx-work">
         <div className="lx-ws-head">
           <div className="lx-ws-heading">
-            <div className="lx-ws-title">{book?.name ?? "Libro"} {props.viewChapter}</div>
+            <div className="lx-ws-title">
+              {book?.name ?? "Libro"} {props.viewChapter}
+            </div>
             <div className="lx-ws-sub">
               {bible?.meta.name ?? props.versionId}
-              {verses.length > 0 && ` · ${verses.length} ${verses.length === 1 ? "versículo" : "versículos"}`}
+              {verses.length > 0 &&
+                ` · ${verses.length} ${verses.length === 1 ? "versículo" : "versículos"}`}
             </div>
           </div>
           <div className="lx-ws-tools">
-            <div className="lx-seg" role="group" aria-label="Cambiar de capítulo">
-              <button type="button" aria-label="Capítulo anterior" disabled={props.viewChapter <= 1} onClick={() => openChapter(props.viewBook, props.viewChapter - 1)}>
+            <div
+              className="lx-seg"
+              role="group"
+              aria-label="Cambiar de capítulo"
+            >
+              <button
+                type="button"
+                aria-label="Capítulo anterior"
+                disabled={props.viewChapter <= 1}
+                onClick={() =>
+                  openChapter(props.viewBook, props.viewChapter - 1)
+                }
+              >
                 <ChevronLeft />
               </button>
-              <button type="button" aria-label="Capítulo siguiente" disabled={props.viewChapter >= chapterCount} onClick={() => openChapter(props.viewBook, props.viewChapter + 1)}>
+              <button
+                type="button"
+                aria-label="Capítulo siguiente"
+                disabled={props.viewChapter >= chapterCount}
+                onClick={() =>
+                  openChapter(props.viewBook, props.viewChapter + 1)
+                }
+              >
                 <ChevronRight />
               </button>
             </div>
@@ -234,7 +298,13 @@ export function BibleWorkspace(props: Props) {
               type="button"
               className="lx-btn"
               disabled={!props.staged || saveFull}
-              title={saveFull ? `Máximo de ${MAX_QUEUE_ITEMS} guardados` : props.staged ? `Guardar ${formatRange(props.staged)}` : "Elige un versículo para guardarlo"}
+              title={
+                saveFull
+                  ? `Máximo de ${MAX_QUEUE_ITEMS} guardados`
+                  : props.staged
+                    ? `Guardar ${formatRange(props.staged)}`
+                    : "Elige un versículo para guardarlo"
+              }
               onClick={props.onAddCurrent}
             >
               <Save /> Guardar
@@ -245,7 +315,9 @@ export function BibleWorkspace(props: Props) {
         {searching ? (
           <div className="lx-results">
             {props.searchResults.length === 0 ? (
-              <p className="lx-empty-ws">Sin resultados para “{props.keyword.trim()}”.</p>
+              <p className="lx-empty-ws">
+                Sin resultados para “{props.keyword.trim()}”.
+              </p>
             ) : (
               <ul>
                 {props.searchResults.map((r) => {
@@ -257,8 +329,14 @@ export function BibleWorkspace(props: Props) {
                     props.staged.start.verse === r.verse;
                   return (
                     <li key={`${r.book}-${r.chapter}-${r.verse}`}>
-                      <button type="button" className={picked ? "lx-result on" : "lx-result"} onClick={() => props.onSearchPick(r)}>
-                        <strong>{cut < 0 ? r.snippet : r.snippet.slice(0, cut)}</strong>
+                      <button
+                        type="button"
+                        className={picked ? "lx-result on" : "lx-result"}
+                        onClick={() => props.onSearchPick(r)}
+                      >
+                        <strong>
+                          {cut < 0 ? r.snippet : r.snippet.slice(0, cut)}
+                        </strong>
                         {cut >= 0 && <span>{r.snippet.slice(cut + 3)}</span>}
                       </button>
                     </li>
@@ -269,14 +347,22 @@ export function BibleWorkspace(props: Props) {
           </div>
         ) : verses.length === 0 ? (
           <p className="lx-empty-ws">
-            {props.loadingChapter || !props.ready ? "Cargando capítulo…" : "Este capítulo no está disponible en esta versión."}
+            {props.loadingChapter || !props.ready
+              ? "Cargando capítulo…"
+              : "Este capítulo no está disponible en esta versión."}
           </p>
         ) : (
           <div className="lx-results" ref={gridRef}>
             <ul>
               {verses.map((v) => {
-                const inRange = stagedHere != null && v >= stagedHere.start.verse && v <= stagedHere.end.verse;
-                const isLive = liveHere != null && v >= liveHere.start.verse && v <= liveHere.end.verse;
+                const inRange =
+                  stagedHere != null &&
+                  v >= stagedHere.start.verse &&
+                  v <= stagedHere.end.verse;
+                const isLive =
+                  liveHere != null &&
+                  v >= liveHere.start.verse &&
+                  v <= liveHere.end.verse;
                 return (
                   <li key={v}>
                     <button
@@ -288,7 +374,9 @@ export function BibleWorkspace(props: Props) {
                       onClick={(e) => props.onVerseClick(v, e.shiftKey)}
                       onDoubleClick={() => props.onVerseTake(v)}
                     >
-                      <strong>{book?.name} {props.viewChapter}:{v}</strong>
+                      <strong>
+                        {book?.name} {props.viewChapter}:{v}
+                      </strong>
                       <span>{chapterMap?.[String(v)] ?? ""}</span>
                     </button>
                   </li>

@@ -12,7 +12,13 @@ interface Props {
 }
 
 /** Two-option segmented control: "Cubrir" (cover) / "Ajustar" (contain). */
-export function FitToggle({ label, value, onChange, testId, spacing = 0 }: Props) {
+export function FitToggle({
+  label,
+  value,
+  onChange,
+  testId,
+  spacing = 0,
+}: Props) {
   return (
     <ToggleGroup
       variant="outline"
@@ -28,8 +34,12 @@ export function FitToggle({ label, value, onChange, testId, spacing = 0 }: Props
         if (picked === "cover" || picked === "contain") onChange(picked);
       }}
     >
-      <ToggleGroupItem value="cover" aria-label={`${label}: cubrir`}>Cubrir</ToggleGroupItem>
-      <ToggleGroupItem value="contain" aria-label={`${label}: ajustar`}>Ajustar</ToggleGroupItem>
+      <ToggleGroupItem value="cover" aria-label={`${label}: cubrir`}>
+        Cubrir
+      </ToggleGroupItem>
+      <ToggleGroupItem value="contain" aria-label={`${label}: ajustar`}>
+        Ajustar
+      </ToggleGroupItem>
     </ToggleGroup>
   );
 }

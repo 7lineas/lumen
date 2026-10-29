@@ -11,7 +11,10 @@ describe("media fit defaults", () => {
   });
 
   it("older stored settings without the new keys fall back to the defaults", () => {
-    const merged = { ...DEFAULT_SETTINGS, ...({ fontSize: 80 } as Partial<typeof DEFAULT_SETTINGS>) };
+    const merged = {
+      ...DEFAULT_SETTINGS,
+      ...({ fontSize: 80 } as Partial<typeof DEFAULT_SETTINGS>),
+    };
     expect(merged.backgroundFit).toBe("cover");
     expect(merged.slideFit).toBe("contain");
   });

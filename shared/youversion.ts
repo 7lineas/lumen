@@ -62,7 +62,10 @@ function clean(value: unknown): string {
   const trimmed = value.trim();
   // The API sometimes returns the text wrapped in literal quotes.
   // Some publishers send multi-line notices; the footer shows them on one line.
-  return trimmed.replace(/^"(.*)"$/s, "$1").replace(/\s*\n+\s*/g, " · ").trim();
+  return trimmed
+    .replace(/^"(.*)"$/s, "$1")
+    .replace(/\s*\n+\s*/g, " · ")
+    .trim();
 }
 
 export function attributionFor(bible: YvBible): string {
@@ -94,16 +97,25 @@ export function buildOnlineVersions(
     const abbr = clean(bible.abbreviation);
     abbrCount.set(abbr, (abbrCount.get(abbr) ?? 0) + 1);
   }
-  const licenseOf = (id: number) => licenses.find((license) => license.bible_ids?.includes(id));
+  const licenseOf = (id: number) =>
+    licenses.find((license) => license.bible_ids?.includes(id));
   const rank = (id: number) => {
     const at = (DEFAULT_ONLINE_VERSION_IDS as readonly number[]).indexOf(id);
     return at === -1 ? DEFAULT_ONLINE_VERSION_IDS.length : at;
   };
   return [...catalog]
-    .sort((a, b) => rank(a.id) - rank(b.id) || clean(a.abbreviation).localeCompare(clean(b.abbreviation)))
+    .sort(
+      (a, b) =>
+        rank(a.id) - rank(b.id) ||
+        clean(a.abbreviation).localeCompare(clean(b.abbreviation)),
+    )
     .map((bible) => {
-      const title = clean(bible.title) || clean(bible.localized_title) || `Biblia ${bible.id}`;
-      let abbr = ABBR_OVERRIDES[bible.id] ?? (clean(bible.abbreviation) || title);
+      const title =
+        clean(bible.title) ||
+        clean(bible.localized_title) ||
+        `Biblia ${bible.id}`;
+      let abbr =
+        ABBR_OVERRIDES[bible.id] ?? (clean(bible.abbreviation) || title);
       // Two editions share "NVI-S": tell them apart by year.
       if ((abbrCount.get(clean(bible.abbreviation)) ?? 0) > 1) {
         abbr = `${abbr.replace(/-S$/, "")} ${yearOf(title)}`.trim();
@@ -141,7 +153,9 @@ export function mergeChapter(
   const key = String(chapter);
   bible.verses[book] = { ...(bible.verses[book] ?? {}), [key]: verses };
   const prefix = `${book}:${chapter}:`;
-  const kept = bible.searchIndex.filter((entry) => !entry.key.startsWith(prefix));
+  const kept = bible.searchIndex.filter(
+    (entry) => !entry.key.startsWith(prefix),
+  );
   const added = Object.entries(verses).map(([verse, text]) => ({
     key: `${prefix}${verse}`,
     book,
@@ -153,16 +167,21 @@ export function mergeChapter(
   return bible;
 }
 
-export function hasChapter(bible: BibleData | undefined, book: string, chapter: number): boolean {
+export function hasChapter(
+  bible: BibleData | undefined,
+  book: string,
+  chapter: number,
+): boolean {
   return !!bible?.verses[book]?.[String(chapter)];
 }
-
 
 /** Numeric YouVersion id of a default online Bible, or null. */
 export function parseDefaultOnlineNumericId(id: string): number | null {
   const numeric = parseYvVersionId(id);
   if (numeric === null) return null;
-  return (DEFAULT_ONLINE_VERSION_IDS as readonly number[]).includes(numeric) ? numeric : null;
+  return (DEFAULT_ONLINE_VERSION_IDS as readonly number[]).includes(numeric)
+    ? numeric
+    : null;
 }
 
 export function isDefaultOnlineVersionId(id: string): boolean {
@@ -192,7 +211,8 @@ export function sanitizeCustomOnlineIds(ids: readonly number[]): number[] {
   const seen = new Set<number>();
   const out: number[] = [];
   for (const id of ids) {
-    if (!Number.isInteger(id) || id < 1 || defaults.has(id) || seen.has(id)) continue;
+    if (!Number.isInteger(id) || id < 1 || defaults.has(id) || seen.has(id))
+      continue;
     seen.add(id);
     out.push(id);
   }
@@ -236,7 +256,15 @@ export function searchOnlineCatalog(
   for (const version of catalog) {
     if (!version.online) continue;
     const haystack = normalizeSearchText(
-      [version.name, version.abbr, version.language, version.license, version.id].filter(Boolean).join(" "),
+      [
+        version.name,
+        version.abbr,
+        version.language,
+        version.license,
+        version.id,
+      ]
+        .filter(Boolean)
+        .join(" "),
     );
     if (!haystack.includes(needle)) continue;
     hits.push({
@@ -280,8 +308,25 @@ export interface OnlineSearchResult {
 
 /** A chapter result as sent over IPC. */
 export type ChapterResult =
-  | { ok: true; verses: Record<string, string>; fromCache: boolean; stale: boolean; /** Publisher attribution to show with the text. */ copyright: string }
-  | { ok: false; reason: "no-key" | "locked" | "offline" | "rate-limited" | "not-found" | "error"; message: string; retryAfterSec?: number };
+  | {
+      ok: true;
+      verses: Record<string, string>;
+      fromCache: boolean;
+      stale: boolean;
+      /** Publisher attribution to show with the text. */ copyright: string;
+    }
+  | {
+      ok: false;
+      reason:
+        | "no-key"
+        | "locked"
+        | "offline"
+        | "rate-limited"
+        | "not-found"
+        | "error";
+      message: string;
+      retryAfterSec?: number;
+    };
 
 export interface OnlineVersionsResult {
   configured: boolean;

@@ -48,12 +48,12 @@ Detalles de red, contrato del servicio y configuración para desarrollo: [`docs/
 
 Pestaña **Media**: importa presentaciones (se proyectan como imágenes), videos y audio.
 
-| Formato | Cómo se muestra |
-| --- | --- |
-| `.pptx` / `.ppsx` | Se renderiza a PNG dentro de la app (pptx-glimpse + resvg WASM, en un proceso aparte de Electron). Usa las **fuentes instaladas en el equipo**: si falta una (p. ej. Calibri en macOS) se sustituye por otra. |
-| `.pdf` | Se rasteriza con pdf.js (build *legacy*, compatible con el Chromium de Electron 34). |
-| `.png` / `.jpg` / `.webp` | Tal cual. Varias imágenes a la vez forman una sola presentación, en orden natural (Diapositiva2 antes que Diapositiva10). |
-| Keynote (`.key`), `.ppt`, `.odp` | No se pueden renderizar sin otra aplicación: la app pide exportar a **PDF o PPTX**. |
+| Formato                          | Cómo se muestra                                                                                                                                                                                               |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.pptx` / `.ppsx`                | Se renderiza a PNG dentro de la app (pptx-glimpse + resvg WASM, en un proceso aparte de Electron). Usa las **fuentes instaladas en el equipo**: si falta una (p. ej. Calibri en macOS) se sustituye por otra. |
+| `.pdf`                           | Se rasteriza con pdf.js (build _legacy_, compatible con el Chromium de Electron 34).                                                                                                                          |
+| `.png` / `.jpg` / `.webp`        | Tal cual. Varias imágenes a la vez forman una sola presentación, en orden natural (Diapositiva2 antes que Diapositiva10).                                                                                     |
+| Keynote (`.key`), `.ppt`, `.odp` | No se pueden renderizar sin otra aplicación: la app pide exportar a **PDF o PPTX**.                                                                                                                           |
 
 Solo se guardan **imágenes** (una PNG por diapositiva, más el título): no se extrae ni guarda el texto de las diapositivas. Si la conversión falla se muestra el error con **Reintentar** y no se guarda nada. El original se copia a `userData/slide-decks` solo mientras se convierte (y se borra al terminar); las imágenes van a `userData/slide-images`; solo `slide-images` (y `background-images`) se sirven por el protocolo `lumen-media`. No hace falta instalar nada extra ni copiar archivos WASM: el renderizado de PPTX no usa `vendor/`. `pptx-glimpse` se carga desde `node_modules` (externo al bundle de `vite.config.ts`), porque su entrada Node lee el `.wasm` de resvg y las fuentes en tiempo de ejecución.
 
@@ -63,15 +63,15 @@ Solo se guardan **imágenes** (una PNG por diapositiva, más el título): no se 
 
 ## Atajos de teclado
 
-| Tecla | Acción |
-| --- | --- |
-| Clic en un versículo | Lo deja en **vista previa**, sin cambiar el videobeam |
-| Mayús + clic | Marca un rango en el mismo capítulo |
-| Enter | Envía la vista previa al videobeam |
-| ← / → (o ↑ / ↓) | Versículo anterior / siguiente, solo en la vista previa |
-| Esc o B | Pantalla negra / volver al último versículo |
-| Logo | Muestra el nombre de la iglesia (Ajustes) |
-| Siguiente | Avanza al próximo ítem de la lista del servicio |
+| Tecla                | Acción                                                  |
+| -------------------- | ------------------------------------------------------- |
+| Clic en un versículo | Lo deja en **vista previa**, sin cambiar el videobeam   |
+| Mayús + clic         | Marca un rango en el mismo capítulo                     |
+| Enter                | Envía la vista previa al videobeam                      |
+| ← / → (o ↑ / ↓)      | Versículo anterior / siguiente, solo en la vista previa |
+| Esc o B              | Pantalla negra / volver al último versículo             |
+| Logo                 | Muestra el nombre de la iglesia (Ajustes)               |
+| Siguiente            | Avanza al próximo ítem de la lista del servicio         |
 
 La columna **En vivo** repite lo que hay en el proyector. Fuente y luz están en la barra superior.
 
@@ -79,7 +79,8 @@ La columna **En vivo** repite lo que hay en el proyector. Fuente y luz están en
 
 - Reina-Valera 1909 (español, principal)
 - King James Version (inglés)
-- 
+-
+
 Detalle legal: `LICENSES/BIBLES.md`.
 
 **No** se incluyen RVR1960, NVI, NTV ni otras traducciones con derechos de autor.
@@ -140,15 +141,15 @@ El bucket está vacío hasta la primera publicación. Hasta entonces esas URL re
 
 Las credenciales no se guardan en el repositorio. David las pasa por el entorno en el momento de publicar.
 
-| Variable | Obligatoria | Valor |
-| --- | --- | --- |
-| `R2_ACCOUNT_ID` | Sí | ID de la cuenta de Cloudflare |
-| `R2_ACCESS_KEY_ID` | Sí | Access key del token limitado al bucket |
-| `R2_SECRET_ACCESS_KEY` | Sí | Secret del mismo token |
-| `R2_BUCKET` | No | `desktop-releases` |
-| `R2_ENDPOINT` | No | `https://<R2_ACCOUNT_ID>.r2.cloudflarestorage.com` |
-| `R2_REGION` | No | `auto` |
-| `DOWNLOAD_BASE_URL` | No | `https://downloads.7lineas.com` |
+| Variable               | Obligatoria | Valor                                              |
+| ---------------------- | ----------- | -------------------------------------------------- |
+| `R2_ACCOUNT_ID`        | Sí          | ID de la cuenta de Cloudflare                      |
+| `R2_ACCESS_KEY_ID`     | Sí          | Access key del token limitado al bucket            |
+| `R2_SECRET_ACCESS_KEY` | Sí          | Secret del mismo token                             |
+| `R2_BUCKET`            | No          | `desktop-releases`                                 |
+| `R2_ENDPOINT`          | No          | `https://<R2_ACCOUNT_ID>.r2.cloudflarestorage.com` |
+| `R2_REGION`            | No          | `auto`                                             |
+| `DOWNLOAD_BASE_URL`    | No          | `https://downloads.7lineas.com`                    |
 
 La subida usa la API S3 de R2 (`R2_ENDPOINT`), no el dominio público. El dominio público solo sirve para descargar.
 
@@ -177,12 +178,12 @@ La aplicación no tiene la lista de versiones escrita en el código. Una versió
 
 Después de `pnpm build:bible-modules`, suba estos archivos del directorio `data/bible-modules/` al bucket `desktop-releases`, con la clave `bibles/` más el nombre. No los suba desde este repositorio si no tiene el token de R2. Use las mismas variables que para el instalador (`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`).
 
-| Archivo local | Clave en el bucket | URL pública |
-| --- | --- | --- |
+| Archivo local         | Clave en el bucket           | URL pública                                              |
+| --------------------- | ---------------------------- | -------------------------------------------------------- |
 | `bibles-catalog.json` | `bibles/bibles-catalog.json` | https://downloads.7lineas.com/bibles/bibles-catalog.json |
-| `bes.json` | `bibles/bes.json` | https://downloads.7lineas.com/bibles/bes.json |
-| `onbv.json` | `bibles/onbv.json` | https://downloads.7lineas.com/bibles/onbv.json |
-| `pddpt.json` | `bibles/pddpt.json` | https://downloads.7lineas.com/bibles/pddpt.json |
+| `bes.json`            | `bibles/bes.json`            | https://downloads.7lineas.com/bibles/bes.json            |
+| `onbv.json`           | `bibles/onbv.json`           | https://downloads.7lineas.com/bibles/onbv.json           |
+| `pddpt.json`          | `bibles/pddpt.json`          | https://downloads.7lineas.com/bibles/pddpt.json          |
 
 Ejemplo, sin guardar secretos en el repo:
 

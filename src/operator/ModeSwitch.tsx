@@ -5,11 +5,26 @@ import { BibleIcon, MediaIcon, SongIcon, TextIcon } from "./icons";
 export type OperatorMode = "biblia" | "canciones" | "textos" | "media";
 
 /** Order of the workspaces, matching the number keys 1, 2, 3. */
-export const MODE_ORDER: readonly OperatorMode[] = ["biblia", "canciones", "textos", "media"];
+export const MODE_ORDER: readonly OperatorMode[] = [
+  "biblia",
+  "canciones",
+  "textos",
+  "media",
+];
 
-const MODES: Array<{ id: OperatorMode; label: string; testId: string; icon: ReactNode }> = [
+const MODES: Array<{
+  id: OperatorMode;
+  label: string;
+  testId: string;
+  icon: ReactNode;
+}> = [
   { id: "biblia", label: "Biblia", testId: "mode-biblia", icon: <BibleIcon /> },
-  { id: "canciones", label: "Canciones", testId: "mode-canciones", icon: <SongIcon /> },
+  {
+    id: "canciones",
+    label: "Canciones",
+    testId: "mode-canciones",
+    icon: <SongIcon />,
+  },
   { id: "textos", label: "Textos", testId: "mode-textos", icon: <TextIcon /> },
   { id: "media", label: "Media", testId: "mode-media", icon: <MediaIcon /> },
 ];
@@ -33,7 +48,9 @@ export function ModeSwitch({ mode, onSwitch }: Props) {
     const indicator = indicatorRef.current;
     if (!rail || !indicator) return;
     const place = () => {
-      const active = rail.querySelector<HTMLElement>(`[data-mode-key="${mode}"]`);
+      const active = rail.querySelector<HTMLElement>(
+        `[data-mode-key="${mode}"]`,
+      );
       if (!active) return;
       indicator.style.width = `${active.offsetWidth}px`;
       indicator.style.transform = `translateX(${active.offsetLeft}px)`;

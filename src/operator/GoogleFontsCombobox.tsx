@@ -2,10 +2,28 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Check, CircleAlert, Search, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@/components/ui/input-group";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { fontStack, type FontFamilyId, type GoogleFontSearchResult, type InstalledFont } from "@shared/fonts";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  fontStack,
+  type FontFamilyId,
+  type GoogleFontSearchResult,
+  type InstalledFont,
+} from "@shared/fonts";
 import { useFontPreview } from "@/hooks/useFontPreview";
 
 interface Props {
@@ -23,11 +41,18 @@ const SEARCH_DELAY_MS = 250;
 /** Family name drawn in its own typeface, so a font can be seen before it is installed. */
 function FontPreviewName({ family }: { family: string }) {
   const stack = useFontPreview(family);
-  return <span style={stack ? { fontFamily: stack } : undefined}>{family}</span>;
+  return (
+    <span style={stack ? { fontFamily: stack } : undefined}>{family}</span>
+  );
 }
 
 /** Search icon next to the typeface selector. Opens a search list of installed and Google fonts. */
-export function GoogleFontsCombobox({ value, installed, onSelect, onRemoved }: Props) {
+export function GoogleFontsCombobox({
+  value,
+  installed,
+  onSelect,
+  onRemoved,
+}: Props) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<GoogleFontSearchResult[]>([]);
@@ -55,7 +80,11 @@ export function GoogleFontsCombobox({ value, installed, onSelect, onRemoved }: P
         .catch((error: unknown) => {
           if (search !== latestSearch.current) return;
           setResults([]);
-          setSearchError(error instanceof Error ? error.message : "No se pudo buscar fuentes");
+          setSearchError(
+            error instanceof Error
+              ? error.message
+              : "No se pudo buscar fuentes",
+          );
         })
         .finally(() => {
           if (search === latestSearch.current) setSearching(false);
@@ -65,10 +94,14 @@ export function GoogleFontsCombobox({ value, installed, onSelect, onRemoved }: P
   }, [query, open]);
 
   const needle = query.trim().toLowerCase();
-  const installedMatches = installed.filter((font) => font.family.toLowerCase().includes(needle));
+  const installedMatches = installed.filter((font) =>
+    font.family.toLowerCase().includes(needle),
+  );
   const installedFamilies = new Set(installed.map((font) => font.family));
   // Installed fonts come from the local list, so they still show when offline.
-  const catalogMatches = results.filter((font) => !installedFamilies.has(font.family));
+  const catalogMatches = results.filter(
+    (font) => !installedFamilies.has(font.family),
+  );
 
   const select = (id: string) => {
     onSelect(id as FontFamilyId);
@@ -84,7 +117,11 @@ export function GoogleFontsCombobox({ value, installed, onSelect, onRemoved }: P
       toast.success(`${font.family} instalada`);
       select(font.id);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "No se pudo instalar la fuente");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "No se pudo instalar la fuente",
+      );
     } finally {
       setBusy(null);
     }
@@ -97,7 +134,9 @@ export function GoogleFontsCombobox({ value, installed, onSelect, onRemoved }: P
       onRemoved(font.id);
       toast.success(`${font.family} quitada`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "No se pudo quitar la fuente");
+      toast.error(
+        error instanceof Error ? error.message : "No se pudo quitar la fuente",
+      );
     } finally {
       setBusy(null);
     }
@@ -105,7 +144,16 @@ export function GoogleFontsCombobox({ value, installed, onSelect, onRemoved }: P
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger render={<Button type="button" variant="outline" size="icon" aria-label="Buscar fuente de Google" />}>
+      <PopoverTrigger
+        render={
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            aria-label="Buscar fuente de Google"
+          />
+        }
+      >
         <Search size={15} strokeWidth={2} aria-hidden />
       </PopoverTrigger>
       <PopoverContent align="end" className="ajustes-font-popover">
@@ -121,12 +169,19 @@ export function GoogleFontsCombobox({ value, installed, onSelect, onRemoved }: P
           <InputGroupAddon align="inline-end">
             <Tooltip>
               <TooltipTrigger
-                render={<InputGroupButton size="icon-xs" variant="ghost" aria-label="Información sobre las fuentes de Google" />}
+                render={
+                  <InputGroupButton
+                    size="icon-xs"
+                    variant="ghost"
+                    aria-label="Información sobre las fuentes de Google"
+                  />
+                }
               >
                 <CircleAlert aria-hidden />
               </TooltipTrigger>
               <TooltipContent side="bottom" align="end">
-                Fuentes de Google Fonts, de uso libre. Instalar necesita internet; después funcionan sin conexión.
+                Fuentes de Google Fonts, de uso libre. Instalar necesita
+                internet; después funcionan sin conexión.
               </TooltipContent>
             </Tooltip>
           </InputGroupAddon>
@@ -135,11 +190,20 @@ export function GoogleFontsCombobox({ value, installed, onSelect, onRemoved }: P
         <ul className="ajustes-font-list" aria-busy={searching}>
           {installedMatches.map((font) => (
             <li key={font.id} className="ajustes-font-item">
-              <button type="button" className="ajustes-font-pick" disabled={busy !== null} onClick={() => select(font.id)}>
-                <span style={{ fontFamily: fontStack(font.id) }}>{font.family}</span>
+              <button
+                type="button"
+                className="ajustes-font-pick"
+                disabled={busy !== null}
+                onClick={() => select(font.id)}
+              >
+                <span style={{ fontFamily: fontStack(font.id) }}>
+                  {font.family}
+                </span>
                 <small>{font.category}</small>
               </button>
-              {font.id === value && <Check size={14} strokeWidth={2} aria-label="Seleccionada" />}
+              {font.id === value && (
+                <Check size={14} strokeWidth={2} aria-label="Seleccionada" />
+              )}
               <Button
                 type="button"
                 variant="ghost"
@@ -156,18 +220,34 @@ export function GoogleFontsCombobox({ value, installed, onSelect, onRemoved }: P
           {!searchError &&
             catalogMatches.map((font) => (
               <li key={font.family} className="ajustes-font-item">
-                <button type="button" className="ajustes-font-pick" disabled={busy !== null} onClick={() => void choose(font.family)}>
+                <button
+                  type="button"
+                  className="ajustes-font-pick"
+                  disabled={busy !== null}
+                  onClick={() => void choose(font.family)}
+                >
                   <FontPreviewName family={font.family} />
-                  <small>{[font.category, font.hebrew ? "hebreo" : ""].filter(Boolean).join(" · ")}</small>
+                  <small>
+                    {[font.category, font.hebrew ? "hebreo" : ""]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </small>
                 </button>
-                <span className="ajustes-font-action">{busy === font.family ? "Instalando…" : "Instalar"}</span>
+                <span className="ajustes-font-action">
+                  {busy === font.family ? "Instalando…" : "Instalar"}
+                </span>
               </li>
             ))}
 
-          {searchError && <li className="ajustes-note ajustes-font-note">{searchError}</li>}
-          {!searching && !searchError && installedMatches.length === 0 && catalogMatches.length === 0 && (
-            <li className="ajustes-note ajustes-font-note">Sin resultados</li>
+          {searchError && (
+            <li className="ajustes-note ajustes-font-note">{searchError}</li>
           )}
+          {!searching &&
+            !searchError &&
+            installedMatches.length === 0 &&
+            catalogMatches.length === 0 && (
+              <li className="ajustes-note ajustes-font-note">Sin resultados</li>
+            )}
         </ul>
       </PopoverContent>
     </Popover>

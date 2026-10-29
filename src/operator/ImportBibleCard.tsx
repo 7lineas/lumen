@@ -14,10 +14,19 @@ interface Props {
 
 const NUMBER = new Intl.NumberFormat("es-CO");
 
-export function ImportBibleCard({ customVersions, onChanged, onRemove }: Props) {
+export function ImportBibleCard({
+  customVersions,
+  onChanged,
+  onRemove,
+}: Props) {
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [fields, setFields] = useState({ name: "", abbr: "", language: "es", copyright: "" });
+  const [fields, setFields] = useState({
+    name: "",
+    abbr: "",
+    language: "es",
+    copyright: "",
+  });
   const [fieldErrors, setFieldErrors] = useState<ImportMetaErrors>({});
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<string | null>(null);
@@ -41,11 +50,18 @@ export function ImportBibleCard({ customVersions, onChanged, onRemove }: Props) 
       setFields({
         name: hint.name ?? "",
         abbr: hint.abbr ?? "",
-        language: hint.language && /^[a-z]{2,3}$/.test(hint.language) ? hint.language : "es",
+        language:
+          hint.language && /^[a-z]{2,3}$/.test(hint.language)
+            ? hint.language
+            : "es",
         copyright: hint.copyright ?? "",
       });
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "No se pudo abrir el archivo");
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : "No se pudo abrir el archivo",
+      );
     } finally {
       setBusy(false);
     }
@@ -56,18 +72,25 @@ export function ImportBibleCard({ customVersions, onChanged, onRemove }: Props) 
     setBusy(true);
     setError(null);
     try {
-      const result = await window.proyector?.commitBibleImport(preview.previewId, fields);
+      const result = await window.proyector?.commitBibleImport(
+        preview.previewId,
+        fields,
+      );
       if (!result) return;
       if (!result.ok) {
         setFieldErrors(result.errors);
         if (result.error) setError(result.error);
         return;
       }
-      setDone(`«${result.version.name}» (${result.version.abbr}) se importó. Está en el selector de versión, grupo «Mis biblias».`);
+      setDone(
+        `«${result.version.name}» (${result.version.abbr}) se importó. Está en el selector de versión, grupo «Mis biblias».`,
+      );
       setPreview(null);
       onChanged();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "No se pudo importar");
+      setError(
+        reason instanceof Error ? reason.message : "No se pudo importar",
+      );
     } finally {
       setBusy(false);
     }
@@ -85,61 +108,131 @@ export function ImportBibleCard({ customVersions, onChanged, onRemove }: Props) 
     try {
       await onRemove(id);
     } catch (reason) {
-      setRowError(reason instanceof Error ? reason.message : "No se pudo quitar");
+      setRowError(
+        reason instanceof Error ? reason.message : "No se pudo quitar",
+      );
     }
   }
 
-  const set = (key: keyof typeof fields) => (event: React.ChangeEvent<HTMLInputElement>) =>
-    setFields({ ...fields, [key]: event.target.value });
+  const set =
+    (key: keyof typeof fields) =>
+    (event: React.ChangeEvent<HTMLInputElement>) =>
+      setFields({ ...fields, [key]: event.target.value });
 
   return (
     <section className="bible-section" data-testid="import-bible">
       <h2>Mis biblias</h2>
       <p className="bible-intro">
-        Importe su propia versión desde un archivo: JSON de Lumen, Zefania XML, OSIS XML, USFM, CSV o TSV. Se guarda en este
-        equipo y funciona sin internet. Usted es responsable de tener permiso para usar el texto.
+        Importe su propia versión desde un archivo: JSON de Lumen, Zefania XML,
+        OSIS XML, USFM, CSV o TSV. Se guarda en este equipo y funciona sin
+        internet. Usted es responsable de tener permiso para usar el texto.
       </p>
       {!preview && (
-        <Button type="button" className="primary" data-testid="import-bible-button" onClick={() => void pick()} disabled={busy}>
+        <Button
+          type="button"
+          className="primary"
+          data-testid="import-bible-button"
+          onClick={() => void pick()}
+          disabled={busy}
+        >
           Importar Biblia
         </Button>
       )}
-      {done && <p className="muted" data-testid="import-done">{done}</p>}
-      {error && <p className="error" data-testid="import-error" style={{ whiteSpace: "pre-line" }}>{error}</p>}
+      {done && (
+        <p className="muted" data-testid="import-done">
+          {done}
+        </p>
+      )}
+      {error && (
+        <p
+          className="error"
+          data-testid="import-error"
+          style={{ whiteSpace: "pre-line" }}
+        >
+          {error}
+        </p>
+      )}
 
       {preview && (
         <article className="bible-row" data-testid="import-preview">
           <h3>Vista previa · {preview.summary.formatLabel}</h3>
           <p className="bible-meta" data-testid="import-counts">
-            {preview.fileNames.join(", ")} · {preview.summary.bookCount} libros · {NUMBER.format(preview.summary.chapterCount)} capítulos ·{" "}
+            {preview.fileNames.join(", ")} · {preview.summary.bookCount} libros
+            · {NUMBER.format(preview.summary.chapterCount)} capítulos ·{" "}
             {NUMBER.format(preview.summary.verseCount)} versículos
           </p>
           {preview.summary.warnings.map((warning) => (
-            <p className="bible-banner" key={warning}>{warning}</p>
+            <p className="bible-banner" key={warning}>
+              {warning}
+            </p>
           ))}
 
           <label className="field">
             <span>Nombre</span>
-            <Input value={fields.name} onChange={set("name")} placeholder="Mi Biblia de estudio" aria-label="Nombre" aria-invalid={!!fieldErrors.name} data-testid="import-name" />
-            {fieldErrors.name && <span className="field-error">{fieldErrors.name}</span>}
+            <Input
+              value={fields.name}
+              onChange={set("name")}
+              placeholder="Mi Biblia de estudio"
+              aria-label="Nombre"
+              aria-invalid={!!fieldErrors.name}
+              data-testid="import-name"
+            />
+            {fieldErrors.name && (
+              <span className="field-error">{fieldErrors.name}</span>
+            )}
           </label>
           <label className="field">
             <span>Abreviatura (aparece en el selector y en la proyección)</span>
-            <Input value={fields.abbr} onChange={set("abbr")} placeholder="MBE" maxLength={12} aria-label="Abreviatura" aria-invalid={!!fieldErrors.abbr} data-testid="import-abbr" />
-            {fieldErrors.abbr && <span className="field-error">{fieldErrors.abbr}</span>}
+            <Input
+              value={fields.abbr}
+              onChange={set("abbr")}
+              placeholder="MBE"
+              maxLength={12}
+              aria-label="Abreviatura"
+              aria-invalid={!!fieldErrors.abbr}
+              data-testid="import-abbr"
+            />
+            {fieldErrors.abbr && (
+              <span className="field-error">{fieldErrors.abbr}</span>
+            )}
           </label>
           <label className="field">
             <span>Idioma (código)</span>
-            <Input value={fields.language} onChange={set("language")} placeholder="es" maxLength={8} aria-label="Idioma" aria-invalid={!!fieldErrors.language} data-testid="import-language" />
-            {fieldErrors.language && <span className="field-error">{fieldErrors.language}</span>}
+            <Input
+              value={fields.language}
+              onChange={set("language")}
+              placeholder="es"
+              maxLength={8}
+              aria-label="Idioma"
+              aria-invalid={!!fieldErrors.language}
+              data-testid="import-language"
+            />
+            {fieldErrors.language && (
+              <span className="field-error">{fieldErrors.language}</span>
+            )}
           </label>
           <label className="field">
             <span>Copyright o licencia (obligatorio)</span>
-            <Input value={fields.copyright} onChange={set("copyright")} placeholder="Dominio público · © Editorial, uso con permiso" aria-label="Copyright" aria-invalid={!!fieldErrors.copyright} data-testid="import-copyright" />
-            {fieldErrors.copyright && <span className="field-error">{fieldErrors.copyright}</span>}
+            <Input
+              value={fields.copyright}
+              onChange={set("copyright")}
+              placeholder="Dominio público · © Editorial, uso con permiso"
+              aria-label="Copyright"
+              aria-invalid={!!fieldErrors.copyright}
+              data-testid="import-copyright"
+            />
+            {fieldErrors.copyright && (
+              <span className="field-error">{fieldErrors.copyright}</span>
+            )}
           </label>
           <div className="bible-actions">
-            <Button type="button" className="primary" onClick={() => void save()} disabled={busy} data-testid="import-save">
+            <Button
+              type="button"
+              className="primary"
+              onClick={() => void save()}
+              disabled={busy}
+              data-testid="import-save"
+            >
               Importar
             </Button>
             <Button type="button" onClick={() => void cancel()} disabled={busy}>
@@ -152,18 +245,29 @@ export function ImportBibleCard({ customVersions, onChanged, onRemove }: Props) 
       {customVersions.length > 0 && (
         <div className="bible-list" data-testid="custom-bibles">
           {customVersions.map((version) => (
-            <article className="bible-row" key={version.id} data-testid={`custom-row-${version.id}`}>
+            <article
+              className="bible-row"
+              key={version.id}
+              data-testid={`custom-row-${version.id}`}
+            >
               <h3>{version.name}</h3>
               <p className="bible-meta">
                 {version.abbr} · {version.language}
-                {version.stats ? ` · ${version.stats.books} libros · ${NUMBER.format(version.stats.verses)} versículos` : ""} · {version.copyright}
+                {version.stats
+                  ? ` · ${version.stats.books} libros · ${NUMBER.format(version.stats.verses)} versículos`
+                  : ""}{" "}
+                · {version.copyright}
               </p>
               <div className="bible-actions">
                 <span className="bible-status">
                   <Check size={16} strokeWidth={2.5} aria-hidden />
                   Importada
                 </span>
-                <Button type="button" onClick={() => void remove(version.id)} disabled={busy}>
+                <Button
+                  type="button"
+                  onClick={() => void remove(version.id)}
+                  disabled={busy}
+                >
                   Quitar
                 </Button>
               </div>

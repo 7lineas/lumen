@@ -11,12 +11,18 @@ const base = "https://downloads.7lineas.com";
 const port = 44741;
 
 await new Promise((resolve, reject) => {
-  const child = spawn(process.execPath, [path.join(root, "scripts", "prepare-landing.mjs")], {
-    cwd: root,
-    stdio: "inherit",
-    env: { ...process.env, DOWNLOAD_BASE_URL: base },
-  });
-  child.on("exit", (code) => (code === 0 ? resolve() : reject(new Error(`prepare ${code}`))));
+  const child = spawn(
+    process.execPath,
+    [path.join(root, "scripts", "prepare-landing.mjs")],
+    {
+      cwd: root,
+      stdio: "inherit",
+      env: { ...process.env, DOWNLOAD_BASE_URL: base },
+    },
+  );
+  child.on("exit", (code) =>
+    code === 0 ? resolve() : reject(new Error(`prepare ${code}`)),
+  );
 });
 
 const types = {
@@ -29,7 +35,9 @@ const types = {
 const server = createServer(async (req, res) => {
   const url = new URL(req.url || "/", "http://127.0.0.1");
   const rel = decodeURIComponent(url.pathname);
-  const filePath = path.normalize(path.join(outDir, rel === "/" ? "index.html" : rel));
+  const filePath = path.normalize(
+    path.join(outDir, rel === "/" ? "index.html" : rel),
+  );
   if (!filePath.startsWith(outDir)) {
     res.writeHead(403).end("Forbidden");
     return;
@@ -37,7 +45,10 @@ const server = createServer(async (req, res) => {
   try {
     const info = await stat(filePath);
     if (!info.isFile()) throw new Error("no");
-    res.writeHead(200, { "Content-Type": types[path.extname(filePath)] || "application/octet-stream" });
+    res.writeHead(200, {
+      "Content-Type":
+        types[path.extname(filePath)] || "application/octet-stream",
+    });
     createReadStream(filePath).pipe(res);
   } catch {
     res.writeHead(404).end("Not found");
@@ -64,7 +75,10 @@ const child = spawn(
 
 let stderr = "";
 const devtoolsUrl = new Promise((resolve, reject) => {
-  const timer = setTimeout(() => reject(new Error(`Chrome no abrió DevTools\n${stderr.slice(-500)}`)), 15000);
+  const timer = setTimeout(
+    () => reject(new Error(`Chrome no abrió DevTools\n${stderr.slice(-500)}`)),
+    15000,
+  );
   child.stderr.on("data", (chunk) => {
     stderr += chunk;
     const match = stderr.match(/DevTools listening on (ws:\/\/\S+)/);
@@ -80,8 +94,12 @@ const debugPort = new URL(browserWs).port;
 const started = Date.now();
 let page = null;
 while (Date.now() - started < 15000) {
-  const list = await fetch(`http://127.0.0.1:${debugPort}/json/list`).then((response) => response.json());
-  page = list.find((target) => target.type === "page" && target.url.startsWith(pageUrl));
+  const list = await fetch(`http://127.0.0.1:${debugPort}/json/list`).then(
+    (response) => response.json(),
+  );
+  page = list.find(
+    (target) => target.type === "page" && target.url.startsWith(pageUrl),
+  );
   if (page) break;
   await new Promise((resolve) => setTimeout(resolve, 200));
 }
@@ -99,7 +117,9 @@ const logs = [];
 ws.addEventListener("message", (event) => {
   const message = JSON.parse(event.data);
   if (message.method === "Runtime.exceptionThrown") {
-    logs.push(message.params.exceptionDetails?.exception?.description || "exception");
+    logs.push(
+      message.params.exceptionDetails?.exception?.description || "exception",
+    );
   }
   if (message.method === "Runtime.consoleAPICalled") {
     logs.push(message.params.args?.map((arg) => arg.value).join(" "));
@@ -113,7 +133,10 @@ ws.addEventListener("message", (event) => {
 function send(method, params = {}) {
   const id = ++nextId;
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error(`CDP ${method} no respondió`)), 8000);
+    const timer = setTimeout(
+      () => reject(new Error(`CDP ${method} no respondió`)),
+      8000,
+    );
     pending.set(id, (result) => {
       clearTimeout(timer);
       resolve(result);
@@ -139,10 +162,14 @@ child.kill("SIGKILL");
 server.close();
 
 if (!snapshot || snapshot.ready !== "1") {
-  throw new Error(`La página no quedó lista (${snapshot?.ready || "vacío"}). ${logs.join(" | ")}`);
+  throw new Error(
+    `La página no quedó lista (${snapshot?.ready || "vacío"}). ${logs.join(" | ")}`,
+  );
 }
 
-const release = JSON.parse(await readFile(path.join(root, "landing", "releases.json"), "utf8"));
+const release = JSON.parse(
+  await readFile(path.join(root, "landing", "releases.json"), "utf8"),
+);
 const setupFile = release.files.find((file) => file.id === "setup");
 const portableFile = release.files.find((file) => file.id === "portable");
 const setupHref = `${base}/${setupFile.filename}`;
@@ -153,8 +180,10 @@ if (snapshot.setup !== setupHref) {
 if (snapshot.portable !== portableHref) {
   throw new Error(`Enlace portable: ${snapshot.portable || "(vacío)"}`);
 }
-if (!snapshot.text.includes("Reina-Valera 1909")) throw new Error("Faltan los créditos de RV1909");
-if (!snapshot.text.includes("sin modificar")) throw new Error("Falta la nota de distribución gratuita");
+if (!snapshot.text.includes("Reina-Valera 1909"))
+  throw new Error("Faltan los créditos de RV1909");
+if (!snapshot.text.includes("sin modificar"))
+  throw new Error("Falta la nota de distribución gratuita");
 if (!snapshot.text.includes(setupFile.sha256)) {
   throw new Error("Falta el SHA-256 del instalador");
 }

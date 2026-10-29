@@ -20,7 +20,8 @@ export interface ParsedSong {
   order: string[];
 }
 
-const LABEL_WORD = /^(verso|estrofa|coro|puente|pre-?coro|estribillo|refr[áa]n|intro|outro|final|tag|interludio|verse|chorus|bridge|pre-?chorus|refrain)(\s+\d+)?\s*:?$/i;
+const LABEL_WORD =
+  /^(verso|estrofa|coro|puente|pre-?coro|estribillo|refr[áa]n|intro|outro|final|tag|interludio|verse|chorus|bridge|pre-?chorus|refrain)(\s+\d+)?\s*:?$/i;
 
 const LABEL_BRACKET = /^\[([^\]]+)\]$/;
 
@@ -67,7 +68,8 @@ export function parseSong(lyrics: string): ParsedSong {
 
   const uniqueKey = (candidate: string): string => {
     let key = candidate;
-    for (let n = 2; sections.some((s) => s.key === key); n++) key = `${candidate}-${n}`;
+    for (let n = 2; sections.some((s) => s.key === key); n++)
+      key = `${candidate}-${n}`;
     return key;
   };
 
@@ -98,7 +100,9 @@ export function parseSong(lyrics: string): ParsedSong {
       continue;
     }
 
-    const same = sections.find((s) => slug(s.label) === group && s.text === text);
+    const same = sections.find(
+      (s) => slug(s.label) === group && s.text === text,
+    );
     if (same) {
       order.push(same.key);
       continue;
@@ -114,7 +118,9 @@ export function parseSong(lyrics: string): ParsedSong {
 /** Parts as they are projected: the written order, repeats included. */
 export function songParts(lyrics: string): SongSection[] {
   const parsed = parseSong(lyrics);
-  const byKey = new Map(parsed.sections.map((section) => [section.key, section]));
+  const byKey = new Map(
+    parsed.sections.map((section) => [section.key, section]),
+  );
   return parsed.order.flatMap((key) => {
     const section = byKey.get(key);
     return section ? [section] : [];

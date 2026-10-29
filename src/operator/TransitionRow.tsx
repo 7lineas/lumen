@@ -6,7 +6,15 @@ import { Slider } from "@/components/ui/slider";
 export type DemoContent = "hebrew" | "letra" | "gradient";
 
 /** A small sample that fades in and out with the chosen duration. */
-function TransitionDemo({ ms, runKey, content }: { ms: number; runKey: number; content: DemoContent }) {
+function TransitionDemo({
+  ms,
+  runKey,
+  content,
+}: {
+  ms: number;
+  runKey: number;
+  content: DemoContent;
+}) {
   const [shown, setShown] = useState(false);
 
   useEffect(() => {
@@ -20,15 +28,26 @@ function TransitionDemo({ ms, runKey, content }: { ms: number; runKey: number; c
     };
   }, [runKey, ms]);
 
-  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const reduceMotion = window.matchMedia(
+    "(prefers-reduced-motion: reduce)",
+  ).matches;
   return (
     <div className="ajustes-demo" aria-hidden>
       <div
         className={`ajustes-demo-card is-${content}`}
-        style={{ opacity: shown ? 1 : 0, transitionDuration: reduceMotion ? "0ms" : `${ms}ms` }}
+        style={{
+          opacity: shown ? 1 : 0,
+          transitionDuration: reduceMotion ? "0ms" : `${ms}ms`,
+        }}
       >
-        {content === "hebrew" && <span className="ajustes-demo-text" lang="he" dir="rtl">ישוע</span>}
-        {content === "letra" && <span className="ajustes-demo-text">Letra</span>}
+        {content === "hebrew" && (
+          <span className="ajustes-demo-text" lang="he" dir="rtl">
+            ישוע
+          </span>
+        )}
+        {content === "letra" && (
+          <span className="ajustes-demo-text">Letra</span>
+        )}
       </div>
     </div>
   );
@@ -72,7 +91,15 @@ export function TransitionRow({
           }}
         />
         <Rabbit size={16} strokeWidth={1.75} aria-hidden />
-        <Button type="button" variant="ghost" size="icon-sm" aria-label={label ? `Probar transición de ${label}` : "Probar transición"} onClick={() => setRunKey((k) => k + 1)}>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          aria-label={
+            label ? `Probar transición de ${label}` : "Probar transición"
+          }
+          onClick={() => setRunKey((k) => k + 1)}
+        >
           <Play size={14} aria-hidden />
         </Button>
         <TransitionDemo ms={value} runKey={runKey} content={content} />

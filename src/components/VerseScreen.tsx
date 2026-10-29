@@ -2,7 +2,10 @@ import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import type { ProjectorPayload } from "@shared/types";
 import { fitFontSize } from "@shared/text-fit";
 
-export function splitReference(label: string): { ref: string; version: string } {
+export function splitReference(label: string): {
+  ref: string;
+  version: string;
+} {
   const sep = label.lastIndexOf(" — ");
   if (sep < 0) return { ref: label, version: "" };
   return { ref: label.slice(0, sep), version: label.slice(sep + 3) };
@@ -26,7 +29,15 @@ interface Props {
  * renders it at full size and the operator monitors render the very same
  * markup at projector resolution, scaled down, so both wrap and size alike.
  */
-export function VerseScreen({ payload, fontSize, fitKey, className, style, referenceColor, versionColor }: Props) {
+export function VerseScreen({
+  payload,
+  fontSize,
+  fitKey,
+  className,
+  style,
+  referenceColor,
+  versionColor,
+}: Props) {
   const innerRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
   const [fitSize, setFitSize] = useState(fontSize);
@@ -47,7 +58,9 @@ export function VerseScreen({ payload, fontSize, fitKey, className, style, refer
       // on the inner box before measuring: they grow and shrink with the text.
       const size = fitFontSize(fontSize, (s) => {
         inner.style.fontSize = `${s}px`;
-        return el.scrollHeight <= el.clientHeight && el.scrollWidth <= el.clientWidth;
+        return (
+          el.scrollHeight <= el.clientHeight && el.scrollWidth <= el.clientWidth
+        );
       });
       inner.style.fontSize = `${size}px`;
       setFitSize(size);
@@ -78,10 +91,21 @@ export function VerseScreen({ payload, fontSize, fitKey, className, style, refer
 
   const { ref, version } = splitReference(payload.referenceLabel);
   return (
-    <div ref={innerRef} className={className} style={{ ...style, fontSize: `${fitSize}px` }}>
+    <div
+      ref={innerRef}
+      className={className}
+      style={{ ...style, fontSize: `${fitSize}px` }}
+    >
       {/* Floating labels (reference top-left, version® bottom-right) share one
           size: 3/4 of the fitted verse text, so they scale with the inner box. */}
-      {ref && <header className="projector-ref" style={{ color: referenceColor, fontSize: "0.75em" }}>{ref}</header>}
+      {ref && (
+        <header
+          className="projector-ref"
+          style={{ color: referenceColor, fontSize: "0.75em" }}
+        >
+          {ref}
+        </header>
+      )}
       <div
         ref={textRef}
         className={`projector-body ${payload.blocks.length > 1 ? "dual" : ""}`}
@@ -90,14 +114,21 @@ export function VerseScreen({ payload, fontSize, fitKey, className, style, refer
       >
         {payload.blocks.map((block, i) => (
           <section key={i} className="projector-column">
-            {block.label && <div className="projector-col-label">{block.label}</div>}
+            {block.label && (
+              <div className="projector-col-label">{block.label}</div>
+            )}
             <p className="projector-text">{block.text}</p>
           </section>
         ))}
       </div>
       {version && (
         <div className="projector-footer">
-          <div className="projector-version" style={{ color: versionColor, fontSize: "0.75em" }}>{version}®</div>
+          <div
+            className="projector-version"
+            style={{ color: versionColor, fontSize: "0.75em" }}
+          >
+            {version}®
+          </div>
         </div>
       )}
     </div>

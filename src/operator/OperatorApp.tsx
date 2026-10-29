@@ -1,17 +1,65 @@
 import { Button } from "@/components/ui/button";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Church, EllipsisVertical, ImagePlus, Keyboard, LayoutGrid, Radio, Timer, Trash2, Video, X } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Church,
+  EllipsisVertical,
+  ImagePlus,
+  Keyboard,
+  LayoutGrid,
+  Radio,
+  Timer,
+  Trash2,
+  Video,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
-import type { AppSettings, HistoryEntry, ProjectorPayload, QueueEntry, VideoPlayback } from "@shared/types";
+import type {
+  AppSettings,
+  HistoryEntry,
+  ProjectorPayload,
+  QueueEntry,
+  VideoPlayback,
+} from "@shared/types";
 import { DEFAULT_SETTINGS, MAX_QUEUE_ITEMS, mediaKind } from "@shared/types";
 import { useBibleLoader } from "../hooks/useBibleLoader";
 import { useOnlineBibles } from "../hooks/useOnlineBibles";
 import { hasChapter, isOnlineVersionId } from "@shared/youversion";
-import { parseReference, formatRange, type VerseRange, type VerseRef } from "@shared/reference";
+import {
+  parseReference,
+  formatRange,
+  type VerseRange,
+  type VerseRef,
+} from "@shared/reference";
 import {
   fetchRangeTexts,
   getBible,
@@ -21,7 +69,11 @@ import {
 } from "@shared/bible-service";
 import { BOOKS } from "@shared/books";
 import { rangeFromVerseClick } from "@shared/stage";
-import { backgroundImageUrl, backgroundThumbnailUrl, isBackgroundVideo } from "@shared/background-image";
+import {
+  backgroundImageUrl,
+  backgroundThumbnailUrl,
+  isBackgroundVideo,
+} from "@shared/background-image";
 import { payloadContentKey, videoPosition } from "@shared/stage";
 import { AboutModal } from "./AboutModal";
 import { BiblesPanel } from "./BiblesPanel";
@@ -29,14 +81,27 @@ import { SettingsPanel } from "./SettingsPanel";
 import { StageMonitor } from "./StageMonitor";
 import { BibleWorkspace } from "./BibleWorkspace";
 import { SavedStrip } from "./SavedStrip";
-import { SongsWorkspace, type SongSelection, type SongStage } from "./SongsWorkspace";
+import {
+  SongsWorkspace,
+  type SongSelection,
+  type SongStage,
+} from "./SongsWorkspace";
 import { TextsWorkspace } from "./TextsWorkspace";
-import { MediaWorkspace, type MediaItem, type SlideStage } from "./MediaWorkspace";
+import {
+  MediaWorkspace,
+  type MediaItem,
+  type SlideStage,
+} from "./MediaWorkspace";
 import { AudioDock, type AudioTrack } from "./AudioDock";
 import { VideoTransport } from "./VideoTransport";
 import { FitToggle } from "./FitToggle";
 import { MODE_ORDER, ModeSwitch, type OperatorMode } from "./ModeSwitch";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ShortcutsDialog } from "./ShortcutsDialog";
 import { UpdateButton, UpdateCheckButton } from "./UpdateButton";
 import { WindowControls } from "./WindowControls";
@@ -54,14 +119,25 @@ const TAKE_ON_ENTER = ".lx-card, .lx-item-main, .lx-chaps button, .lx-result";
 function gridColumns(): number {
   const grid = document.querySelector(".lx-slides");
   if (!grid) return 1;
-  return Math.max(1, getComputedStyle(grid).gridTemplateColumns.split(" ").filter(Boolean).length);
+  return Math.max(
+    1,
+    getComputedStyle(grid).gridTemplateColumns.split(" ").filter(Boolean)
+      .length,
+  );
 }
 
 /** Minutes offered for the countdown screen. */
-const COUNTDOWN_OPTIONS = [1, 3, 5, 10, 15, 20].map((minutes) => ({ value: String(minutes), label: `${minutes} min` }));
+const COUNTDOWN_OPTIONS = [1, 3, 5, 10, 15, 20].map((minutes) => ({
+  value: String(minutes),
+  label: `${minutes} min`,
+}));
 /** Caption above the countdown on the projector. */
 const COUNTDOWN_CAPTION = "Comenzamos en";
-const OVERLAY_TITLES = { ajustes: "Ajustes", acerca: "Acerca de Lumen", biblias: "Biblias" } as const;
+const OVERLAY_TITLES = {
+  ajustes: "Ajustes",
+  acerca: "Acerca de Lumen",
+  biblias: "Biblias",
+} as const;
 
 /** Settings persisted before the accent/song-fade split. */
 type StoredSettings = Partial<AppSettings> & {
@@ -78,7 +154,10 @@ function mergeSettings(s: StoredSettings): AppSettings {
     ...DEFAULT_SETTINGS,
     ...rest,
     accentColor:
-      s.accentColor ?? s.referenceColor ?? s.versionColor ?? DEFAULT_SETTINGS.accentColor,
+      s.accentColor ??
+      s.referenceColor ??
+      s.versionColor ??
+      DEFAULT_SETTINGS.accentColor,
     fadeMs,
     songFadeMs: s.songFadeMs ?? fadeMs,
   };
@@ -113,16 +192,25 @@ function BackgroundLibraryPreview({ filePath }: { filePath: string }) {
   const [thumbnailFailed, setThumbnailFailed] = useState(false);
   if (video) {
     const thumbnail = backgroundThumbnailUrl(filePath);
-    return thumbnail && !thumbnailFailed
-      ? <img src={thumbnail} alt="" onError={() => {
-        setThumbnailFailed(true);
-        if (!window.__LUMEN_BROWSER__) {
-          void createBackgroundVideoThumbnail(filePath).then((created) => {
-            if (created) setThumbnailFailed(false);
-          });
-        }
-      }} />
-      : <span className="background-video-placeholder"><Video aria-hidden="true" /><span>Video</span></span>;
+    return thumbnail && !thumbnailFailed ? (
+      <img
+        src={thumbnail}
+        alt=""
+        onError={() => {
+          setThumbnailFailed(true);
+          if (!window.__LUMEN_BROWSER__) {
+            void createBackgroundVideoThumbnail(filePath).then((created) => {
+              if (created) setThumbnailFailed(false);
+            });
+          }
+        }}
+      />
+    ) : (
+      <span className="background-video-placeholder">
+        <Video aria-hidden="true" />
+        <span>Video</span>
+      </span>
+    );
   }
   return <img src={backgroundImageUrl(filePath)} alt="" />;
 }
@@ -172,7 +260,9 @@ export function OperatorApp() {
   const [projectOnClick, setProjectOnClick] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [countdownMinutes, setCountdownMinutes] = useState(5);
-  const [overlay, setOverlay] = useState<"ajustes" | "acerca" | "biblias" | null>(null);
+  const [overlay, setOverlay] = useState<
+    "ajustes" | "acerca" | "biblias" | null
+  >(null);
   // Phone only: which of the two panels the bottom tabs show.
   const [phoneView, setPhoneView] = useState<"modes" | "live">("modes");
   // Keep rendering the last non-null overlay while the sheet plays its
@@ -185,10 +275,15 @@ export function OperatorApp() {
   }, [overlay]);
   const activeOverlay = overlay ?? lastOverlay;
   useEffect(() => {
-    document.documentElement.dataset.overlayMotion = settings.overlayAnimation ? "on" : "off";
+    document.documentElement.dataset.overlayMotion = settings.overlayAnimation
+      ? "on"
+      : "off";
   }, [settings.overlayAnimation]);
   const [libraryTick, setLibraryTick] = useState(0);
-  const [projectorBounds, setProjectorBounds] = useState<{ width: number; height: number } | null>(null);
+  const [projectorBounds, setProjectorBounds] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
   const lastVerse = useRef<ProjectorPayload | null>(null);
   const lastContent = useRef<ProjectorPayload | null>(null);
   const booted = useRef(false);
@@ -201,40 +296,65 @@ export function OperatorApp() {
     let cancelled = false;
     const applyBounds = (b: { width: number; height: number } | null) => {
       if (!b || b.width <= 0 || b.height <= 0 || cancelled) return;
-      setProjectorBounds((prev) => (
+      setProjectorBounds((prev) =>
         prev?.width === b.width && prev?.height === b.height
           ? prev
-          : { width: b.width, height: b.height }
-      ));
+          : { width: b.width, height: b.height },
+      );
     };
     const api = window.proyector;
     if (!api) return;
     // Live window bounds first; fall back to the target display.
-    void api.getProjectorBounds?.().then(applyBounds).catch(() => undefined);
-    const pickDisplay = (displays: Array<{ id: number; primary: boolean; bounds: { width: number; height: number } }>) => {
+    void api
+      .getProjectorBounds?.()
+      .then(applyBounds)
+      .catch(() => undefined);
+    const pickDisplay = (
+      displays: Array<{
+        id: number;
+        primary: boolean;
+        bounds: { width: number; height: number };
+      }>,
+    ) => {
       if (displays.length === 0) return;
-      const explicit = settings.projectorDisplayId != null
-        ? displays.find((d) => d.id === settings.projectorDisplayId)
-        : undefined;
-      const target = explicit
-        ?? displays.find((d) => !d.primary)
-        ?? displays.find((d) => d.primary)
-        ?? displays[0];
+      const explicit =
+        settings.projectorDisplayId != null
+          ? displays.find((d) => d.id === settings.projectorDisplayId)
+          : undefined;
+      const target =
+        explicit ??
+        displays.find((d) => !d.primary) ??
+        displays.find((d) => d.primary) ??
+        displays[0];
       if (target && !cancelled) {
-        setProjectorBounds((prev) => (
-          prev !== null ? prev : { width: target.bounds.width, height: target.bounds.height }
-        ));
+        setProjectorBounds((prev) =>
+          prev !== null
+            ? prev
+            : { width: target.bounds.width, height: target.bounds.height },
+        );
       }
     };
-    void api.listDisplays().then((d) => { if (!cancelled) pickDisplay(d); }).catch(() => undefined);
+    void api
+      .listDisplays()
+      .then((d) => {
+        if (!cancelled) pickDisplay(d);
+      })
+      .catch(() => undefined);
     const off = api.onProjectorBounds?.(applyBounds);
     // Belt and braces: re-read the window size periodically so the panels
     // follow resizes even if a resize event is ever missed.
     const poll = window.setInterval(() => {
       if (cancelled || typeof api.getProjectorBounds !== "function") return;
-      void api.getProjectorBounds().then(applyBounds).catch(() => undefined);
+      void api
+        .getProjectorBounds()
+        .then(applyBounds)
+        .catch(() => undefined);
     }, 1000);
-    return () => { cancelled = true; off?.(); window.clearInterval(poll); };
+    return () => {
+      cancelled = true;
+      off?.();
+      window.clearInterval(poll);
+    };
   }, [settings.projectorDisplayId]);
 
   const projectorAspect = useMemo(() => {
@@ -256,57 +376,97 @@ export function OperatorApp() {
   // with RV1909, which ships with the app; this is derived, not persisted.
   const onlineBibles = useOnlineBibles();
   const primaryOnline = isOnlineVersionId(settings.primaryVersionId);
-  const primaryMeta = onlineBibles.online.versions.find((v) => v.id === settings.primaryVersionId);
-  const visibleFailure = primaryOnline
-    ? onlineBibles.failures[onlineBibles.chapterKey({ versionId: settings.primaryVersionId, book: viewBook, chapter: viewChapter })]
-    : undefined;
-  const onlineUnavailable = primaryOnline && (
-    (onlineBibles.loaded && (!primaryMeta || !!primaryMeta.locked)) ||
-    (!!visibleFailure && visibleFailure.reason !== "not-found")
+  const primaryMeta = onlineBibles.online.versions.find(
+    (v) => v.id === settings.primaryVersionId,
   );
+  const visibleFailure = primaryOnline
+    ? onlineBibles.failures[
+        onlineBibles.chapterKey({
+          versionId: settings.primaryVersionId,
+          book: viewBook,
+          chapter: viewChapter,
+        })
+      ]
+    : undefined;
+  const onlineUnavailable =
+    primaryOnline &&
+    ((onlineBibles.loaded && (!primaryMeta || !!primaryMeta.locked)) ||
+      (!!visibleFailure && visibleFailure.reason !== "not-found"));
   const primaryId = onlineUnavailable ? "rv1909" : settings.primaryVersionId;
-  const onlineNotice = !onlineUnavailable ? null
-    : primaryMeta?.locked ? `${primaryMeta.lockedReason ?? "Licencia no aceptada"}. Se usa RV1909.`
-    : !visibleFailure ? "Esa Biblia en línea no está disponible. Se usa RV1909."
-    : visibleFailure.reason === "offline" ? "Sin conexión con YouVersion: se usa RV1909 (los capítulos ya consultados siguen disponibles)."
-    : visibleFailure.reason === "rate-limited" ? `YouVersion pidió esperar${visibleFailure.retryAfterSec ? ` ${Math.max(1, Math.ceil(visibleFailure.retryAfterSec / 60))} min` : ""}: se usa RV1909.`
-    : `${visibleFailure.message}. Se usa RV1909.`;
+  const onlineNotice = !onlineUnavailable
+    ? null
+    : primaryMeta?.locked
+      ? `${primaryMeta.lockedReason ?? "Licencia no aceptada"}. Se usa RV1909.`
+      : !visibleFailure
+        ? "Esa Biblia en línea no está disponible. Se usa RV1909."
+        : visibleFailure.reason === "offline"
+          ? "Sin conexión con YouVersion: se usa RV1909 (los capítulos ya consultados siguen disponibles)."
+          : visibleFailure.reason === "rate-limited"
+            ? `YouVersion pidió esperar${visibleFailure.retryAfterSec ? ` ${Math.max(1, Math.ceil(visibleFailure.retryAfterSec / 60))} min` : ""}: se usa RV1909.`
+            : `${visibleFailure.message}. Se usa RV1909.`;
 
   const versionIds = useMemo(
     () =>
       [
         primaryId,
-        settings.dualView && settings.secondaryVersionId ? settings.secondaryVersionId : null,
+        settings.dualView && settings.secondaryVersionId
+          ? settings.secondaryVersionId
+          : null,
       ].filter(Boolean) as string[],
     [primaryId, settings.dualView, settings.secondaryVersionId],
   );
 
-  const { ready, versions, error: loadError } = useBibleLoader(versionIds, libraryTick, onlineBibles.online.versions);
-  const allVersions = useMemo(() => [...versions, ...onlineBibles.online.versions], [versions, onlineBibles.online.versions]);
+  const {
+    ready,
+    versions,
+    error: loadError,
+  } = useBibleLoader(versionIds, libraryTick, onlineBibles.online.versions);
+  const allVersions = useMemo(
+    () => [...versions, ...onlineBibles.online.versions],
+    [versions, onlineBibles.online.versions],
+  );
 
   // Prefetch the visible chapter first, then the staged/live ones and the
   // neighbours, one at a time (the API limit is per key). Skipped while the
   // fallback is active so an offline church does not retry in a loop.
   useEffect(() => {
     if (onlineUnavailable) return;
-    const ids = [settings.primaryVersionId, settings.dualView ? settings.secondaryVersionId : null]
-      .filter((id): id is string => !!id && isOnlineVersionId(id));
+    const ids = [
+      settings.primaryVersionId,
+      settings.dualView ? settings.secondaryVersionId : null,
+    ].filter((id): id is string => !!id && isOnlineVersionId(id));
     if (ids.length === 0 || !onlineBibles.online.configured) return;
     const neighbours = (book: string, chapter: number) => {
       const at = BOOKS.findIndex((b) => b.code === book);
       if (at < 0) return [];
       const out: Array<{ book: string; chapter: number }> = [];
-      if (chapter < BOOKS[at].chapters) out.push({ book, chapter: chapter + 1 });
-      else if (BOOKS[at + 1]) out.push({ book: BOOKS[at + 1].code, chapter: 1 });
+      if (chapter < BOOKS[at].chapters)
+        out.push({ book, chapter: chapter + 1 });
+      else if (BOOKS[at + 1])
+        out.push({ book: BOOKS[at + 1].code, chapter: 1 });
       if (chapter > 1) out.push({ book, chapter: chapter - 1 });
-      else if (BOOKS[at - 1]) out.push({ book: BOOKS[at - 1].code, chapter: BOOKS[at - 1].chapters });
+      else if (BOOKS[at - 1])
+        out.push({ book: BOOKS[at - 1].code, chapter: BOOKS[at - 1].chapters });
       return out;
     };
-    const targets: Array<{ book: string; chapter: number }> = [{ book: viewBook, chapter: viewChapter }];
-    if (staged) targets.push({ book: staged.start.book, chapter: staged.start.chapter }, { book: staged.end.book, chapter: staged.end.chapter });
-    if (liveRange) targets.push({ book: liveRange.start.book, chapter: liveRange.start.chapter });
+    const targets: Array<{ book: string; chapter: number }> = [
+      { book: viewBook, chapter: viewChapter },
+    ];
+    if (staged)
+      targets.push(
+        { book: staged.start.book, chapter: staged.start.chapter },
+        { book: staged.end.book, chapter: staged.end.chapter },
+      );
+    if (liveRange)
+      targets.push({
+        book: liveRange.start.book,
+        chapter: liveRange.start.chapter,
+      });
     targets.push(...neighbours(viewBook, viewChapter));
-    if (liveRange) targets.push(...neighbours(liveRange.start.book, liveRange.start.chapter));
+    if (liveRange)
+      targets.push(
+        ...neighbours(liveRange.start.book, liveRange.start.chapter),
+      );
     const seen = new Set<string>();
     let cancelled = false;
     void (async () => {
@@ -315,14 +475,32 @@ export function OperatorApp() {
           const key = `${versionId}/${target.book}.${target.chapter}`;
           if (seen.has(key) || cancelled) continue;
           seen.add(key);
-          if (hasChapter(getBible(versionId), target.book, target.chapter)) continue;
-          await onlineBibles.ensureChapter({ versionId, book: target.book, chapter: target.chapter });
+          if (hasChapter(getBible(versionId), target.book, target.chapter))
+            continue;
+          await onlineBibles.ensureChapter({
+            versionId,
+            book: target.book,
+            chapter: target.chapter,
+          });
         }
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
     // oxlint-disable-next-line react/exhaustive-deps
-  }, [onlineUnavailable, settings.primaryVersionId, settings.dualView, settings.secondaryVersionId, viewBook, viewChapter, staged, liveRange, onlineBibles.online.configured, onlineBibles.failures]);
+  }, [
+    onlineUnavailable,
+    settings.primaryVersionId,
+    settings.dualView,
+    settings.secondaryVersionId,
+    viewBook,
+    viewChapter,
+    staged,
+    liveRange,
+    onlineBibles.online.configured,
+    onlineBibles.failures,
+  ]);
 
   const previewContent = useMemo(() => {
     // fetchRangeTexts already returns null while the selected Bible is not in
@@ -335,9 +513,15 @@ export function OperatorApp() {
       settings.dualView ? settings.secondaryVersionId : null,
       staged,
     );
-  // chapterTick: online chapters are merged into the cached Bible in place.
-  // oxlint-disable-next-line react/exhaustive-deps
-  }, [staged, primaryId, settings.dualView, settings.secondaryVersionId, onlineBibles.chapterTick]);
+    // chapterTick: online chapters are merged into the cached Bible in place.
+    // oxlint-disable-next-line react/exhaustive-deps
+  }, [
+    staged,
+    primaryId,
+    settings.dualView,
+    settings.secondaryVersionId,
+    onlineBibles.chapterTick,
+  ]);
 
   const previewPayload = useMemo<ProjectorPayload | null>(() => {
     if (!previewContent) return null;
@@ -412,18 +596,21 @@ export function OperatorApp() {
     stageRange(liveRange);
   }, [mode, staged, liveRange, stageRange]);
 
-  const switchMode = useCallback((next: OperatorMode) => {
-    setMode(next);
-    if (next !== "biblia" || staged) return;
-    if (liveRange) {
-      stageRange(liveRange);
-      return;
-    }
-    const reference = lastVerse.current?.referenceLabel.split(" — ")[0];
-    if (!reference) return;
-    const parsed = parseReference(reference);
-    if (parsed.ok) stageRange(parsed.range);
-  }, [liveRange, stageRange, staged]);
+  const switchMode = useCallback(
+    (next: OperatorMode) => {
+      setMode(next);
+      if (next !== "biblia" || staged) return;
+      if (liveRange) {
+        stageRange(liveRange);
+        return;
+      }
+      const reference = lastVerse.current?.referenceLabel.split(" — ")[0];
+      if (!reference) return;
+      const parsed = parseReference(reference);
+      if (parsed.ok) stageRange(parsed.range);
+    },
+    [liveRange, stageRange, staged],
+  );
 
   useEffect(() => {
     if (!ready || booted.current) return;
@@ -441,7 +628,8 @@ export function OperatorApp() {
     // Only a real change of content restarts the live timer; style-only
     // updates (font, brightness, background) keep it running.
     if (payload.mode === "blank") setLiveSince(null);
-    else if (payloadContentKey(previous) !== payloadContentKey(payload)) setLiveSince(Date.now());
+    else if (payloadContentKey(previous) !== payloadContentKey(payload))
+      setLiveSince(Date.now());
     if (payload.mode === "verse") {
       lastVerse.current = payload;
     }
@@ -473,37 +661,48 @@ export function OperatorApp() {
 
   // A song's own velocity wins over Ajustes > Canciones; textos pass no fadeMs and keep the setting.
   // The typeface comes from the staged song or text; without its own, Ajustes > Tipo de letra applies.
-  const songPayload = useCallback((_title: string, text: string, fadeMs?: number, typeface?: Pick<SongStage, "fontFamily" | "fontWeight">): ProjectorPayload => ({
-    mode: "verse",
-    // Song titles are never projected; the operator sees them in the library.
-    referenceLabel: "",
-    blocks: [{ text: settings.songUppercase ? text.toUpperCase() : text }],
-    churchName: settings.churchName,
-    fontSize: settings.fontSize,
-    brightness: settings.brightness,
-    padding: settings.padding,
-    theme: settings.theme,
-    backgroundColor: settings.backgroundColor,
-    referenceColor: settings.accentColor,
-    versionColor: settings.accentColor,
-    backgroundImagePath: settings.backgroundImagePath,
-    fadeMs: fadeMs ?? settings.songFadeMs,
-    backgroundFadeMs: settings.backgroundFadeMs,
-    fontFamily: typeface?.fontFamily,
-    fontWeight: typeface?.fontWeight,
-  }), [settings]);
+  const songPayload = useCallback(
+    (
+      _title: string,
+      text: string,
+      fadeMs?: number,
+      typeface?: Pick<SongStage, "fontFamily" | "fontWeight">,
+    ): ProjectorPayload => ({
+      mode: "verse",
+      // Song titles are never projected; the operator sees them in the library.
+      referenceLabel: "",
+      blocks: [{ text: settings.songUppercase ? text.toUpperCase() : text }],
+      churchName: settings.churchName,
+      fontSize: settings.fontSize,
+      brightness: settings.brightness,
+      padding: settings.padding,
+      theme: settings.theme,
+      backgroundColor: settings.backgroundColor,
+      referenceColor: settings.accentColor,
+      versionColor: settings.accentColor,
+      backgroundImagePath: settings.backgroundImagePath,
+      fadeMs: fadeMs ?? settings.songFadeMs,
+      backgroundFadeMs: settings.backgroundFadeMs,
+      fontFamily: typeface?.fontFamily,
+      fontWeight: typeface?.fontWeight,
+    }),
+    [settings],
+  );
 
-  const slidePayload = useCallback((imagePath: string | null): ProjectorPayload => ({
-    ...songPayload("", ""),
-    mode: "slides",
-    // A diapositiva is just its image: no text blocks.
-    blocks: [],
-    slideImagePath: imagePath,
-    // Slides fade in/out/between with the same backgroundFadeMs as the
-    // background media (no separate setting), and the background switches to
-    // the solid color while they are shown (see ProjectorView / StageMonitor).
-    fadeMs: settings.backgroundFadeMs,
-  }), [songPayload, settings.backgroundFadeMs]);
+  const slidePayload = useCallback(
+    (imagePath: string | null): ProjectorPayload => ({
+      ...songPayload("", ""),
+      mode: "slides",
+      // A diapositiva is just its image: no text blocks.
+      blocks: [],
+      slideImagePath: imagePath,
+      // Slides fade in/out/between with the same backgroundFadeMs as the
+      // background media (no separate setting), and the background switches to
+      // the solid color while they are shown (see ProjectorView / StageMonitor).
+      fadeMs: settings.backgroundFadeMs,
+    }),
+    [songPayload, settings.backgroundFadeMs],
+  );
 
   const songPreviewPayload = useMemo<ProjectorPayload | null>(() => {
     if (!songStaged || songStaged.slides.length === 0) return null;
@@ -512,73 +711,113 @@ export function OperatorApp() {
     return songPayload(songStaged.title, text, songStaged.fadeMs, songStaged);
   }, [songStaged, songPayload]);
 
-  const selectSong = useCallback((songId: string | null, selection: SongSelection | null) => {
-    setSongSelectedId(songId);
-    setSongStaged(
-      selection && selection.slides.length > 0
-        ? { title: selection.title, slides: selection.slides, labels: selection.labels, index: selection.index ?? 0, fadeMs: selection.fadeMs, fontFamily: selection.fontFamily, fontWeight: selection.fontWeight }
-        : null,
-    );
-  }, []);
+  const selectSong = useCallback(
+    (songId: string | null, selection: SongSelection | null) => {
+      setSongSelectedId(songId);
+      setSongStaged(
+        selection && selection.slides.length > 0
+          ? {
+              title: selection.title,
+              slides: selection.slides,
+              labels: selection.labels,
+              index: selection.index ?? 0,
+              fadeMs: selection.fadeMs,
+              fontFamily: selection.fontFamily,
+              fontWeight: selection.fontWeight,
+            }
+          : null,
+      );
+    },
+    [],
+  );
 
-  const selectSongPart = useCallback((index: number) => {
-    setSongStaged((current) => {
-      if (!current || current.slides.length === 0) return current;
-      const clamped = Math.min(Math.max(index, 0), current.slides.length - 1);
-      const next = { ...current, index: clamped };
-      const text = next.slides[clamped];
-      if (projectOnClick && text != null) {
-        setSongLive(next);
-        void send(songPayload(next.title, text, next.fadeMs, next));
-      }
-      return next;
-    });
-  }, [projectOnClick, send, songPayload]);
+  const selectSongPart = useCallback(
+    (index: number) => {
+      setSongStaged((current) => {
+        if (!current || current.slides.length === 0) return current;
+        const clamped = Math.min(Math.max(index, 0), current.slides.length - 1);
+        const next = { ...current, index: clamped };
+        const text = next.slides[clamped];
+        if (projectOnClick && text != null) {
+          setSongLive(next);
+          void send(songPayload(next.title, text, next.fadeMs, next));
+        }
+        return next;
+      });
+    },
+    [projectOnClick, send, songPayload],
+  );
 
-  const takeSongPart = useCallback((index: number) => {
-    if (!songStaged) return;
-    const text = songStaged.slides[index];
-    if (text == null) return;
-    const next = { ...songStaged, index };
-    setSongStaged(next);
-    setSongLive(next);
-    void send(songPayload(next.title, text, next.fadeMs, next));
-  }, [songStaged, send, songPayload]);
+  const takeSongPart = useCallback(
+    (index: number) => {
+      if (!songStaged) return;
+      const text = songStaged.slides[index];
+      if (text == null) return;
+      const next = { ...songStaged, index };
+      setSongStaged(next);
+      setSongLive(next);
+      void send(songPayload(next.title, text, next.fadeMs, next));
+    },
+    [songStaged, send, songPayload],
+  );
 
   const projectSongStaged = useCallback(async () => {
     if (!songStaged || songStaged.slides.length === 0) return;
     const text = songStaged.slides[songStaged.index] ?? songStaged.slides[0];
     if (text == null) return;
     setSongLive(songStaged);
-    await send(songPayload(songStaged.title, text, songStaged.fadeMs, songStaged));
+    await send(
+      songPayload(songStaged.title, text, songStaged.fadeMs, songStaged),
+    );
   }, [songStaged, send, songPayload]);
 
   const navigateSongPreview = useCallback((delta: number) => {
     setSongStaged((current) => {
       if (!current || current.slides.length === 0) return current;
-      const clamped = Math.min(Math.max(current.index + delta, 0), current.slides.length - 1);
-      return clamped === current.index ? current : { ...current, index: clamped };
+      const clamped = Math.min(
+        Math.max(current.index + delta, 0),
+        current.slides.length - 1,
+      );
+      return clamped === current.index
+        ? current
+        : { ...current, index: clamped };
     });
   }, []);
 
   // Textos are projected like songs, but the uppercase setting is for songs only.
-  const textPayload = useCallback((text: string, typeface?: Pick<SongStage, "fontFamily" | "fontWeight">): ProjectorPayload => ({
-    ...songPayload("", text, undefined, typeface),
-    blocks: [{ text }],
-  }), [songPayload]);
+  const textPayload = useCallback(
+    (
+      text: string,
+      typeface?: Pick<SongStage, "fontFamily" | "fontWeight">,
+    ): ProjectorPayload => ({
+      ...songPayload("", text, undefined, typeface),
+      blocks: [{ text }],
+    }),
+    [songPayload],
+  );
 
-  const navigateSongLive = useCallback(async (delta: number) => {
-    const base = songLive;
-    if (!base || base.slides.length === 0) return;
-    const clamped = Math.min(Math.max(base.index + delta, 0), base.slides.length - 1);
-    if (clamped === base.index) return;
-    const next = { ...base, index: clamped };
-    const text = next.slides[clamped];
-    if (text == null) return;
-    setSongLive(next);
-    // Stepping a live texto keeps it a texto: no song uppercase.
-    await send(next.isText ? textPayload(text, next) : songPayload(next.title, text, next.fadeMs, next));
-  }, [songLive, send, songPayload, textPayload]);
+  const navigateSongLive = useCallback(
+    async (delta: number) => {
+      const base = songLive;
+      if (!base || base.slides.length === 0) return;
+      const clamped = Math.min(
+        Math.max(base.index + delta, 0),
+        base.slides.length - 1,
+      );
+      if (clamped === base.index) return;
+      const next = { ...base, index: clamped };
+      const text = next.slides[clamped];
+      if (text == null) return;
+      setSongLive(next);
+      // Stepping a live texto keeps it a texto: no song uppercase.
+      await send(
+        next.isText
+          ? textPayload(text, next)
+          : songPayload(next.title, text, next.fadeMs, next),
+      );
+    },
+    [songLive, send, songPayload, textPayload],
+  );
 
   const textPreviewPayload = useMemo<ProjectorPayload | null>(() => {
     if (!textStaged || textStaged.slides.length === 0) return null;
@@ -587,38 +826,54 @@ export function OperatorApp() {
     return textPayload(text, textStaged);
   }, [textStaged, textPayload]);
 
-  const selectText = useCallback((textId: string | null, selection: SongSelection | null) => {
-    setTextSelectedId(textId);
-    setTextStaged(
-      selection && selection.slides.length > 0
-        ? { title: selection.title, slides: selection.slides, labels: selection.labels, index: selection.index ?? 0, fontFamily: selection.fontFamily, fontWeight: selection.fontWeight }
-        : null,
-    );
-  }, []);
+  const selectText = useCallback(
+    (textId: string | null, selection: SongSelection | null) => {
+      setTextSelectedId(textId);
+      setTextStaged(
+        selection && selection.slides.length > 0
+          ? {
+              title: selection.title,
+              slides: selection.slides,
+              labels: selection.labels,
+              index: selection.index ?? 0,
+              fontFamily: selection.fontFamily,
+              fontWeight: selection.fontWeight,
+            }
+          : null,
+      );
+    },
+    [],
+  );
 
-  const selectTextPart = useCallback((index: number) => {
-    setTextStaged((current) => {
-      if (!current || current.slides.length === 0) return current;
-      const clamped = Math.min(Math.max(index, 0), current.slides.length - 1);
-      const next = { ...current, index: clamped };
-      const text = next.slides[clamped];
-      if (projectOnClick && text != null) {
-        setSongLive({ ...next, isText: true });
-        void send(textPayload(text, next));
-      }
-      return next;
-    });
-  }, [projectOnClick, send, textPayload]);
+  const selectTextPart = useCallback(
+    (index: number) => {
+      setTextStaged((current) => {
+        if (!current || current.slides.length === 0) return current;
+        const clamped = Math.min(Math.max(index, 0), current.slides.length - 1);
+        const next = { ...current, index: clamped };
+        const text = next.slides[clamped];
+        if (projectOnClick && text != null) {
+          setSongLive({ ...next, isText: true });
+          void send(textPayload(text, next));
+        }
+        return next;
+      });
+    },
+    [projectOnClick, send, textPayload],
+  );
 
-  const takeTextPart = useCallback((index: number) => {
-    if (!textStaged) return;
-    const text = textStaged.slides[index];
-    if (text == null) return;
-    const next = { ...textStaged, index };
-    setTextStaged(next);
-    setSongLive({ ...next, isText: true });
-    void send(textPayload(text, next));
-  }, [textStaged, send, textPayload]);
+  const takeTextPart = useCallback(
+    (index: number) => {
+      if (!textStaged) return;
+      const text = textStaged.slides[index];
+      if (text == null) return;
+      const next = { ...textStaged, index };
+      setTextStaged(next);
+      setSongLive({ ...next, isText: true });
+      void send(textPayload(text, next));
+    },
+    [textStaged, send, textPayload],
+  );
 
   const projectTextStaged = useCallback(async () => {
     if (!textStaged || textStaged.slides.length === 0) return;
@@ -631,136 +886,231 @@ export function OperatorApp() {
   const navigateTextPreview = useCallback((delta: number) => {
     setTextStaged((current) => {
       if (!current || current.slides.length === 0) return current;
-      const clamped = Math.min(Math.max(current.index + delta, 0), current.slides.length - 1);
-      return clamped === current.index ? current : { ...current, index: clamped };
+      const clamped = Math.min(
+        Math.max(current.index + delta, 0),
+        current.slides.length - 1,
+      );
+      return clamped === current.index
+        ? current
+        : { ...current, index: clamped };
     });
   }, []);
 
   const selectMedia = useCallback((item: MediaItem | null) => {
     setMediaSelected(item);
-    setSlideStaged(item && mediaKind(item) === "slides" && item.images.length
-      ? { deckId: item.id, title: item.title, images: item.images, index: 0 }
-      : null);
+    setSlideStaged(
+      item && mediaKind(item) === "slides" && item.images.length
+        ? { deckId: item.id, title: item.title, images: item.images, index: 0 }
+        : null,
+    );
   }, []);
   // Removing what is on screen (or sounding) stops it: the projector fades it
   // out (backgroundFadeMs) and the normal background returns.
-  const mediaRemoved = useCallback((item: MediaItem) => {
-    setAudioTrack((track) => (track?.id === item.id ? null : track));
-    const current = liveRef.current;
-    const showing = slideLive?.deckId === item.id
-      || (current?.mode === "video" && item.file != null && current.video?.path === item.file);
-    if (!showing) return;
-    setSlideLive(null);
-    void send(blankPayload(settings, settings.backgroundFadeMs));
-  }, [slideLive, send, settings]);
+  const mediaRemoved = useCallback(
+    (item: MediaItem) => {
+      setAudioTrack((track) => (track?.id === item.id ? null : track));
+      const current = liveRef.current;
+      const showing =
+        slideLive?.deckId === item.id ||
+        (current?.mode === "video" &&
+          item.file != null &&
+          current.video?.path === item.file);
+      if (!showing) return;
+      setSlideLive(null);
+      void send(blankPayload(settings, settings.backgroundFadeMs));
+    },
+    [slideLive, send, settings],
+  );
   // Renaming the open item updates the header, the preview and the audio dock too.
   const mediaRenamed = useCallback((item: MediaItem) => {
     setMediaSelected((current) => (current?.id === item.id ? item : current));
-    setSlideStaged((current) => (current?.deckId === item.id ? { ...current, title: item.title } : current));
-    setAudioTrack((track) => (track?.id === item.id ? { ...track, title: item.title } : track));
+    setSlideStaged((current) =>
+      current?.deckId === item.id ? { ...current, title: item.title } : current,
+    );
+    setAudioTrack((track) =>
+      track?.id === item.id ? { ...track, title: item.title } : track,
+    );
   }, []);
   // A deck whose images changed (merged into, or slides taken out) updates the grid and the preview.
   const mediaImagesChanged = useCallback((item: MediaItem) => {
     setMediaSelected((current) => (current?.id === item.id ? item : current));
-    setSlideStaged((current) => (current?.deckId === item.id
-      ? { ...current, images: item.images, index: Math.min(current.index, item.images.length - 1) }
-      : current));
+    setSlideStaged((current) =>
+      current?.deckId === item.id
+        ? {
+            ...current,
+            images: item.images,
+            index: Math.min(current.index, item.images.length - 1),
+          }
+        : current,
+    );
   }, []);
-  const selectSlide = useCallback((index: number) => {
-    setSlideStaged((current) => {
-      if (!current || current.images.length === 0) return current;
-      const clamped = Math.min(Math.max(index, 0), current.images.length - 1);
-      if (clamped === current.index) return current;
-      const next = { ...current, index: clamped };
-      if (projectOnClick) {
-        const image = next.images[clamped] ?? null;
-        // Defer the projection out of the state updater to avoid
-        // double-sends under StrictMode double-invocation.
-        queueMicrotask(() => {
-          setSlideLive(next);
-          void send(slidePayload(image));
-        });
-      }
-      return next;
-    });
-  }, [projectOnClick, send, slidePayload]);
+  const selectSlide = useCallback(
+    (index: number) => {
+      setSlideStaged((current) => {
+        if (!current || current.images.length === 0) return current;
+        const clamped = Math.min(Math.max(index, 0), current.images.length - 1);
+        if (clamped === current.index) return current;
+        const next = { ...current, index: clamped };
+        if (projectOnClick) {
+          const image = next.images[clamped] ?? null;
+          // Defer the projection out of the state updater to avoid
+          // double-sends under StrictMode double-invocation.
+          queueMicrotask(() => {
+            setSlideLive(next);
+            void send(slidePayload(image));
+          });
+        }
+        return next;
+      });
+    },
+    [projectOnClick, send, slidePayload],
+  );
   const slidePreviewPayload = useMemo<ProjectorPayload | null>(() => {
     if (!slideStaged || slideStaged.images.length === 0) return null;
-    const index = Math.min(Math.max(slideStaged.index, 0), slideStaged.images.length - 1);
+    const index = Math.min(
+      Math.max(slideStaged.index, 0),
+      slideStaged.images.length - 1,
+    );
     return slidePayload(slideStaged.images[index] ?? null);
   }, [slideStaged, slidePayload]);
   const projectSlideStaged = useCallback(async () => {
     if (!slideStaged || slideStaged.images.length === 0) return;
-    const index = Math.min(Math.max(slideStaged.index, 0), slideStaged.images.length - 1);
+    const index = Math.min(
+      Math.max(slideStaged.index, 0),
+      slideStaged.images.length - 1,
+    );
     setSlideLive(slideStaged);
     await send(slidePayload(slideStaged.images[index] ?? null));
   }, [slideStaged, send, slidePayload]);
-  const takeSlide = useCallback((index: number) => {
-    if (!slideStaged) return;
-    const image = slideStaged.images[index];
-    if (image == null) return;
-    const next = { ...slideStaged, index };
-    setSlideStaged(next);
-    setSlideLive(next);
-    void send(slidePayload(image));
-  }, [slideStaged, send, slidePayload]);
-  const navigateSlidePreview = useCallback((delta: number) => { setSlideStaged((current) => current && current.images.length ? { ...current, index: Math.min(Math.max(current.index + delta, 0), current.images.length - 1) } : current); }, []);
-  const navigateSlideLive = useCallback(async (delta: number) => {
-    const current = slideLive;
-    if (!current || current.images.length === 0) return;
-    const index = Math.min(Math.max(current.index + delta, 0), current.images.length - 1);
-    if (index === current.index) return;
-    const next = { ...current, index };
-    setSlideLive(next);
-    await send(slidePayload(next.images[index] ?? null));
-  }, [slideLive, send, slidePayload]);
+  const takeSlide = useCallback(
+    (index: number) => {
+      if (!slideStaged) return;
+      const image = slideStaged.images[index];
+      if (image == null) return;
+      const next = { ...slideStaged, index };
+      setSlideStaged(next);
+      setSlideLive(next);
+      void send(slidePayload(image));
+    },
+    [slideStaged, send, slidePayload],
+  );
+  const navigateSlidePreview = useCallback((delta: number) => {
+    setSlideStaged((current) =>
+      current && current.images.length
+        ? {
+            ...current,
+            index: Math.min(
+              Math.max(current.index + delta, 0),
+              current.images.length - 1,
+            ),
+          }
+        : current,
+    );
+  }, []);
+  const navigateSlideLive = useCallback(
+    async (delta: number) => {
+      const current = slideLive;
+      if (!current || current.images.length === 0) return;
+      const index = Math.min(
+        Math.max(current.index + delta, 0),
+        current.images.length - 1,
+      );
+      if (index === current.index) return;
+      const next = { ...current, index };
+      setSlideLive(next);
+      await send(slidePayload(next.images[index] ?? null));
+    },
+    [slideLive, send, slidePayload],
+  );
 
   const selectedKind = mediaSelected ? mediaKind(mediaSelected) : null;
   const videoPreviewPayload = useMemo<ProjectorPayload | null>(() => {
     if (selectedKind !== "video" || !mediaSelected?.file) return null;
     // The preview shows the first frame; nothing plays until it is projected.
-    return { ...slidePayload(null), mode: "video", video: { path: mediaSelected.file, playing: false, startedAt: 0, position: 0, volume: 0 } };
-  }, [selectedKind, mediaSelected, slidePayload]);
-
-  const projectVideo = useCallback(async (item: MediaItem) => {
-    if (!item.file) return;
-    setVideoTitle(item.title);
-    setVideoDuration(null);
-    await send({
+    return {
       ...slidePayload(null),
       mode: "video",
-      video: { path: item.file, playing: true, startedAt: Date.now(), position: 0, volume: videoVolume },
-    });
-  }, [send, slidePayload, videoVolume]);
+      video: {
+        path: mediaSelected.file,
+        playing: false,
+        startedAt: 0,
+        position: 0,
+        volume: 0,
+      },
+    };
+  }, [selectedKind, mediaSelected, slidePayload]);
+
+  const projectVideo = useCallback(
+    async (item: MediaItem) => {
+      if (!item.file) return;
+      setVideoTitle(item.title);
+      setVideoDuration(null);
+      await send({
+        ...slidePayload(null),
+        mode: "video",
+        video: {
+          path: item.file,
+          playing: true,
+          startedAt: Date.now(),
+          position: 0,
+          volume: videoVolume,
+        },
+      });
+    },
+    [send, slidePayload, videoVolume],
+  );
 
   // Transport changes resend the payload that is on screen with a new clock.
-  const updateVideo = useCallback((change: (video: VideoPlayback, now: number) => VideoPlayback) => {
-    const current = liveRef.current;
-    if (current?.mode !== "video" || !current.video) return;
-    void send({ ...current, video: change(current.video, Date.now()) });
-  }, [send]);
+  const updateVideo = useCallback(
+    (change: (video: VideoPlayback, now: number) => VideoPlayback) => {
+      const current = liveRef.current;
+      if (current?.mode !== "video" || !current.video) return;
+      void send({ ...current, video: change(current.video, Date.now()) });
+    },
+    [send],
+  );
 
   const toggleVideo = useCallback(() => {
     updateVideo((video, now) => {
       const at = videoPosition(video, now, videoDuration);
-      if (video.playing && !(videoDuration != null && at >= videoDuration - 0.25)) return { ...video, playing: false, position: at };
+      if (
+        video.playing &&
+        !(videoDuration != null && at >= videoDuration - 0.25)
+      )
+        return { ...video, playing: false, position: at };
       // Play from where it was paused, or from the start once it has ended.
       const from = videoDuration != null && at >= videoDuration - 0.25 ? 0 : at;
-      return { ...video, playing: true, position: from, startedAt: now - from * 1000 };
+      return {
+        ...video,
+        playing: true,
+        position: from,
+        startedAt: now - from * 1000,
+      };
     });
   }, [updateVideo, videoDuration]);
 
-  const seekVideo = useCallback((seconds: number) => {
-    updateVideo((video, now) => ({ ...video, position: seconds, startedAt: now - seconds * 1000 }));
-  }, [updateVideo]);
+  const seekVideo = useCallback(
+    (seconds: number) => {
+      updateVideo((video, now) => ({
+        ...video,
+        position: seconds,
+        startedAt: now - seconds * 1000,
+      }));
+    },
+    [updateVideo],
+  );
 
-  const changeVideoVolume = useCallback((volume: number) => {
-    setVideoVolume(volume);
-    updateVideo((video) => ({ ...video, volume }));
-  }, [updateVideo]);
+  const changeVideoVolume = useCallback(
+    (volume: number) => {
+      setVideoVolume(volume);
+      updateVideo((video) => ({ ...video, volume }));
+    },
+    [updateVideo],
+  );
 
   const playAudio = useCallback((item: MediaItem) => {
-    if (item.file) setAudioTrack({ id: item.id, title: item.title, file: item.file });
+    if (item.file)
+      setAudioTrack({ id: item.id, title: item.title, file: item.file });
   }, []);
 
   // "Proyectar" in Media: a slide goes to the screen, a video starts playing there, audio starts sounding here.
@@ -769,19 +1119,37 @@ export function OperatorApp() {
     if (selectedKind === "video") void projectVideo(mediaSelected);
     else if (selectedKind === "audio") playAudio(mediaSelected);
     else void projectSlideStaged();
-  }, [mediaSelected, selectedKind, projectVideo, playAudio, projectSlideStaged]);
+  }, [
+    mediaSelected,
+    selectedKind,
+    projectVideo,
+    playAudio,
+    projectSlideStaged,
+  ]);
 
   // Songs and textos are both lyric-style: they share the text fade and the blank screen.
   const lyricsWorkspace = mode === "canciones" || mode === "textos";
 
   // The song staged on screen uses its own velocity when it has one.
-  const lyricsFadeMs = mode === "canciones" ? (songStaged?.fadeMs ?? settings.songFadeMs) : settings.songFadeMs;
+  const lyricsFadeMs =
+    mode === "canciones"
+      ? (songStaged?.fadeMs ?? settings.songFadeMs)
+      : settings.songFadeMs;
 
   const showBlank = useCallback(async () => {
     // "Limpiar" clears only the text (verse/song/slide). Background color and
     // media stay so the projector keeps showing them behind empty content.
     // The blank transition uses the current workspace's fade setting.
-    await send(blankPayload(settings, mode === "media" ? settings.backgroundFadeMs : lyricsWorkspace ? lyricsFadeMs : settings.fadeMs));
+    await send(
+      blankPayload(
+        settings,
+        mode === "media"
+          ? settings.backgroundFadeMs
+          : lyricsWorkspace
+            ? lyricsFadeMs
+            : settings.fadeMs,
+      ),
+    );
   }, [send, settings, mode, lyricsWorkspace, lyricsFadeMs]);
 
   const toggleBlank = useCallback(async () => {
@@ -793,7 +1161,12 @@ export function OperatorApp() {
   }, [live, send, chrome, showBlank]);
 
   // Fade used by the logo and countdown screens: the workspace on screen decides.
-  const workspaceFadeMs = mode === "media" ? settings.backgroundFadeMs : lyricsWorkspace ? lyricsFadeMs : settings.fadeMs;
+  const workspaceFadeMs =
+    mode === "media"
+      ? settings.backgroundFadeMs
+      : lyricsWorkspace
+        ? lyricsFadeMs
+        : settings.fadeMs;
 
   // Logo replaces the text; pressing it again brings back what was on screen.
   // With no logo image yet, the file picker opens straight away.
@@ -808,7 +1181,9 @@ export function OperatorApp() {
       try {
         logoImagePath = (await window.proyector?.pickLogoImage()) ?? null;
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "No se pudo elegir el logo");
+        toast.error(
+          error instanceof Error ? error.message : "No se pudo elegir el logo",
+        );
         return;
       }
       if (!logoImagePath) return;
@@ -818,16 +1193,26 @@ export function OperatorApp() {
       setSettings(next);
       await window.proyector?.setSettings(next);
     }
-    await send({ ...blankPayload(settings, workspaceFadeMs), mode: "logo", logoImagePath });
-  }, [live, send, chrome, settings, showBlank, workspaceFadeMs]);
-
-  const startCountdown = useCallback(async (minutes: number) => {
     await send({
       ...blankPayload(settings, workspaceFadeMs),
-      mode: "countdown",
-      countdown: { caption: COUNTDOWN_CAPTION, endsAt: Date.now() + minutes * 60_000 },
+      mode: "logo",
+      logoImagePath,
     });
-  }, [send, settings, workspaceFadeMs]);
+  }, [live, send, chrome, settings, showBlank, workspaceFadeMs]);
+
+  const startCountdown = useCallback(
+    async (minutes: number) => {
+      await send({
+        ...blankPayload(settings, workspaceFadeMs),
+        mode: "countdown",
+        countdown: {
+          caption: COUNTDOWN_CAPTION,
+          endsAt: Date.now() + minutes * 60_000,
+        },
+      });
+    },
+    [send, settings, workspaceFadeMs],
+  );
 
   const applyChrome = useCallback(
     async (next: AppSettings) => {
@@ -875,12 +1260,15 @@ export function OperatorApp() {
     [live, send],
   );
 
-  const stageReference = useCallback((text: string): string | null => {
-    const parsed = parseReference(text);
-    if (!parsed.ok) return parsed.message;
-    stageRange(parsed.range);
-    return null;
-  }, [stageRange]);
+  const stageReference = useCallback(
+    (text: string): string | null => {
+      const parsed = parseReference(text);
+      if (!parsed.ok) return parsed.message;
+      stageRange(parsed.range);
+      return null;
+    },
+    [stageRange],
+  );
 
   const navigateVerse = useCallback(
     (delta: number) => {
@@ -936,7 +1324,7 @@ export function OperatorApp() {
         churchName: settings.churchName,
         fontSize: settings.fontSize,
         brightness: settings.brightness,
-      padding: settings.padding,
+        padding: settings.padding,
         theme: settings.theme,
         backgroundColor: settings.backgroundColor,
         referenceColor: settings.accentColor,
@@ -989,7 +1377,7 @@ export function OperatorApp() {
         churchName: settings.churchName,
         fontSize: settings.fontSize,
         brightness: settings.brightness,
-      padding: settings.padding,
+        padding: settings.padding,
         theme: settings.theme,
         backgroundColor: settings.backgroundColor,
         referenceColor: settings.accentColor,
@@ -1013,12 +1401,21 @@ export function OperatorApp() {
   }, [toggleBlank, navigateVerse]);
 
   // Arrows move the preview and Enter projects it, in every workspace.
-  const stepPreview = useCallback((delta: number) => {
-    if (mode === "canciones") navigateSongPreview(delta);
-    else if (mode === "textos") navigateTextPreview(delta);
-    else if (mode === "media") navigateSlidePreview(delta);
-    else navigateVerse(delta);
-  }, [mode, navigateSongPreview, navigateTextPreview, navigateSlidePreview, navigateVerse]);
+  const stepPreview = useCallback(
+    (delta: number) => {
+      if (mode === "canciones") navigateSongPreview(delta);
+      else if (mode === "textos") navigateTextPreview(delta);
+      else if (mode === "media") navigateSlidePreview(delta);
+      else navigateVerse(delta);
+    },
+    [
+      mode,
+      navigateSongPreview,
+      navigateTextPreview,
+      navigateSlidePreview,
+      navigateVerse,
+    ],
+  );
 
   const projectPreview = useCallback(() => {
     if (mode === "canciones") void projectSongStaged();
@@ -1030,7 +1427,11 @@ export function OperatorApp() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target;
-      if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
+      if (
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement
+      )
+        return;
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         document.querySelector<HTMLInputElement>("[data-search]")?.focus();
@@ -1038,8 +1439,17 @@ export function OperatorApp() {
       }
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       // Open dialogs, sheets, menus and selects own the keyboard.
-      if (document.querySelector('[role="dialog"], [role="listbox"], [role="menu"]')) return;
-      if (target instanceof HTMLElement && target.closest('[role="combobox"], [role="listbox"], [role="menu"]')) return;
+      if (
+        document.querySelector(
+          '[role="dialog"], [role="listbox"], [role="menu"]',
+        )
+      )
+        return;
+      if (
+        target instanceof HTMLElement &&
+        target.closest('[role="combobox"], [role="listbox"], [role="menu"]')
+      )
+        return;
 
       switch (e.key) {
         case "1":
@@ -1066,7 +1476,12 @@ export function OperatorApp() {
           break;
         case "Enter":
           // Other focused buttons (Limpiar, Guardar…) keep their own Enter.
-          if (target instanceof HTMLElement && target.closest("button, a") && !target.closest(TAKE_ON_ENTER)) return;
+          if (
+            target instanceof HTMLElement &&
+            target.closest("button, a") &&
+            !target.closest(TAKE_ON_ENTER)
+          )
+            return;
           e.preventDefault();
           projectPreview();
           break;
@@ -1091,7 +1506,7 @@ export function OperatorApp() {
   const searchResults = useMemo(() => {
     if (!keyword.trim() || !ready) return [];
     return searchVerses(primaryId, keyword, 30);
-  // oxlint-disable-next-line react/exhaustive-deps
+    // oxlint-disable-next-line react/exhaustive-deps
   }, [keyword, ready, primaryId, onlineBibles.chapterTick]);
 
   const persistQueue = async (q: QueueEntry[]) => {
@@ -1116,30 +1531,67 @@ export function OperatorApp() {
   };
 
   // What each monitor is showing, next to its title.
-  const songPartLabel = (stage: SongStage) => `${stage.title} · ${stage.labels[stage.index] || `Parte ${stage.index + 1}`}`;
-  const previewLabel = mode === "canciones" ? (songStaged ? songPartLabel(songStaged) : "")
-    : mode === "textos" ? (textStaged ? songPartLabel(textStaged) : "")
-    : mode === "media" ? (slideStaged ? `${slideStaged.title} · ${slideStaged.index + 1}/${slideStaged.images.length}` : mediaSelected?.title ?? "")
-    : staged ? formatRange(staged) : "";
-  const liveLabel = !live || live.mode === "blank" ? "Fondo"
-    : live.mode === "logo" ? "Logo"
-    : live.mode === "countdown" ? "Cuenta regresiva"
-    : live.mode === "video" ? videoTitle
-    : live.mode === "slides" ? (slideLive ? `${slideLive.title} · ${slideLive.index + 1}/${slideLive.images.length}` : "Diapositiva")
-    : live.referenceLabel ? live.referenceLabel.split(" — ")[0]
-    : songLive ? songPartLabel(songLive) : "Canción";
-  const previewPayloadForMode = mode === "canciones" ? songPreviewPayload
-    : mode === "textos" ? textPreviewPayload
-    : mode === "media" ? (selectedKind === "video" ? videoPreviewPayload : slidePreviewPayload)
-    : previewPayload;
-  const previewEmpty = mode === "canciones" ? "Elige una parte de la canción"
-    : mode === "textos" ? "Elige un bloque del texto"
-    : mode === "media" ? (selectedKind === "audio" ? "El audio suena en esta computadora" : "Elige una diapositiva o un video")
-    : "Elige un versículo";
+  const songPartLabel = (stage: SongStage) =>
+    `${stage.title} · ${stage.labels[stage.index] || `Parte ${stage.index + 1}`}`;
+  const previewLabel =
+    mode === "canciones"
+      ? songStaged
+        ? songPartLabel(songStaged)
+        : ""
+      : mode === "textos"
+        ? textStaged
+          ? songPartLabel(textStaged)
+          : ""
+        : mode === "media"
+          ? slideStaged
+            ? `${slideStaged.title} · ${slideStaged.index + 1}/${slideStaged.images.length}`
+            : (mediaSelected?.title ?? "")
+          : staged
+            ? formatRange(staged)
+            : "";
+  const liveLabel =
+    !live || live.mode === "blank"
+      ? "Fondo"
+      : live.mode === "logo"
+        ? "Logo"
+        : live.mode === "countdown"
+          ? "Cuenta regresiva"
+          : live.mode === "video"
+            ? videoTitle
+            : live.mode === "slides"
+              ? slideLive
+                ? `${slideLive.title} · ${slideLive.index + 1}/${slideLive.images.length}`
+                : "Diapositiva"
+              : live.referenceLabel
+                ? live.referenceLabel.split(" — ")[0]
+                : songLive
+                  ? songPartLabel(songLive)
+                  : "Canción";
+  const previewPayloadForMode =
+    mode === "canciones"
+      ? songPreviewPayload
+      : mode === "textos"
+        ? textPreviewPayload
+        : mode === "media"
+          ? selectedKind === "video"
+            ? videoPreviewPayload
+            : slidePreviewPayload
+          : previewPayload;
+  const previewEmpty =
+    mode === "canciones"
+      ? "Elige una parte de la canción"
+      : mode === "textos"
+        ? "Elige un bloque del texto"
+        : mode === "media"
+          ? selectedKind === "audio"
+            ? "El audio suena en esta computadora"
+            : "Elige una diapositiva o un video"
+          : "Elige un versículo";
   // Previous / next under the live monitor follow what is on screen, not the workspace that is open.
   const stepLive = (delta: number) => {
     if (live?.mode === "slides") void navigateSlideLive(delta);
-    else if (live?.mode === "verse" && !live.referenceLabel) void navigateSongLive(delta);
+    else if (live?.mode === "verse" && !live.referenceLabel)
+      void navigateSongLive(delta);
     else void navigateLive(delta);
   };
 
@@ -1156,31 +1608,54 @@ export function OperatorApp() {
     <Select
       value={settings.primaryVersionId}
       items={allVersions.map((v) => ({ value: v.id, label: v.abbr }))}
-      onValueChange={(value) => value && void applyChrome({ ...settings, primaryVersionId: value })}
+      onValueChange={(value) =>
+        value && void applyChrome({ ...settings, primaryVersionId: value })
+      }
     >
-      <SelectTrigger className="lx-pill" aria-label="Versión de la Biblia" title="Versión"><SelectValue /></SelectTrigger>
+      <SelectTrigger
+        className="lx-pill"
+        aria-label="Versión de la Biblia"
+        title="Versión"
+      >
+        <SelectValue />
+      </SelectTrigger>
       <SelectContent>
-        {versions.filter((v) => !v.custom).map((v) => (
-          <SelectItem key={v.id} value={v.id}>
-            {v.abbr}
-          </SelectItem>
-        ))}
+        {versions
+          .filter((v) => !v.custom)
+          .map((v) => (
+            <SelectItem key={v.id} value={v.id}>
+              {v.abbr}
+            </SelectItem>
+          ))}
         {versions.some((v) => v.custom) && (
           <SelectGroup>
             <SelectLabel>Mis biblias</SelectLabel>
-            {versions.filter((v) => v.custom).map((v) => (
-              <SelectItem key={v.id} value={v.id} data-testid={`version-${v.id}`}>
-                {v.abbr}
-              </SelectItem>
-            ))}
+            {versions
+              .filter((v) => v.custom)
+              .map((v) => (
+                <SelectItem
+                  key={v.id}
+                  value={v.id}
+                  data-testid={`version-${v.id}`}
+                >
+                  {v.abbr}
+                </SelectItem>
+              ))}
           </SelectGroup>
         )}
         {onlineBibles.online.versions.length > 0 && (
           <SelectGroup>
             <SelectLabel>En línea (YouVersion)</SelectLabel>
             {onlineBibles.online.versions.map((v) => (
-              <SelectItem key={v.id} value={v.id} disabled={v.locked} title={v.lockedReason} data-testid={`version-${v.id}`}>
-                {v.abbr}{v.locked ? " · requiere licencia" : ""}
+              <SelectItem
+                key={v.id}
+                value={v.id}
+                disabled={v.locked}
+                title={v.lockedReason}
+                data-testid={`version-${v.id}`}
+              >
+                {v.abbr}
+                {v.locked ? " · requiere licencia" : ""}
               </SelectItem>
             ))}
           </SelectGroup>
@@ -1194,10 +1669,12 @@ export function OperatorApp() {
       className="app-shell lx"
       data-mode={mode}
       data-phone-view={phoneView}
-      style={{
-        "--tile-bg": settings.backgroundColor,
-        "--tile-fg": settings.theme === "light" ? "#1a1a1a" : "#f5f7fa",
-      } as React.CSSProperties}
+      style={
+        {
+          "--tile-bg": settings.backgroundColor,
+          "--tile-fg": settings.theme === "light" ? "#1a1a1a" : "#f5f7fa",
+        } as React.CSSProperties
+      }
     >
       <header className="top-bar">
         <div className="top-left">
@@ -1208,11 +1685,24 @@ export function OperatorApp() {
             <ModeSwitch mode={mode} onSwitch={switchMode} />
           </div>
           <div className="lx-phone-only">
-            <Select value={mode} items={PHONE_MODE_ITEMS} onValueChange={(value) => value && switchMode(value as OperatorMode)}>
-              <SelectTrigger className="lx-pill lx-phone-control" aria-label="Modo de trabajo"><SelectValue /></SelectTrigger>
+            <Select
+              value={mode}
+              items={PHONE_MODE_ITEMS}
+              onValueChange={(value) =>
+                value && switchMode(value as OperatorMode)
+              }
+            >
+              <SelectTrigger
+                className="lx-pill lx-phone-control"
+                aria-label="Modo de trabajo"
+              >
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 {PHONE_MODE_ITEMS.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -1221,11 +1711,24 @@ export function OperatorApp() {
         <div className="top-right">
           <UpdateButton />
           <UpdateCheckButton />
-          <Button type="button" variant="ghost" size="icon" className="shortcuts-btn" aria-label="Atajos de teclado" title="Atajos de teclado (?)" data-testid="btn-shortcuts" onClick={() => setShortcutsOpen(true)}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="shortcuts-btn"
+            aria-label="Atajos de teclado"
+            title="Atajos de teclado (?)"
+            data-testid="btn-shortcuts"
+            onClick={() => setShortcutsOpen(true)}
+          >
             <Keyboard />
           </Button>
           {!window.__LUMEN_BROWSER__ && (
-            <Button type="button" variant="outline" onClick={() => void window.proyector?.openProjector()}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => void window.proyector?.openProjector()}
+            >
               Abrir proyector
             </Button>
           )}
@@ -1235,7 +1738,9 @@ export function OperatorApp() {
               type="button"
               data-testid="tab-biblias"
               className={overlay === "biblias" ? "active" : ""}
-              onClick={() => setOverlay(overlay === "biblias" ? null : "biblias")}
+              onClick={() =>
+                setOverlay(overlay === "biblias" ? null : "biblias")
+              }
             >
               Biblias
             </Button>
@@ -1243,7 +1748,9 @@ export function OperatorApp() {
               type="button"
               data-testid="tab-ajustes"
               className={overlay === "ajustes" ? "active" : ""}
-              onClick={() => setOverlay(overlay === "ajustes" ? null : "ajustes")}
+              onClick={() =>
+                setOverlay(overlay === "ajustes" ? null : "ajustes")
+              }
             >
               Ajustes
             </Button>
@@ -1258,13 +1765,23 @@ export function OperatorApp() {
           <WindowControls />
           <div className="lx-phone-only">
             <DropdownMenu>
-              <DropdownMenuTrigger className="lx-phone-control" aria-label="Más opciones" title="Más opciones">
+              <DropdownMenuTrigger
+                className="lx-phone-control"
+                aria-label="Más opciones"
+                title="Más opciones"
+              >
                 <EllipsisVertical aria-hidden />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setOverlay("biblias")}>Biblias</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setOverlay("ajustes")}>Ajustes</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setOverlay("acerca")}>Acerca de</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setOverlay("biblias")}>
+                  Biblias
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setOverlay("ajustes")}>
+                  Ajustes
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setOverlay("acerca")}>
+                  Acerca de
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -1277,8 +1794,20 @@ export function OperatorApp() {
           <SongsWorkspace
             staged={songStaged}
             selectedId={songSelectedId}
-            liveText={live?.mode === "verse" && !live.referenceLabel ? live.blocks[0]?.text ?? null : null}
-            liveIndex={songLive && songStaged && songLive.title === songStaged.title && songLive.slides[songLive.index] === songStaged.slides[songLive.index] ? songLive.index : null}
+            liveText={
+              live?.mode === "verse" && !live.referenceLabel
+                ? (live.blocks[0]?.text ?? null)
+                : null
+            }
+            liveIndex={
+              songLive &&
+              songStaged &&
+              songLive.title === songStaged.title &&
+              songLive.slides[songLive.index] ===
+                songStaged.slides[songLive.index]
+                ? songLive.index
+                : null
+            }
             projectOnClick={projectOnClick}
             defaultFadeMs={settings.songFadeMs}
             defaultFontFamily={settings.fontFamily}
@@ -1291,8 +1820,20 @@ export function OperatorApp() {
           <TextsWorkspace
             staged={textStaged}
             selectedId={textSelectedId}
-            liveText={live?.mode === "verse" && !live.referenceLabel ? live.blocks[0]?.text ?? null : null}
-            liveIndex={songLive && textStaged && songLive.title === textStaged.title && songLive.slides[songLive.index] === textStaged.slides[songLive.index] ? songLive.index : null}
+            liveText={
+              live?.mode === "verse" && !live.referenceLabel
+                ? (live.blocks[0]?.text ?? null)
+                : null
+            }
+            liveIndex={
+              songLive &&
+              textStaged &&
+              songLive.title === textStaged.title &&
+              songLive.slides[songLive.index] ===
+                textStaged.slides[songLive.index]
+                ? songLive.index
+                : null
+            }
             projectOnClick={projectOnClick}
             defaultFontFamily={settings.fontFamily}
             onToggleProjectOnClick={setProjectOnClick}
@@ -1304,12 +1845,18 @@ export function OperatorApp() {
           <MediaWorkspace
             staged={slideStaged}
             selected={mediaSelected}
-            liveImage={live?.mode === "slides" ? live.slideImagePath ?? null : null}
-            liveVideo={live?.mode === "video" ? live.video?.path ?? null : null}
+            liveImage={
+              live?.mode === "slides" ? (live.slideImagePath ?? null) : null
+            }
+            liveVideo={
+              live?.mode === "video" ? (live.video?.path ?? null) : null
+            }
             audioId={audioTrack?.id ?? null}
             audioPlaying={audioPlaying}
             slideFit={settings.slideFit}
-            onSlideFit={(slideFit) => void applyChrome({ ...settings, slideFit })}
+            onSlideFit={(slideFit) =>
+              void applyChrome({ ...settings, slideFit })
+            }
             projectOnClick={projectOnClick}
             onToggleProjectOnClick={setProjectOnClick}
             onSelect={selectMedia}
@@ -1329,16 +1876,30 @@ export function OperatorApp() {
               onlineBibles.resetFailures();
               // Only re-ask for the list when it is what failed: it shares the
               // single request queue with the chapter that is being retried.
-              if (onlineBibles.online.error || onlineBibles.online.stale || onlineBibles.online.versions.length === 0) {
+              if (
+                onlineBibles.online.error ||
+                onlineBibles.online.stale ||
+                onlineBibles.online.versions.length === 0
+              ) {
                 void onlineBibles.refreshVersions(true);
               }
             }}
-            loadingChapter={!!onlineBibles.loading[onlineBibles.chapterKey({ versionId: primaryId, book: viewBook, chapter: viewChapter })]}
+            loadingChapter={
+              !!onlineBibles.loading[
+                onlineBibles.chapterKey({
+                  versionId: primaryId,
+                  book: viewBook,
+                  chapter: viewChapter,
+                })
+              ]
+            }
             ready={ready}
             viewBook={viewBook}
             viewChapter={viewChapter}
             staged={staged}
-            liveRange={live?.mode === "verse" && live.referenceLabel ? liveRange : null}
+            liveRange={
+              live?.mode === "verse" && live.referenceLabel ? liveRange : null
+            }
             onOpenChapter={(book, chapter) => {
               setViewBook(book);
               setViewChapter(chapter);
@@ -1347,23 +1908,40 @@ export function OperatorApp() {
             onReference={stageReference}
             onAddCurrent={() => {
               if (!staged || queue.length >= MAX_QUEUE_ITEMS) return;
-              void persistQueue([...queue, { id: newId(), reference: formatRange(staged) }]);
+              void persistQueue([
+                ...queue,
+                { id: newId(), reference: formatRange(staged) },
+              ]);
             }}
             savedCount={queue.length}
             onVerseClick={(verse, shiftKey) => {
-              const next = rangeFromVerseClick(anchor, viewBook, viewChapter, verse, shiftKey);
+              const next = rangeFromVerseClick(
+                anchor,
+                viewBook,
+                viewChapter,
+                verse,
+                shiftKey,
+              );
               stageRange(next.range, next.anchor);
             }}
-            onVerseTake={(verse) => void projectReference(formatRange({
-              start: { book: viewBook, chapter: viewChapter, verse },
-              end: { book: viewBook, chapter: viewChapter, verse },
-            }))}
+            onVerseTake={(verse) =>
+              void projectReference(
+                formatRange({
+                  start: { book: viewBook, chapter: viewChapter, verse },
+                  end: { book: viewBook, chapter: viewChapter, verse },
+                }),
+              )
+            }
             keyword={keyword}
             onKeyword={setKeyword}
             searchResults={searchResults}
             onSearchPick={(hit) => {
               stageRange({
-                start: { book: hit.book, chapter: hit.chapter, verse: hit.verse },
+                start: {
+                  book: hit.book,
+                  chapter: hit.chapter,
+                  verse: hit.verse,
+                },
                 end: { book: hit.book, chapter: hit.chapter, verse: hit.verse },
               });
               setKeyword("");
@@ -1386,13 +1964,33 @@ export function OperatorApp() {
             fontFamily={settings.fontFamily}
           >
             <div className="lx-mon-actions">
-              <button type="button" className="lx-take" data-testid="btn-project" onClick={projectPreview}>
-                {mode === "media" && selectedKind === "audio" ? "Reproducir audio" : "Proyectar"} <kbd>↵</kbd>
+              <button
+                type="button"
+                className="lx-take"
+                data-testid="btn-project"
+                onClick={projectPreview}
+              >
+                {mode === "media" && selectedKind === "audio"
+                  ? "Reproducir audio"
+                  : "Proyectar"}{" "}
+                <kbd>↵</kbd>
               </button>
-              <button type="button" className="lx-sq" aria-label="Anterior en la vista previa" title="Anterior (←)" onClick={() => stepPreview(-1)}>
+              <button
+                type="button"
+                className="lx-sq"
+                aria-label="Anterior en la vista previa"
+                title="Anterior (←)"
+                onClick={() => stepPreview(-1)}
+              >
                 <ChevronLeft />
               </button>
-              <button type="button" className="lx-sq" aria-label="Siguiente en la vista previa" title="Siguiente (→)" onClick={() => stepPreview(1)}>
+              <button
+                type="button"
+                className="lx-sq"
+                aria-label="Siguiente en la vista previa"
+                title="Siguiente (→)"
+                onClick={() => stepPreview(1)}
+              >
                 <ChevronRight />
               </button>
             </div>
@@ -1413,17 +2011,30 @@ export function OperatorApp() {
             onVideoDuration={setVideoDuration}
           >
             {live?.mode === "video" && live.video && (
-              <VideoTransport video={live.video} duration={videoDuration} onToggle={toggleVideo} onSeek={seekVideo} onVolume={changeVideoVolume} />
+              <VideoTransport
+                video={live.video}
+                duration={videoDuration}
+                onToggle={toggleVideo}
+                onSeek={seekVideo}
+                onVolume={changeVideoVolume}
+              />
             )}
             <div className="lx-mon-actions">
               <button
                 type="button"
-                className={live?.mode === "blank" && hasLiveContent ? "lx-act on" : "lx-act"}
+                className={
+                  live?.mode === "blank" && hasLiveContent
+                    ? "lx-act on"
+                    : "lx-act"
+                }
                 data-testid="btn-clear"
                 title="Quitar el texto de la pantalla o devolverlo (B)"
                 onClick={() => void toggleBlank()}
               >
-                {live?.mode === "blank" && hasLiveContent ? "Restaurar" : "Limpiar"} <kbd>B</kbd>
+                {live?.mode === "blank" && hasLiveContent
+                  ? "Restaurar"
+                  : "Limpiar"}{" "}
+                <kbd>B</kbd>
               </button>
               <button
                 type="button"
@@ -1435,10 +2046,24 @@ export function OperatorApp() {
               >
                 <Church /> Logo <kbd>L</kbd>
               </button>
-              <button type="button" className="lx-sq" data-testid="btn-live-prev" aria-label="Anterior en vivo" title="Anterior, directo a la pantalla" onClick={() => stepLive(-1)}>
+              <button
+                type="button"
+                className="lx-sq"
+                data-testid="btn-live-prev"
+                aria-label="Anterior en vivo"
+                title="Anterior, directo a la pantalla"
+                onClick={() => stepLive(-1)}
+              >
                 <ChevronLeft />
               </button>
-              <button type="button" className="lx-sq" data-testid="btn-live-next" aria-label="Siguiente en vivo" title="Siguiente, directo a la pantalla" onClick={() => stepLive(1)}>
+              <button
+                type="button"
+                className="lx-sq"
+                data-testid="btn-live-next"
+                aria-label="Siguiente en vivo"
+                title="Siguiente, directo a la pantalla"
+                onClick={() => stepLive(1)}
+              >
                 <ChevronRight />
               </button>
             </div>
@@ -1446,9 +2071,14 @@ export function OperatorApp() {
               <Select
                 value={String(countdownMinutes)}
                 items={COUNTDOWN_OPTIONS}
-                onValueChange={(value) => value && setCountdownMinutes(Number(value))}
+                onValueChange={(value) =>
+                  value && setCountdownMinutes(Number(value))
+                }
               >
-                <SelectTrigger aria-label="Duración de la cuenta regresiva" data-testid="countdown-minutes">
+                <SelectTrigger
+                  aria-label="Duración de la cuenta regresiva"
+                  data-testid="countdown-minutes"
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1471,109 +2101,197 @@ export function OperatorApp() {
             </div>
           </StageMonitor>
 
-          <AudioDock track={audioTrack} onClose={() => setAudioTrack(null)} onPlayingChange={setAudioPlaying} />
+          <AudioDock
+            track={audioTrack}
+            onClose={() => setAudioTrack(null)}
+            onPlayingChange={setAudioPlaying}
+          />
 
           <section className="lx-panel stage-background">
             <span className="lx-h">Fondo</span>
             <div className="stage-background-row">
               <div className="stage-background-media">
                 <div className="stage-background-actions">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="icon"
-                  title="Añadir fondo"
-                  aria-label="Añadir fondo"
-                  disabled={backgroundImportBusy}
-                  onClick={async () => {
-                    setBackgroundImportBusy(true);
-                    try {
-                      const path = await window.proyector?.pickBackgroundImage();
-                      if (!path) return;
-                      if (isBackgroundVideo(path)) await createBackgroundVideoThumbnail(path);
-                      // New uploads join the library but never auto-project: the
-                      // operator picks explicitly from the gallery.
-                      if ((settings.backgroundImages ?? []).includes(path)) return;
-                      await applyChrome({
-                        ...settings,
-                        backgroundImages: [...(settings.backgroundImages ?? []), path],
-                      });
-                    } finally {
-                      setBackgroundImportBusy(false);
-                    }
-                  }}
-                >
-                  <ImagePlus />
-                </Button>
-                {(settings.backgroundImages ?? []).length > 0 && (
                   <Button
                     type="button"
+                    variant="secondary"
                     size="icon"
-                    variant={deletingMedia ? "destructive" : "secondary"}
-                    title={deletingMedia ? "Cancelar eliminación" : "Eliminar fondos"}
-                    aria-label={deletingMedia ? "Cancelar eliminación" : "Eliminar fondos"}
-                    aria-pressed={deletingMedia}
-                    onClick={() => setDeletingMedia((value) => !value)}
+                    title="Añadir fondo"
+                    aria-label="Añadir fondo"
+                    disabled={backgroundImportBusy}
+                    onClick={async () => {
+                      setBackgroundImportBusy(true);
+                      try {
+                        const path =
+                          await window.proyector?.pickBackgroundImage();
+                        if (!path) return;
+                        if (isBackgroundVideo(path))
+                          await createBackgroundVideoThumbnail(path);
+                        // New uploads join the library but never auto-project: the
+                        // operator picks explicitly from the gallery.
+                        if ((settings.backgroundImages ?? []).includes(path))
+                          return;
+                        await applyChrome({
+                          ...settings,
+                          backgroundImages: [
+                            ...(settings.backgroundImages ?? []),
+                            path,
+                          ],
+                        });
+                      } finally {
+                        setBackgroundImportBusy(false);
+                      }
+                    }}
                   >
-                    <Trash2 />
+                    <ImagePlus />
                   </Button>
-                )}
+                  {(settings.backgroundImages ?? []).length > 0 && (
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant={deletingMedia ? "destructive" : "secondary"}
+                      title={
+                        deletingMedia
+                          ? "Cancelar eliminación"
+                          : "Eliminar fondos"
+                      }
+                      aria-label={
+                        deletingMedia
+                          ? "Cancelar eliminación"
+                          : "Eliminar fondos"
+                      }
+                      aria-pressed={deletingMedia}
+                      onClick={() => setDeletingMedia((value) => !value)}
+                    >
+                      <Trash2 />
+                    </Button>
+                  )}
                 </div>
                 <FitToggle
                   label="Fondo"
                   testId="media-fit"
                   spacing={2}
                   value={settings.backgroundFit}
-                  onChange={(backgroundFit) => void applyChrome({ ...settings, backgroundFit })}
+                  onChange={(backgroundFit) =>
+                    void applyChrome({ ...settings, backgroundFit })
+                  }
                 />
               </div>
               <div className="stage-background-color">
-              <span className="background-color-wrap" title="Color de fondo">
+                <span className="background-color-wrap" title="Color de fondo">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="background-color-btn"
+                    aria-label="Elegir color de fondo"
+                    style={{ backgroundColor: settings.backgroundColor }}
+                  />
+                  <input
+                    type="color"
+                    className="background-color-input"
+                    aria-label="Elegir color de fondo"
+                    value={settings.backgroundColor}
+                    onChange={(e) =>
+                      void applyChrome({
+                        ...settings,
+                        backgroundColor: e.target.value,
+                      })
+                    }
+                  />
+                </span>
                 <Button
                   type="button"
-                  variant="outline"
-                  size="icon"
-                  className="background-color-btn"
-                  aria-label="Elegir color de fondo"
-                  style={{ backgroundColor: settings.backgroundColor }}
-                />
-                <input
-                  type="color"
-                  className="background-color-input"
-                  aria-label="Elegir color de fondo"
-                  value={settings.backgroundColor}
-                  onChange={(e) =>
-                    void applyChrome({
-                      ...settings,
-                      backgroundColor: e.target.value,
-                    })
+                  className={
+                    !settings.backgroundImagePath
+                      ? "background-solid active"
+                      : "background-solid"
                   }
-                />
-              </span>
-              <Button
-                type="button"
-                className={!settings.backgroundImagePath ? "background-solid active" : "background-solid"}
-                aria-pressed={!settings.backgroundImagePath}
-                onClick={() => void applyChrome({ ...settings, backgroundImagePath: null })}
-              >
-                Color sólido
-              </Button>
+                  aria-pressed={!settings.backgroundImagePath}
+                  onClick={() =>
+                    void applyChrome({ ...settings, backgroundImagePath: null })
+                  }
+                >
+                  Color sólido
+                </Button>
               </div>
             </div>
             {(settings.backgroundImages ?? []).length > 0 && (
               <div className="background-gallery" aria-label="Fondos guardados">
                 {settings.backgroundImages.map((imagePath, index) => (
-                  <div key={`${imagePath}-${index}`} className="background-choice-wrap">
-                    <button type="button" className={`background-choice${settings.backgroundImagePath === imagePath ? " active" : ""}`} aria-label={deletingMedia ? `Eliminar fondo ${index + 1}` : `Usar fondo ${index + 1}`} aria-pressed={settings.backgroundImagePath === imagePath} onClick={() => { if (!deletingMedia) void applyChrome({ ...settings, backgroundImagePath: imagePath }); }}>
+                  <div
+                    key={`${imagePath}-${index}`}
+                    className="background-choice-wrap"
+                  >
+                    <button
+                      type="button"
+                      className={`background-choice${settings.backgroundImagePath === imagePath ? " active" : ""}`}
+                      aria-label={
+                        deletingMedia
+                          ? `Eliminar fondo ${index + 1}`
+                          : `Usar fondo ${index + 1}`
+                      }
+                      aria-pressed={settings.backgroundImagePath === imagePath}
+                      onClick={() => {
+                        if (!deletingMedia)
+                          void applyChrome({
+                            ...settings,
+                            backgroundImagePath: imagePath,
+                          });
+                      }}
+                    >
                       <BackgroundLibraryPreview filePath={imagePath} />
                     </button>
-                    {deletingMedia && <AlertDialog>
-                      <AlertDialogTrigger render={<Button type="button" variant="destructive" className="background-delete">Eliminar</Button>} />
-                      <AlertDialogContent>
-                        <AlertDialogHeader><AlertDialogTitle>Eliminar fondo</AlertDialogTitle><AlertDialogDescription>¿Quieres eliminar este archivo de la biblioteca de fondos?</AlertDialogDescription></AlertDialogHeader>
-                        <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction variant="destructive" onClick={() => void (async () => { await window.proyector?.deleteBackgroundMedia(imagePath); void applyChrome({ ...settings, backgroundImages: settings.backgroundImages.filter((item) => item !== imagePath), backgroundImagePath: settings.backgroundImagePath === imagePath ? null : settings.backgroundImagePath }); })()}>Eliminar</AlertDialogAction></AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>}
+                    {deletingMedia && (
+                      <AlertDialog>
+                        <AlertDialogTrigger
+                          render={
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              className="background-delete"
+                            >
+                              Eliminar
+                            </Button>
+                          }
+                        />
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Eliminar fondo</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              ¿Quieres eliminar este archivo de la biblioteca de
+                              fondos?
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction
+                              variant="destructive"
+                              onClick={() =>
+                                void (async () => {
+                                  await window.proyector?.deleteBackgroundMedia(
+                                    imagePath,
+                                  );
+                                  void applyChrome({
+                                    ...settings,
+                                    backgroundImages:
+                                      settings.backgroundImages.filter(
+                                        (item) => item !== imagePath,
+                                      ),
+                                    backgroundImagePath:
+                                      settings.backgroundImagePath === imagePath
+                                        ? null
+                                        : settings.backgroundImagePath,
+                                  });
+                                })()
+                              }
+                            >
+                              Eliminar
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
                   </div>
                 ))}
               </div>
@@ -1582,25 +2300,32 @@ export function OperatorApp() {
 
           <section className="lx-panel lx-tweaks">
             <span className="lx-h">Pantalla</span>
-            {mode !== "media" && <label className="tweak">
-              <span className="tweak-head">
-                <span>Fuente</span>
-                <span className="tweak-val">{settings.fontSize}px</span>
-              </span>
-              <Slider
-                min={40}
-                max={110}
-                value={[settings.fontSize]}
-                onValueChange={(value) => {
-                  const next = Array.isArray(value) ? value[0] : value;
-                  void applyChrome({ ...settings, fontSize: next ?? settings.fontSize });
-                }}
-              />
-            </label>}
+            {mode !== "media" && (
+              <label className="tweak">
+                <span className="tweak-head">
+                  <span>Fuente</span>
+                  <span className="tweak-val">{settings.fontSize}px</span>
+                </span>
+                <Slider
+                  min={40}
+                  max={110}
+                  value={[settings.fontSize]}
+                  onValueChange={(value) => {
+                    const next = Array.isArray(value) ? value[0] : value;
+                    void applyChrome({
+                      ...settings,
+                      fontSize: next ?? settings.fontSize,
+                    });
+                  }}
+                />
+              </label>
+            )}
             <label className="tweak">
               <span className="tweak-head">
                 <span>Luz</span>
-                <span className="tweak-val">{Math.round(settings.brightness * 100)}%</span>
+                <span className="tweak-val">
+                  {Math.round(settings.brightness * 100)}%
+                </span>
               </span>
               <Slider
                 min={35}
@@ -1608,25 +2333,34 @@ export function OperatorApp() {
                 value={[Math.round(settings.brightness * 100)]}
                 onValueChange={(value) => {
                   const next = Array.isArray(value) ? value[0] : value;
-                  void applyChrome({ ...settings, brightness: (next ?? Math.round(settings.brightness * 100)) / 100 });
+                  void applyChrome({
+                    ...settings,
+                    brightness:
+                      (next ?? Math.round(settings.brightness * 100)) / 100,
+                  });
                 }}
               />
             </label>
-            {mode !== "media" && <label className="tweak">
-              <span className="tweak-head">
-                <span>Margen</span>
-                <span className="tweak-val">{settings.padding}vw</span>
-              </span>
-              <Slider
-                min={0}
-                max={12}
-                value={[settings.padding]}
-                onValueChange={(value) => {
-                  const next = Array.isArray(value) ? value[0] : value;
-                  void applyChrome({ ...settings, padding: next ?? settings.padding });
-                }}
-              />
-            </label>}
+            {mode !== "media" && (
+              <label className="tweak">
+                <span className="tweak-head">
+                  <span>Margen</span>
+                  <span className="tweak-val">{settings.padding}vw</span>
+                </span>
+                <Slider
+                  min={0}
+                  max={12}
+                  value={[settings.padding]}
+                  onValueChange={(value) => {
+                    const next = Array.isArray(value) ? value[0] : value;
+                    void applyChrome({
+                      ...settings,
+                      padding: next ?? settings.padding,
+                    });
+                  }}
+                />
+              </label>
+            )}
           </section>
         </aside>
 
@@ -1641,7 +2375,13 @@ export function OperatorApp() {
           onRemove={(id) => void persistQueue(queue.filter((q) => q.id !== id))}
           onReorder={(from, to) => {
             if (from === to) return;
-            if (from < 0 || to < 0 || from >= queue.length || to >= queue.length) return;
+            if (
+              from < 0 ||
+              to < 0 ||
+              from >= queue.length ||
+              to >= queue.length
+            )
+              return;
             const copy = [...queue];
             const [moved] = copy.splice(from, 1);
             if (!moved) return;
@@ -1666,11 +2406,21 @@ export function OperatorApp() {
       </div>
 
       <nav className="lx-phone-tabs" aria-label="Vista móvil">
-        <button type="button" className={phoneView === "modes" ? "on" : ""} aria-pressed={phoneView === "modes"} onClick={() => setPhoneView("modes")}>
+        <button
+          type="button"
+          className={phoneView === "modes" ? "on" : ""}
+          aria-pressed={phoneView === "modes"}
+          onClick={() => setPhoneView("modes")}
+        >
           <LayoutGrid aria-hidden />
           <span>Contenido</span>
         </button>
-        <button type="button" className={phoneView === "live" ? "on" : ""} aria-pressed={phoneView === "live"} onClick={() => setPhoneView("live")}>
+        <button
+          type="button"
+          className={phoneView === "live" ? "on" : ""}
+          aria-pressed={phoneView === "live"}
+          onClick={() => setPhoneView("live")}
+        >
           <Radio aria-hidden />
           <span>En vivo</span>
         </button>
@@ -1678,16 +2428,42 @@ export function OperatorApp() {
 
       <ShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
 
-      <Dialog open={overlay !== null} onOpenChange={(open) => !open && setOverlay(null)}>
-        <DialogContent showCloseButton={false} className="overlay-dialog" data-testid={activeOverlay === "ajustes" ? "settings-panel" : undefined}>
+      <Dialog
+        open={overlay !== null}
+        onOpenChange={(open) => !open && setOverlay(null)}
+      >
+        <DialogContent
+          showCloseButton={false}
+          className="overlay-dialog"
+          data-testid={
+            activeOverlay === "ajustes" ? "settings-panel" : undefined
+          }
+        >
           <DialogHeader className="overlay-dialog-header">
-            <DialogTitle>{activeOverlay ? OVERLAY_TITLES[activeOverlay] : ""}</DialogTitle>
-            <DialogClose render={<Button type="button" variant="ghost" size="icon-sm" aria-label="Cerrar" />}>
+            <DialogTitle>
+              {activeOverlay ? OVERLAY_TITLES[activeOverlay] : ""}
+            </DialogTitle>
+            <DialogClose
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label="Cerrar"
+                />
+              }
+            >
               <X aria-hidden />
             </DialogClose>
           </DialogHeader>
           <div className="overlay-dialog-body">
-            {activeOverlay === "ajustes" && <SettingsPanel settings={settings} versions={allVersions} onSave={(s) => applyChrome(s)} />}
+            {activeOverlay === "ajustes" && (
+              <SettingsPanel
+                settings={settings}
+                versions={allVersions}
+                onSave={(s) => applyChrome(s)}
+              />
+            )}
             {activeOverlay === "biblias" && (
               <BiblesPanel
                 customVersions={versions.filter((v) => v.custom)}

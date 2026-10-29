@@ -22,7 +22,9 @@ function findExecutable() {
   if (fs.existsSync(winExe)) {
     return { cmd: "wine", args: [winExe], useWine: true };
   }
-  throw new Error("No packaged build in release/linux-unpacked or release/win-unpacked");
+  throw new Error(
+    "No packaged build in release/linux-unpacked or release/win-unpacked",
+  );
 }
 
 const { cmd, args } = findExecutable();
@@ -44,7 +46,11 @@ child.on("exit", (code) => {
     console.error("Packaged smoke failed with code", code);
     process.exit(code ?? 1);
   }
-  for (const file of ["operator-window.png", "projector-window.png", "settings-window.png"]) {
+  for (const file of [
+    "operator-window.png",
+    "projector-window.png",
+    "settings-window.png",
+  ]) {
     const p = path.join(outDir, file);
     if (!fs.existsSync(p)) {
       console.error("Missing artifact:", p);

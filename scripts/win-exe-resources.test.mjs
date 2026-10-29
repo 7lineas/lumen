@@ -6,11 +6,17 @@ import { describe, expect, it } from "vitest";
 import { ICO_SIZES, buildIco } from "./build-icon.mjs";
 
 const require = createRequire(import.meta.url);
-const { applyWindowsResources, inspectExe, readIcoSizes } = require("./win-exe-resources.cjs");
+const {
+  applyWindowsResources,
+  inspectExe,
+  readIcoSizes,
+} = require("./win-exe-resources.cjs");
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const ico = fs.readFileSync(path.join(root, "build", "icon.ico"));
 // Small real PE (electron-builder's elevate.exe, MIT) used as a stand-in for Lumen.exe.
-const sample = fs.readFileSync(path.join(root, "scripts", "fixtures", "sample-pe.bin"));
+const sample = fs.readFileSync(
+  path.join(root, "scripts", "fixtures", "sample-pe.bin"),
+);
 
 describe("build/icon.ico", () => {
   it("covers every size Windows asks for (taskbar 16/24/32/48, large 256)", () => {
@@ -25,7 +31,9 @@ describe("build/icon.ico", () => {
   });
 
   it("rejects things that are not icons", () => {
-    expect(() => readIcoSizes(Buffer.from("not an icon at all"))).toThrow(/ico/);
+    expect(() => readIcoSizes(Buffer.from("not an icon at all"))).toThrow(
+      /ico/,
+    );
   });
 });
 
@@ -50,7 +58,14 @@ describe("applyWindowsResources", () => {
       OriginalFilename: "Lumen.exe",
     });
     // Idempotent: a second pass leaves one group and the same strings.
-    const again = inspectExe(applyWindowsResources(out, { icoBuffer: ico, productName: "Lumen", version: "1.2.3", companyName: "7Lineas" }));
+    const again = inspectExe(
+      applyWindowsResources(out, {
+        icoBuffer: ico,
+        productName: "Lumen",
+        version: "1.2.3",
+        companyName: "7Lineas",
+      }),
+    );
     expect(again.groups).toHaveLength(1);
     expect(again.strings.ProductName).toBe("Lumen");
   });

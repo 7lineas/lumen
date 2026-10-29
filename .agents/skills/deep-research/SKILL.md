@@ -24,6 +24,7 @@ As you work, if you have a to-do or task-list tool (for example TodoWrite, or Ta
 ### 1. [If necessary] Ask the user follow up questions
 
 Read the user's question and consider if there are any missing or ambiguous details that need to be clarified. Some examples include:
+
 - Ambiguous terminology — Acronyms, jargon, or terms with multiple meanings across different fields
 - Implicit geographic or jurisdictional context — Questions where the answer varies significantly by region but no region is specified
 - Ambiguous entities — Company names, product names, or proper nouns that refer to multiple distinct entities
@@ -37,6 +38,7 @@ If you determine that you do need to ask follow up questions, do so with the Ask
 First choose a title for this research. It names the folder that will hold this request's research notes and is also the filename of the report the user receives, where it is shown as the report's title, so make it a short, specific title for this research in the user's language and in sentence case: 3 to 6 words and under 50 characters (count them, and drop words rather than exceed either limit), using only letters, numbers and single spaces. Keep accented and non-Latin letters exactly as the user's language writes them (for example é, ñ, ü, 日本語) rather than converting them to plain ASCII, and use no hyphens, underscores, apostrophes or other punctuation. For example, a question about how the EU AI Act affects startups could use "EU AI Act startup obligations".
 
 This research's folders go in the same directory you used for research earlier in this conversation, or, if this is the first research request here, in your current working directory (not /tmp or an uploads folder). Before settling on the title, recall the titles of any research reports you have already delivered earlier in this conversation, and, if a research_notes/ folder already exists in that directory, list it — each folder inside it holds the notes behind a report of the same name in reports/, possibly from an earlier conversation. Then pick the case that fits:
+
 - New topic: choose a fresh title.
 - Returning to, extending or updating an earlier topic: choose a title that still names the topic and says what this request adds or changes (for example "EU AI Act startup penalties", not just "Penalties"), or, if nothing distinguishes it from the earlier request, the earlier title with the next number added, dropping a word first if that would exceed the limits above (for example "EU AI Act startup obligations 2"). Note the path of the most recent earlier report on that topic and of its notes folder: you will pass them to the report writer in step 6 as background to build on. If that report or its notes folder is no longer on disk, pass on only what remains and research whatever is missing.
 - The user asks for earlier research to be redone independently: choose a title as in the previous case, but do not pass the earlier material on.
@@ -49,13 +51,13 @@ Then create the folders research_notes/{research title}/ and reports/ in that di
 
 In order to effectively spawn and task subagents, determine if and how the user's question can be decomposed into independent subtopics. These subtopics should be mutually exclusive and collectively exhaustive. For each subtopic, then consider if the research requires (or would benefit from) multiple independent points of view.
 
-| Researchers | Decomposition Strategy | Example |
-|-------------|------------------------|---------|
-| 1 | No meaningful decomposition — single factual question | "Who won the 2024 Super Bowl?" |
-| 3 | Few natural angles or perspectives on a focused topic | "Effects of temperature on salmon migration" → (1) biological mechanisms, (2) observed population data, (3) climate projections |
-| 4 | Distinct facets or evaluation criteria | "Compare CRM platforms for small businesses" → (1) pricing models, (2) feature comparison, (3) integrations ecosystem, (4) user reviews/sentiment |
-| 5 | Multiple independent entities, regions, or domains | "AI regulation landscape" → (1) US federal, (2) EU/GDPR-AI Act, (3) China, (4) UK, (5) industry self-regulation |
-| 6+ | Large enumerable set requiring systematic coverage | "Electric vehicle adoption rates by US state" → researchers assigned to regional clusters |
+| Researchers | Decomposition Strategy                                | Example                                                                                                                                           |
+| ----------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1           | No meaningful decomposition — single factual question | "Who won the 2024 Super Bowl?"                                                                                                                    |
+| 3           | Few natural angles or perspectives on a focused topic | "Effects of temperature on salmon migration" → (1) biological mechanisms, (2) observed population data, (3) climate projections                   |
+| 4           | Distinct facets or evaluation criteria                | "Compare CRM platforms for small businesses" → (1) pricing models, (2) feature comparison, (3) integrations ecosystem, (4) user reviews/sentiment |
+| 5           | Multiple independent entities, regions, or domains    | "AI regulation landscape" → (1) US federal, (2) EU/GDPR-AI Act, (3) China, (4) UK, (5) industry self-regulation                                   |
+| 6+          | Large enumerable set requiring systematic coverage    | "Electric vehicle adoption rates by US state" → researchers assigned to regional clusters                                                         |
 
 In the next step, you should spawn one subagent for each subtopic and independent point of view that you identified. When in doubt, 3 researchers is a reasonable default. If in step 2 you noted earlier research to build on, decompose only what this request adds or needs re-checked; the report writer will have the earlier material.
 
@@ -97,17 +99,20 @@ Example of a good, clear, detailed prompt for a research subagent:
 > Objective: Compile a dense report of the facts, covering the current situation, ongoing solutions, and future outlook, with specific timelines and quantitative data where available.
 >
 > Key questions:
->  - What are current bottlenecks?
->  - What are the projected capacity increases from new fab construction?
->  - What are geopolitical factors affecting supply chains?
->  - When do experts predict supply will meet demand?
+>
+> - What are current bottlenecks?
+> - What are the projected capacity increases from new fab construction?
+> - What are geopolitical factors affecting supply chains?
+> - When do experts predict supply will meet demand?
 >
 > Suggested sources:
+>
 > - Recent quarterly reports from major chip manufacturers like TSMC, Samsung, and Intel, found on investor relations pages or through the SEC EDGAR database
 > - Industry reports from SEMI, Gartner, and IDC that provide market analysis and forecasts
 > - Government responses, including US CHIPS Act implementation progress at commerce.gov, EU Chips Act at ec.europa.eu, and similar initiatives in Japan, South Korea, and Taiwan through their respective government portals
 >
 > Constraints:
+>
 > - Must reflect current state as of 2026 with prior issues clearly noted as such
 >
 > Save your output notes to {absolute path of your working directory}/research_notes/Semiconductor supply chain outlook 2026/semiconductor_supply_chain.md

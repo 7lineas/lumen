@@ -33,14 +33,20 @@ import { joinDownloadUrl, safeObjectKey } from "../landing/download-url.js";
 export const DEFAULT_DOWNLOAD_BASE_URL = "https://downloads.7lineas.com";
 
 export function resolveDownloadBaseUrl() {
-  return (process.env.DOWNLOAD_BASE_URL || DEFAULT_DOWNLOAD_BASE_URL).trim().replace(/\/+$/, "");
+  return (process.env.DOWNLOAD_BASE_URL || DEFAULT_DOWNLOAD_BASE_URL)
+    .trim()
+    .replace(/\/+$/, "");
 }
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const repoRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "..",
+);
 
 function uriEncode(value) {
-  return encodeURIComponent(value).replace(/[!'()*]/g, (char) =>
-    `%${char.charCodeAt(0).toString(16).toUpperCase()}`,
+  return encodeURIComponent(value).replace(
+    /[!'()*]/g,
+    (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`,
   );
 }
 
@@ -66,14 +72,18 @@ export function signS3Request({
   const dateStamp = amzDate.slice(0, 8);
   const canonicalHeadersMap = {};
   for (const [name, value] of Object.entries(headers)) {
-    canonicalHeadersMap[name.toLowerCase()] = String(value).trim().replace(/\s+/g, " ");
+    canonicalHeadersMap[name.toLowerCase()] = String(value)
+      .trim()
+      .replace(/\s+/g, " ");
   }
   canonicalHeadersMap.host = target.host;
   canonicalHeadersMap["x-amz-date"] = amzDate;
   canonicalHeadersMap["x-amz-content-sha256"] = payloadHash;
 
   const signedHeaderNames = Object.keys(canonicalHeadersMap).sort();
-  const canonicalHeaders = signedHeaderNames.map((name) => `${name}:${canonicalHeadersMap[name]}\n`).join("");
+  const canonicalHeaders = signedHeaderNames
+    .map((name) => `${name}:${canonicalHeadersMap[name]}\n`)
+    .join("");
   const signedHeaders = signedHeaderNames.join(";");
   const canonicalQuery = [...target.searchParams.entries()]
     .sort(([a], [b]) => a.localeCompare(b) || 0)
@@ -97,11 +107,17 @@ export function signS3Request({
     createHash("sha256").update(canonicalRequest).digest("hex"),
   ].join("\n");
 
-  const kDate = createHmac("sha256", `AWS4${secretAccessKey}`).update(dateStamp).digest();
+  const kDate = createHmac("sha256", `AWS4${secretAccessKey}`)
+    .update(dateStamp)
+    .digest();
   const kRegion = createHmac("sha256", kDate).update(region).digest();
   const kService = createHmac("sha256", kRegion).update(service).digest();
-  const kSigning = createHmac("sha256", kService).update("aws4_request").digest();
-  const signature = createHmac("sha256", kSigning).update(stringToSign).digest("hex");
+  const kSigning = createHmac("sha256", kService)
+    .update("aws4_request")
+    .digest();
+  const signature = createHmac("sha256", kSigning)
+    .update(stringToSign)
+    .digest("hex");
 
   return {
     authorization: `AWS4-HMAC-SHA256 Credential=${accessKeyId}/${credentialScope},SignedHeaders=${signedHeaders},Signature=${signature}`,
@@ -143,10 +159,16 @@ export async function findWindowsArtifacts(dir, version) {
     if (info.isFile()) exes.push({ name, full });
   }
   const versionedExes = version
-    ? exes.filter((file) => file.name.toLowerCase().startsWith(`lumen-${String(version).trim().toLowerCase()}-`))
+    ? exes.filter((file) =>
+        file.name
+          .toLowerCase()
+          .startsWith(`lumen-${String(version).trim().toLowerCase()}-`),
+      )
     : exes;
   const portable = versionedExes.find((file) => /portable/i.test(file.name));
-  const setup = versionedExes.find((file) => file !== portable && /(setup|win-x64|nsis)/i.test(file.name));
+  const setup = versionedExes.find(
+    (file) => file !== portable && /(setup|win-x64|nsis)/i.test(file.name),
+  );
   if (!setup || !portable) {
     const found = exes.map((file) => file.name).join(", ") || "(ninguno)";
     throw new Error(
@@ -156,12 +178,24 @@ export async function findWindowsArtifacts(dir, version) {
   return { setup: setup.full, portable: portable.full };
 }
 
-export async function buildReleaseManifest({ version, releasedAt, setupPath, portablePath, downloadBaseUrl }) {
-  const [setupHash, portableHash] = await Promise.all([hashFile(setupPath), hashFile(portablePath)]);
+export async function buildReleaseManifest({
+  version,
+  releasedAt,
+  setupPath,
+  portablePath,
+  downloadBaseUrl,
+}) {
+  const [setupHash, portableHash] = await Promise.all([
+    hashFile(setupPath),
+    hashFile(portablePath),
+  ]);
   return {
     version,
     releasedAt,
-    downloadBaseUrl: (downloadBaseUrl || DEFAULT_DOWNLOAD_BASE_URL).replace(/\/+$/, ""),
+    downloadBaseUrl: (downloadBaseUrl || DEFAULT_DOWNLOAD_BASE_URL).replace(
+      /\/+$/,
+      "",
+    ),
     files: [
       {
         id: "setup",
@@ -193,9 +227,11 @@ function requireEnv(name) {
 
 export async function findUpdaterMetadata(dir, setupFullPath) {
   const entries = await readdir(dir);
-  const latestName = entries.find((name) => name.toLowerCase() === "latest.yml") ?? null;
+  const latestName =
+    entries.find((name) => name.toLowerCase() === "latest.yml") ?? null;
   const setupBase = path.basename(setupFullPath);
-  const blockmapName = entries.find((name) => name === `${setupBase}.blockmap`) ?? null;
+  const blockmapName =
+    entries.find((name) => name === `${setupBase}.blockmap`) ?? null;
   return {
     latestPath: latestName ? path.join(dir, latestName) : null,
     latestKey: latestName,
@@ -228,21 +264,37 @@ function describeError(error) {
   const cause = error && typeof error === "object" ? error.cause : null;
   const parts = [error instanceof Error ? error.message : String(error)];
   if (error && error.code) parts.push(`code=${error.code}`);
-  if (cause) parts.push(`cause=${cause.code ?? ""} ${cause.message ?? cause}`.trim());
+  if (cause)
+    parts.push(`cause=${cause.code ?? ""} ${cause.message ?? cause}`.trim());
   return parts.join(" | ");
 }
 
-function sendRequest({ method, url, headers, filePath, body, timeoutMs = 600_000 }) {
+function sendRequest({
+  method,
+  url,
+  headers,
+  filePath,
+  body,
+  timeoutMs = 600_000,
+}) {
   return new Promise((resolve, reject) => {
     const target = new URL(url);
     const transport = target.protocol === "http:" ? http : https;
     const req = transport.request(target, { method, headers }, (res) => {
       const chunks = [];
       res.on("data", (chunk) => chunks.push(chunk));
-      res.on("end", () => resolve({ status: res.statusCode ?? 0, headers: res.headers, text: Buffer.concat(chunks).toString("utf8") }));
+      res.on("end", () =>
+        resolve({
+          status: res.statusCode ?? 0,
+          headers: res.headers,
+          text: Buffer.concat(chunks).toString("utf8"),
+        }),
+      );
       res.on("error", reject);
     });
-    req.setTimeout(timeoutMs, () => req.destroy(new Error(`Tiempo de espera agotado (${timeoutMs} ms)`)));
+    req.setTimeout(timeoutMs, () =>
+      req.destroy(new Error(`Tiempo de espera agotado (${timeoutMs} ms)`)),
+    );
     req.on("error", reject);
     if (filePath) {
       const stream = createReadStream(filePath);
@@ -254,9 +306,26 @@ function sendRequest({ method, url, headers, filePath, body, timeoutMs = 600_000
   });
 }
 
-function signedHeaders({ method, url, headers, payloadHash, accessKeyId, secretAccessKey, region }) {
+function signedHeaders({
+  method,
+  url,
+  headers,
+  payloadHash,
+  accessKeyId,
+  secretAccessKey,
+  region,
+}) {
   const amzDate = new Date().toISOString().replace(/[:-]|\.\d{3}/g, "");
-  const signed = signS3Request({ method, url, headers, payloadHash, accessKeyId, secretAccessKey, region, amzDate });
+  const signed = signS3Request({
+    method,
+    url,
+    headers,
+    payloadHash,
+    accessKeyId,
+    secretAccessKey,
+    region,
+    amzDate,
+  });
   return {
     ...headers,
     Authorization: signed.authorization,
@@ -266,16 +335,38 @@ function signedHeaders({ method, url, headers, payloadHash, accessKeyId, secretA
 }
 
 /** HEAD an R2 object. Returns { size, etag } (etag without quotes) or null when it does not exist. */
-export async function headObject({ url, region, accessKeyId, secretAccessKey }) {
-  const headers = signedHeaders({ method: "HEAD", url, headers: {}, payloadHash: EMPTY_SHA256, accessKeyId, secretAccessKey, region });
-  const response = await sendRequest({ method: "HEAD", url, headers, timeoutMs: 60_000 });
+export async function headObject({
+  url,
+  region,
+  accessKeyId,
+  secretAccessKey,
+}) {
+  const headers = signedHeaders({
+    method: "HEAD",
+    url,
+    headers: {},
+    payloadHash: EMPTY_SHA256,
+    accessKeyId,
+    secretAccessKey,
+    region,
+  });
+  const response = await sendRequest({
+    method: "HEAD",
+    url,
+    headers,
+    timeoutMs: 60_000,
+  });
   if (response.status === 404) return null;
   if (response.status < 200 || response.status >= 300) {
-    throw new Error(`R2 respondió ${response.status} al consultar ${url.split("/").pop()}`);
+    throw new Error(
+      `R2 respondió ${response.status} al consultar ${url.split("/").pop()}`,
+    );
   }
   return {
     size: Number(response.headers["content-length"]),
-    etag: String(response.headers.etag ?? "").replace(/"/g, "").toLowerCase(),
+    etag: String(response.headers.etag ?? "")
+      .replace(/"/g, "")
+      .toLowerCase(),
   };
 }
 
@@ -285,13 +376,32 @@ export async function headObject({ url, region, accessKeyId, secretAccessKey }) 
  * the real error.cause instead of just "fetch failed".
  */
 export async function putObjectWithRetry({
-  url, headers, body, filePath, size, payloadHash, accessKeyId, secretAccessKey, region, label,
-  attempts = 4, backoffMs = 2000, timeoutMs = 600_000,
+  url,
+  headers,
+  body,
+  filePath,
+  size,
+  payloadHash,
+  accessKeyId,
+  secretAccessKey,
+  region,
+  label,
+  attempts = 4,
+  backoffMs = 2000,
+  timeoutMs = 600_000,
 }) {
   let lastError;
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     try {
-      const signed = signedHeaders({ method: "PUT", url, headers, payloadHash, accessKeyId, secretAccessKey, region });
+      const signed = signedHeaders({
+        method: "PUT",
+        url,
+        headers,
+        payloadHash,
+        accessKeyId,
+        secretAccessKey,
+        region,
+      });
       const response = await sendRequest({
         method: "PUT",
         url,
@@ -301,16 +411,25 @@ export async function putObjectWithRetry({
         timeoutMs,
       });
       if (response.status < 200 || response.status >= 300) {
-        throw new Error(`R2 rechazó ${label} (${response.status}). ${response.text.slice(0, 400)}`);
+        throw new Error(
+          `R2 rechazó ${label} (${response.status}). ${response.text.slice(0, 400)}`,
+        );
       }
       return;
     } catch (error) {
       lastError = error;
-      console.error(`Fallo subiendo ${label} (intento ${attempt}/${attempts}): ${describeError(error)}`);
-      if (attempt < attempts) await new Promise((resolve) => setTimeout(resolve, backoffMs * 2 ** (attempt - 1)));
+      console.error(
+        `Fallo subiendo ${label} (intento ${attempt}/${attempts}): ${describeError(error)}`,
+      );
+      if (attempt < attempts)
+        await new Promise((resolve) =>
+          setTimeout(resolve, backoffMs * 2 ** (attempt - 1)),
+        );
     }
   }
-  throw new Error(`No se pudo subir ${label} tras ${attempts} intentos: ${describeError(lastError)}`);
+  throw new Error(
+    `No se pudo subir ${label} tras ${attempts} intentos: ${describeError(lastError)}`,
+  );
 }
 
 /**
@@ -318,21 +437,38 @@ export async function putObjectWithRetry({
  * expected version, and every artifact answers 200 with the expected size.
  * Returns the list of problems (empty when everything is fine).
  */
-export async function verifyPublicRelease({ manifest, baseUrl, fetchImpl = fetch }) {
+export async function verifyPublicRelease({
+  manifest,
+  baseUrl,
+  fetchImpl = fetch,
+}) {
   const problems = [];
   const base = baseUrl.replace(/\/+$/, "");
   const getText = async (key) => {
-    const response = await fetchImpl(`${base}/${key}?verify=${Date.now()}`, { cache: "no-store" });
+    const response = await fetchImpl(`${base}/${key}?verify=${Date.now()}`, {
+      cache: "no-store",
+    });
     if (!response.ok) throw new Error(`${key} respondió ${response.status}`);
     return response.text();
   };
   try {
     const remote = JSON.parse(await getText("releases.json"));
-    if (remote.version !== manifest.version) problems.push(`releases.json dice ${remote.version}, se esperaba ${manifest.version}`);
+    if (remote.version !== manifest.version)
+      problems.push(
+        `releases.json dice ${remote.version}, se esperaba ${manifest.version}`,
+      );
     for (const file of manifest.files) {
-      const entry = remote.files?.find((item) => item.filename === file.filename);
-      if (!entry || entry.sha256 !== file.sha256 || entry.bytes !== file.bytes) {
-        problems.push(`releases.json no coincide (tamaño/sha256) para ${file.filename}`);
+      const entry = remote.files?.find(
+        (item) => item.filename === file.filename,
+      );
+      if (
+        !entry ||
+        entry.sha256 !== file.sha256 ||
+        entry.bytes !== file.bytes
+      ) {
+        problems.push(
+          `releases.json no coincide (tamaño/sha256) para ${file.filename}`,
+        );
       }
     }
   } catch (error) {
@@ -347,22 +483,36 @@ export async function verifyPublicRelease({ manifest, baseUrl, fetchImpl = fetch
       path: /^path:\s*['"]?([^'"\n]+?)['"]?\s*$/m.exec(text)?.[1],
       size: Number(/^\s+size:\s*(\d+)/m.exec(text)?.[1]),
     };
-    if (version !== manifest.version) problems.push(`latest.yml dice ${version}, se esperaba ${manifest.version}`);
+    if (version !== manifest.version)
+      problems.push(
+        `latest.yml dice ${version}, se esperaba ${manifest.version}`,
+      );
   } catch (error) {
     problems.push(`latest.yml: ${describeError(error)}`);
   }
-  const targets = manifest.files.map((file) => ({ key: file.filename, size: file.bytes }));
+  const targets = manifest.files.map((file) => ({
+    key: file.filename,
+    size: file.bytes,
+  }));
   if (latest?.path) {
     targets.push({ key: latest.path, size: latest.size });
     targets.push({ key: `${latest.path}.blockmap`, size: null });
   }
   for (const target of targets) {
     try {
-      const response = await fetchImpl(`${base}/${encodeURIComponent(target.key)}`, { method: "HEAD" });
+      const response = await fetchImpl(
+        `${base}/${encodeURIComponent(target.key)}`,
+        { method: "HEAD" },
+      );
       if (response.status !== 200) {
         problems.push(`${target.key} respondió ${response.status}`);
-      } else if (target.size && Number(response.headers.get("content-length")) !== target.size) {
-        problems.push(`${target.key} tiene otro tamaño (${response.headers.get("content-length")} ≠ ${target.size})`);
+      } else if (
+        target.size &&
+        Number(response.headers.get("content-length")) !== target.size
+      ) {
+        problems.push(
+          `${target.key} tiene otro tamaño (${response.headers.get("content-length")} ≠ ${target.size})`,
+        );
       }
     } catch (error) {
       problems.push(`${target.key}: ${describeError(error)}`);
@@ -371,20 +521,45 @@ export async function verifyPublicRelease({ manifest, baseUrl, fetchImpl = fetch
   return problems;
 }
 
-export async function uploadToR2({ manifest, setupPath, portablePath, dir, force = false }) {
+export async function uploadToR2({
+  manifest,
+  setupPath,
+  portablePath,
+  dir,
+  force = false,
+}) {
   const accountId = requireEnv("R2_ACCOUNT_ID");
   const accessKeyId = requireEnv("R2_ACCESS_KEY_ID");
   const secretAccessKey = requireEnv("R2_SECRET_ACCESS_KEY");
   const bucket = (process.env.R2_BUCKET || "desktop-releases").trim();
   const region = (process.env.R2_REGION || "auto").trim();
-  const endpoint = (process.env.R2_ENDPOINT || `https://${accountId}.r2.cloudflarestorage.com`).replace(/\/+$/, "");
+  const endpoint = (
+    process.env.R2_ENDPOINT || `https://${accountId}.r2.cloudflarestorage.com`
+  ).replace(/\/+$/, "");
   const baseUrl = resolveDownloadBaseUrl();
 
   const releasesBody = Buffer.from(`${JSON.stringify(manifest, null, 2)}\n`);
   const uploads = [
-    { key: manifest.files[0].filename, filePath: setupPath, contentType: "application/octet-stream", cacheControl: "public, max-age=31536000, immutable", skipIfSame: true },
-    { key: manifest.files[1].filename, filePath: portablePath, contentType: "application/octet-stream", cacheControl: "public, max-age=31536000, immutable", skipIfSame: true },
-    { key: "releases.json", body: releasesBody, contentType: "application/json; charset=utf-8", cacheControl: "public, max-age=60" },
+    {
+      key: manifest.files[0].filename,
+      filePath: setupPath,
+      contentType: "application/octet-stream",
+      cacheControl: "public, max-age=31536000, immutable",
+      skipIfSame: true,
+    },
+    {
+      key: manifest.files[1].filename,
+      filePath: portablePath,
+      contentType: "application/octet-stream",
+      cacheControl: "public, max-age=31536000, immutable",
+      skipIfSame: true,
+    },
+    {
+      key: "releases.json",
+      body: releasesBody,
+      contentType: "application/json; charset=utf-8",
+      cacheControl: "public, max-age=60",
+    },
   ];
 
   // electron-updater reads https://downloads.7lineas.com/latest.yml, which points
@@ -393,7 +568,9 @@ export async function uploadToR2({ manifest, setupPath, portablePath, dir, force
   if (dir) {
     const meta = await findUpdaterMetadata(dir, setupPath);
     if (!meta.latestPath) {
-      throw new Error(`En ${dir} falta latest.yml para la actualización automática`);
+      throw new Error(
+        `En ${dir} falta latest.yml para la actualización automática`,
+      );
     }
     if (meta.setupBase !== manifest.files[0].filename) {
       uploads.push({
@@ -424,7 +601,8 @@ export async function uploadToR2({ manifest, setupPath, portablePath, dir, force
   // A half-finished run must never advertise a version whose files are missing:
   // artifacts first, then releases.json, and latest.yml (what installed apps
   // read to update) strictly last.
-  const rank = (item) => (item.key === "latest.yml" ? 2 : item.key === "releases.json" ? 1 : 0);
+  const rank = (item) =>
+    item.key === "latest.yml" ? 2 : item.key === "releases.json" ? 1 : 0;
   uploads.sort((x, y) => rank(x) - rank(y));
 
   const ctx = { endpoint, bucket, region, accessKeyId, secretAccessKey };
@@ -447,7 +625,9 @@ export async function uploadToR2({ manifest, setupPath, portablePath, dir, force
     if (item.skipIfSame && !force) {
       const remote = await headObject({ ...ctx, url });
       if (remote && remote.size === local.bytes && remote.etag === local.md5) {
-        console.log(`Omitido (ya está en R2, mismo tamaño y MD5) ${joinDownloadUrl(baseUrl, key)}`);
+        console.log(
+          `Omitido (ya está en R2, mismo tamaño y MD5) ${joinDownloadUrl(baseUrl, key)}`,
+        );
         continue;
       }
     }
@@ -466,7 +646,13 @@ export async function uploadToR2({ manifest, setupPath, portablePath, dir, force
 }
 
 function parseArgs(argv) {
-  const args = { dir: path.join(repoRoot, "release"), dryRun: false, out: null, force: false, verify: false };
+  const args = {
+    dir: path.join(repoRoot, "release"),
+    dryRun: false,
+    out: null,
+    force: false,
+    verify: false,
+  };
   for (let i = 0; i < argv.length; i += 1) {
     const token = argv[i];
     if (token === "--dry-run") args.dryRun = true;
@@ -481,7 +667,9 @@ function parseArgs(argv) {
 }
 
 async function readVersion() {
-  const pkg = JSON.parse(await readFile(path.join(repoRoot, "package.json"), "utf8"));
+  const pkg = JSON.parse(
+    await readFile(path.join(repoRoot, "package.json"), "utf8"),
+  );
   return pkg.version;
 }
 
@@ -501,7 +689,8 @@ export async function publishRelease(options) {
     portablePath: artifacts.portable,
     downloadBaseUrl,
   });
-  const outPath = options.out || path.join(repoRoot, "landing", "releases.json");
+  const outPath =
+    options.out || path.join(repoRoot, "landing", "releases.json");
   if (!options.dryRun || options.out) {
     await writeJson(outPath, manifest);
     console.log(`Manifest escrito en ${outPath}`);
@@ -510,7 +699,13 @@ export async function publishRelease(options) {
   }
   if (options.dryRun) return manifest;
 
-  await uploadToR2({ manifest, setupPath: artifacts.setup, portablePath: artifacts.portable, dir: options.dir, force: options.force });
+  await uploadToR2({
+    manifest,
+    setupPath: artifacts.setup,
+    portablePath: artifacts.portable,
+    dir: options.dir,
+    force: options.force,
+  });
   const configPath = path.join(repoRoot, "landing", "config.json");
   const config = JSON.parse(await readFile(configPath, "utf8"));
   config.DOWNLOAD_BASE_URL = downloadBaseUrl;
@@ -521,21 +716,32 @@ export async function publishRelease(options) {
 }
 
 async function verifyOrThrow(manifest) {
-  const problems = await verifyPublicRelease({ manifest, baseUrl: manifest.downloadBaseUrl });
+  const problems = await verifyPublicRelease({
+    manifest,
+    baseUrl: manifest.downloadBaseUrl,
+  });
   if (problems.length) {
-    throw new Error(`Verificación pública fallida:\n - ${problems.join("\n - ")}`);
+    throw new Error(
+      `Verificación pública fallida:\n - ${problems.join("\n - ")}`,
+    );
   }
-  console.log(`Verificación pública OK: v${manifest.version} (releases.json, latest.yml, .exe y .blockmap responden con el tamaño esperado)`);
+  console.log(
+    `Verificación pública OK: v${manifest.version} (releases.json, latest.yml, .exe y .blockmap responden con el tamaño esperado)`,
+  );
 }
 
 /** Verify the already-published release described by landing/releases.json (no upload). */
 export async function verifyOnly() {
-  const manifest = JSON.parse(await readFile(path.join(repoRoot, "landing", "releases.json"), "utf8"));
+  const manifest = JSON.parse(
+    await readFile(path.join(repoRoot, "landing", "releases.json"), "utf8"),
+  );
   await verifyOrThrow(manifest);
   return manifest;
 }
 
-const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+const isMain =
+  process.argv[1] &&
+  path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) {
   const args = parseArgs(process.argv.slice(2));
   if (args.help) {

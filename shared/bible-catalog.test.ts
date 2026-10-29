@@ -6,20 +6,44 @@ import { describe, expect, it } from "vitest";
 import { BIBLES_DOWNLOAD_BASE } from "./bible-download";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const catalog = JSON.parse(fs.readFileSync(path.join(root, "data/bible-modules/bibles-catalog.json"), "utf8"));
-const licenses = JSON.parse(fs.readFileSync(path.join(root, "shared/bible-licenses.json"), "utf8"));
+const catalog = JSON.parse(
+  fs.readFileSync(
+    path.join(root, "data/bible-modules/bibles-catalog.json"),
+    "utf8",
+  ),
+);
+const licenses = JSON.parse(
+  fs.readFileSync(path.join(root, "shared/bible-licenses.json"), "utf8"),
+);
 
 const EXPECTED = ["bes", "onbv", "pddpt"];
-const FORBIDDEN = ["rvg", "sparvg", "rvr1960", "nvi", "ntv", "dhh", "tla", "rvc", "lbla", "nblh"];
+const FORBIDDEN = [
+  "rvg",
+  "sparvg",
+  "rvr1960",
+  "nvi",
+  "ntv",
+  "dhh",
+  "tla",
+  "rvc",
+  "lbla",
+  "nblh",
+];
 
 describe("bibles catalog", () => {
   it("lists only the approved free versions", () => {
     expect(catalog.baseUrl).toBe(BIBLES_DOWNLOAD_BASE);
-    expect(catalog.versions.map((version: { id: string }) => version.id)).toEqual(EXPECTED);
+    expect(
+      catalog.versions.map((version: { id: string }) => version.id),
+    ).toEqual(EXPECTED);
     expect(catalog.extensionNote).toMatch(/sin cambiar el código/);
-    const ids = [...catalog.versions, ...licenses.versions].map((version: { id: string }) => version.id);
+    const ids = [...catalog.versions, ...licenses.versions].map(
+      (version: { id: string }) => version.id,
+    );
     for (const id of FORBIDDEN) expect(ids).not.toContain(id);
-    const onbv = catalog.versions.find((version: { id: string }) => version.id === "onbv");
+    const onbv = catalog.versions.find(
+      (version: { id: string }) => version.id === "onbv",
+    );
     expect(onbv.copyright).toMatch(/Biblica® Open Nueva Biblia Viva™/);
     expect(onbv.copyright).toMatch(/2006, 2008 Biblica/);
     expect(onbv.license).toBe("CC BY-SA 4.0");
@@ -38,7 +62,9 @@ describe("bibles catalog", () => {
     for (const version of catalog.versions) {
       const file = path.join(root, "data/bible-modules", version.file);
       if (!fs.existsSync(file)) continue;
-      const hash = createHash("sha256").update(fs.readFileSync(file)).digest("hex");
+      const hash = createHash("sha256")
+        .update(fs.readFileSync(file))
+        .digest("hex");
       expect(hash).toBe(version.sha256);
       expect(fs.statSync(file).size).toBe(version.bytes);
     }

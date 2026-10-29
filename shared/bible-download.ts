@@ -19,7 +19,9 @@ export class HashMismatchError extends DownloadError {
   readonly actual: string;
 
   constructor(expected: string, actual: string) {
-    super("El archivo descargado no coincide con el SHA-256 del catálogo. No se instaló.");
+    super(
+      "El archivo descargado no coincide con el SHA-256 del catálogo. No se instaló.",
+    );
     this.name = "HashMismatchError";
     this.expected = expected;
     this.actual = actual;
@@ -58,7 +60,9 @@ export interface FetchResponse {
   status: number;
   headers?: { get(name: string): string | null };
   arrayBuffer(): Promise<ArrayBuffer>;
-  body?: { getReader(): { read(): Promise<{ done: boolean; value?: Uint8Array }> } };
+  body?: {
+    getReader(): { read(): Promise<{ done: boolean; value?: Uint8Array }> };
+  };
 }
 
 export type FetchLike = (url: string) => Promise<FetchResponse>;
@@ -84,7 +88,10 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 }
 
 /** Keeps only complete, non-draft entries. Download URLs stay on the fixed public host. */
-export function parseCatalog(data: unknown, extensionNote = ""): BibleCatalog | null {
+export function parseCatalog(
+  data: unknown,
+  extensionNote = "",
+): BibleCatalog | null {
   const root = asRecord(data);
   if (!root || !Array.isArray(root.versions)) return null;
   const versions: CatalogEntry[] = [];
@@ -94,13 +101,25 @@ export function parseCatalog(data: unknown, extensionNote = ""): BibleCatalog | 
     if (row.draft === true) continue;
     if (typeof row.id !== "string" || !BIBLE_ID.test(row.id)) continue;
     if (typeof row.name !== "string" || row.name.trim() === "") continue;
-    if (typeof row.language !== "string" || row.language.trim() === "") continue;
+    if (typeof row.language !== "string" || row.language.trim() === "")
+      continue;
     if (row.file !== `${row.id}.json`) continue;
-    if (typeof row.bytes !== "number" || !Number.isFinite(row.bytes) || row.bytes <= 0) continue;
-    if (typeof row.sha256 !== "string" || !SHA256_HEX.test(row.sha256.toLowerCase())) continue;
+    if (
+      typeof row.bytes !== "number" ||
+      !Number.isFinite(row.bytes) ||
+      row.bytes <= 0
+    )
+      continue;
+    if (
+      typeof row.sha256 !== "string" ||
+      !SHA256_HEX.test(row.sha256.toLowerCase())
+    )
+      continue;
     if (typeof row.license !== "string" || row.license.trim() === "") continue;
-    if (typeof row.attribution !== "string" || row.attribution.trim() === "") continue;
-    if (typeof row.copyright !== "string" || row.copyright.trim() === "") continue;
+    if (typeof row.attribution !== "string" || row.attribution.trim() === "")
+      continue;
+    if (typeof row.copyright !== "string" || row.copyright.trim() === "")
+      continue;
     versions.push({
       id: row.id,
       name: row.name.trim(),
@@ -111,14 +130,18 @@ export function parseCatalog(data: unknown, extensionNote = ""): BibleCatalog | 
       license: row.license.trim(),
       attribution: row.attribution.trim(),
       copyright: row.copyright.trim(),
-      abbr: typeof row.abbr === "string" && row.abbr.trim() ? row.abbr.trim() : row.id.toUpperCase(),
+      abbr:
+        typeof row.abbr === "string" && row.abbr.trim()
+          ? row.abbr.trim()
+          : row.id.toUpperCase(),
       draft: row.draft === true,
     });
   }
   if (versions.length === 0) return null;
-  const note = typeof root.extensionNote === "string" && root.extensionNote.trim()
-    ? root.extensionNote.trim()
-    : extensionNote;
+  const note =
+    typeof root.extensionNote === "string" && root.extensionNote.trim()
+      ? root.extensionNote.trim()
+      : extensionNote;
   return {
     format: "proyector-bible-json-v1",
     baseUrl: BIBLES_DOWNLOAD_BASE,
@@ -135,7 +158,10 @@ async function readResponseBytes(
 ): Promise<Uint8Array> {
   const header = response.headers?.get("content-length");
   const parsedHeader = header ? Number(header) : NaN;
-  const total = Number.isFinite(parsedHeader) && parsedHeader > 0 ? parsedHeader : expectedBytes;
+  const total =
+    Number.isFinite(parsedHeader) && parsedHeader > 0
+      ? parsedHeader
+      : expectedBytes;
   onProgress?.({ loaded: 0, total, attempt });
 
   if (response.body && typeof response.body.getReader === "function") {
@@ -160,7 +186,11 @@ async function readResponseBytes(
   }
 
   const buffer = new Uint8Array(await response.arrayBuffer());
-  onProgress?.({ loaded: buffer.byteLength, total: buffer.byteLength, attempt });
+  onProgress?.({
+    loaded: buffer.byteLength,
+    total: buffer.byteLength,
+    attempt,
+  });
   return buffer;
 }
 
@@ -196,7 +226,9 @@ export async function downloadAndInstall(options: {
         throw new DownloadError("Sin conexión. Inténtelo de nuevo.");
       }
       if (!response.ok) {
-        throw new DownloadError(`No se pudo descargar el archivo (HTTP ${response.status}).`);
+        throw new DownloadError(
+          `No se pudo descargar el archivo (HTTP ${response.status}).`,
+        );
       }
       const bytes = await readResponseBytes(
         response,
@@ -211,7 +243,10 @@ export async function downloadAndInstall(options: {
       await options.write(bytes);
       return { sha256: actual, bytes: bytes.byteLength };
     } catch (error) {
-      lastError = error instanceof Error ? error : new DownloadError("No se pudo descargar");
+      lastError =
+        error instanceof Error
+          ? error
+          : new DownloadError("No se pudo descargar");
       if (attempt < maxAttempts) await delay(retryDelayMs);
     }
   }
@@ -277,7 +312,9 @@ export function describeLibrary(input: {
       attribution: version.attribution,
       copyright: version.copyright,
       draft: version.draft,
-      availability: input.installedIds.has(version.id) ? "installed" : "available",
+      availability: input.installedIds.has(version.id)
+        ? "installed"
+        : "available",
     });
   }
 

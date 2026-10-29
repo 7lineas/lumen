@@ -28,12 +28,72 @@ const SOURCES = [
 ];
 
 const PROTESTANT_BOOKS = [
-  "GEN", "EXO", "LEV", "NUM", "DEU", "JOS", "JDG", "RUT", "1SA", "2SA", "1KI", "2KI",
-  "1CH", "2CH", "EZR", "NEH", "EST", "JOB", "PSA", "PRO", "ECC", "SNG", "ISA", "JER",
-  "LAM", "EZK", "DAN", "HOS", "JOL", "AMO", "OBA", "JON", "MIC", "NAM", "HAB", "ZEP",
-  "HAG", "ZEC", "MAL", "MAT", "MRK", "LUK", "JHN", "ACT", "ROM", "1CO", "2CO", "GAL",
-  "EPH", "PHP", "COL", "1TH", "2TH", "1TI", "2TI", "TIT", "PHM", "HEB", "JAS", "1PE",
-  "2PE", "1JN", "2JN", "3JN", "JUD", "REV",
+  "GEN",
+  "EXO",
+  "LEV",
+  "NUM",
+  "DEU",
+  "JOS",
+  "JDG",
+  "RUT",
+  "1SA",
+  "2SA",
+  "1KI",
+  "2KI",
+  "1CH",
+  "2CH",
+  "EZR",
+  "NEH",
+  "EST",
+  "JOB",
+  "PSA",
+  "PRO",
+  "ECC",
+  "SNG",
+  "ISA",
+  "JER",
+  "LAM",
+  "EZK",
+  "DAN",
+  "HOS",
+  "JOL",
+  "AMO",
+  "OBA",
+  "JON",
+  "MIC",
+  "NAM",
+  "HAB",
+  "ZEP",
+  "HAG",
+  "ZEC",
+  "MAL",
+  "MAT",
+  "MRK",
+  "LUK",
+  "JHN",
+  "ACT",
+  "ROM",
+  "1CO",
+  "2CO",
+  "GAL",
+  "EPH",
+  "PHP",
+  "COL",
+  "1TH",
+  "2TH",
+  "1TI",
+  "2TI",
+  "TIT",
+  "PHM",
+  "HEB",
+  "JAS",
+  "1PE",
+  "2PE",
+  "1JN",
+  "2JN",
+  "3JN",
+  "JUD",
+  "REV",
 ];
 
 const BOOK_SET = new Set(PROTESTANT_BOOKS);
@@ -76,7 +136,10 @@ function ensureZips() {
 async function parseVplFile(txtPath) {
   const verses = {};
   const searchIndex = [];
-  const rl = createInterface({ input: createReadStream(txtPath), crlfDelay: Infinity });
+  const rl = createInterface({
+    input: createReadStream(txtPath),
+    crlfDelay: Infinity,
+  });
   for await (const line of rl) {
     const m = line.match(/^([A-Z0-9]{3})\s+(\d+):(\d+)\s+(.+)$/);
     if (!m) continue;
@@ -113,7 +176,9 @@ function validate(id, verses) {
       verseCount += Object.keys(verses[book][ch]).length;
     }
   }
-  console.log(`[${id}] Books present: ${Object.keys(verses).length}, verses: ${verseCount}`);
+  console.log(
+    `[${id}] Books present: ${Object.keys(verses).length}, verses: ${verseCount}`,
+  );
   if (verseCount < 31000) {
     throw new Error(`[${id}] Verse count suspiciously low: ${verseCount}`);
   }
@@ -129,7 +194,9 @@ async function main() {
     const zipPath = path.join(tmpDir, src.zip);
     const extractDir = path.join(tmpDir, src.id);
     fs.mkdirSync(extractDir, { recursive: true });
-    execSync(`unzip -o -q "${zipPath}" "${src.txt}" -d "${extractDir}"`, { stdio: "inherit" });
+    execSync(`unzip -o -q "${zipPath}" "${src.txt}" -d "${extractDir}"`, {
+      stdio: "inherit",
+    });
     const txtPath = path.join(extractDir, src.txt);
     const { verses, searchIndex } = await parseVplFile(txtPath);
     validate(src.id, verses);
@@ -147,11 +214,16 @@ async function main() {
     const outPath = path.join(outDir, `${src.id}.json`);
     fs.writeFileSync(outPath, JSON.stringify(out));
     const stat = fs.statSync(outPath);
-    console.log(`Wrote ${outPath} (${(stat.size / 1024 / 1024).toFixed(2)} MiB)`);
+    console.log(
+      `Wrote ${outPath} (${(stat.size / 1024 / 1024).toFixed(2)} MiB)`,
+    );
     manifest.push(out.meta);
   }
 
-  fs.writeFileSync(path.join(outDir, "manifest.json"), JSON.stringify(manifest, null, 2));
+  fs.writeFileSync(
+    path.join(outDir, "manifest.json"),
+    JSON.stringify(manifest, null, 2),
+  );
   console.log("Done.");
 }
 

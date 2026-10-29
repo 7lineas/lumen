@@ -42,13 +42,21 @@ export function payloadContentKey(p: ProjectorPayload | null): string {
   if (p.mode === "logo") return `logo:${p.logoImagePath ?? ""}`;
   // Play, pause and seek keep the key: they are not a new take.
   if (p.mode === "video") return `video:${p.video?.path ?? ""}`;
-  if (p.mode === "countdown") return `countdown:${p.countdown?.caption ?? ""}|${p.countdown?.endsAt ?? 0}`;
+  if (p.mode === "countdown")
+    return `countdown:${p.countdown?.caption ?? ""}|${p.countdown?.endsAt ?? 0}`;
   return `${p.mode}:${p.referenceLabel}|${p.slideImagePath ?? ""}|${p.blocks.map((b) => `${b.label ?? ""}=${b.text}`).join("|")}`;
 }
 
 /** Where a video is right now, in seconds, clamped to its duration when known. */
-export function videoPosition(video: { playing: boolean; startedAt: number; position: number }, now: number, duration?: number | null): number {
+export function videoPosition(
+  video: { playing: boolean; startedAt: number; position: number },
+  now: number,
+  duration?: number | null,
+): number {
   const raw = video.playing ? (now - video.startedAt) / 1000 : video.position;
-  const max = duration != null && Number.isFinite(duration) && duration > 0 ? duration : Infinity;
+  const max =
+    duration != null && Number.isFinite(duration) && duration > 0
+      ? duration
+      : Infinity;
   return Math.min(Math.max(raw, 0), max);
 }

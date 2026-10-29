@@ -7,13 +7,19 @@ interface IconProps {
 const svg = (children: React.ReactNode) =>
   function Icon({ className }: IconProps) {
     return (
-      <svg viewBox="0 0 20 20" aria-hidden className={className ? `lx-icon ${className}` : "lx-icon"}>
+      <svg
+        viewBox="0 0 20 20"
+        aria-hidden
+        className={className ? `lx-icon ${className}` : "lx-icon"}
+      >
         {children}
       </svg>
     );
   };
 
-export const BibleIcon = svg(<path d="M3 4.5C5.5 3.5 8 3.7 10 5c2-1.3 4.5-1.5 7-.5v11c-2.5-1-5-.8-7 .5-2-1.3-4.5-1.5-7-.5z M10 5v11" />);
+export const BibleIcon = svg(
+  <path d="M3 4.5C5.5 3.5 8 3.7 10 5c2-1.3 4.5-1.5 7-.5v11c-2.5-1-5-.8-7 .5-2-1.3-4.5-1.5-7-.5z M10 5v11" />,
+);
 
 export const SongIcon = svg(
   <>
@@ -39,7 +45,9 @@ export const SlidesIcon = svg(
   </>,
 );
 
-export const AudioIcon = svg(<path d="M3 8v4 M6.5 5.5v9 M10 3v14 M13.5 6.5v7 M17 8.5v3" />);
+export const AudioIcon = svg(
+  <path d="M3 8v4 M6.5 5.5v9 M10 3v14 M13.5 6.5v7 M17 8.5v3" />,
+);
 
 export const SearchIcon = svg(
   <>

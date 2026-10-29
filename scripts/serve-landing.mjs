@@ -10,12 +10,20 @@ const outDir = path.join(root, "landing-dist");
 const port = Number(process.env.PORT || 44731);
 
 await new Promise((resolve, reject) => {
-  const child = spawn(process.execPath, [path.join(root, "scripts", "prepare-landing.mjs")], {
-    cwd: root,
-    stdio: "inherit",
-    env: process.env,
-  });
-  child.on("exit", (code) => (code === 0 ? resolve() : reject(new Error(`prepare-landing salió con ${code}`))));
+  const child = spawn(
+    process.execPath,
+    [path.join(root, "scripts", "prepare-landing.mjs")],
+    {
+      cwd: root,
+      stdio: "inherit",
+      env: process.env,
+    },
+  );
+  child.on("exit", (code) =>
+    code === 0
+      ? resolve()
+      : reject(new Error(`prepare-landing salió con ${code}`)),
+  );
 });
 
 const types = {
@@ -28,7 +36,9 @@ const types = {
 const server = createServer(async (req, res) => {
   const url = new URL(req.url || "/", "http://127.0.0.1");
   const rel = decodeURIComponent(url.pathname);
-  const filePath = path.normalize(path.join(outDir, rel === "/" ? "index.html" : rel));
+  const filePath = path.normalize(
+    path.join(outDir, rel === "/" ? "index.html" : rel),
+  );
   if (!filePath.startsWith(outDir)) {
     res.writeHead(403);
     res.end("Forbidden");
@@ -37,7 +47,10 @@ const server = createServer(async (req, res) => {
   try {
     const info = await stat(filePath);
     if (!info.isFile()) throw new Error("not a file");
-    res.writeHead(200, { "Content-Type": types[path.extname(filePath)] || "application/octet-stream" });
+    res.writeHead(200, {
+      "Content-Type":
+        types[path.extname(filePath)] || "application/octet-stream",
+    });
     createReadStream(filePath).pipe(res);
   } catch {
     res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });

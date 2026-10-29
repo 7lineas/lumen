@@ -2,10 +2,26 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import QRCode from "qrcode";
-import { Check, Church, Copy, MonitorPlay, Palette, RefreshCw, Timer, Wifi, type LucideIcon } from "lucide-react";
+import {
+  Check,
+  Church,
+  Copy,
+  MonitorPlay,
+  Palette,
+  RefreshCw,
+  Timer,
+  Wifi,
+  type LucideIcon,
+} from "lucide-react";
 import type { AppSettings, BibleVersionMeta } from "@shared/types";
 import { backgroundImageUrl } from "@shared/background-image";
 import type { DisplayInfo } from "../vite-env.d";
@@ -18,12 +34,21 @@ import { useInstalledFonts } from "@/hooks/useInstalledFonts";
 let browserAccessCache: BrowserAccessInfo | null = null;
 let browserQrCache: Record<string, string> = {};
 
-async function makeQrCodes(info: BrowserAccessInfo): Promise<Record<string, string>> {
+async function makeQrCodes(
+  info: BrowserAccessInfo,
+): Promise<Record<string, string>> {
   if (!info.enabled || !info.pairingCode) return {};
   const entries = await Promise.all(
     info.addresses.map(async (address) => {
       const connectUrl = `http://${address}:${info.port}/?pair=${info.pairingCode}`;
-      return [address, await QRCode.toDataURL(connectUrl, { width: 220, margin: 2, errorCorrectionLevel: "M" })] as const;
+      return [
+        address,
+        await QRCode.toDataURL(connectUrl, {
+          width: 220,
+          margin: 2,
+          errorCorrectionLevel: "M",
+        }),
+      ] as const;
     }),
   );
   return Object.fromEntries(entries);
@@ -44,7 +69,15 @@ interface Props {
   onSave: (s: AppSettings) => Promise<void>;
 }
 
-function SettingsGroup({ icon: Icon, title, children }: { icon: LucideIcon; title: string; children: ReactNode }) {
+function SettingsGroup({
+  icon: Icon,
+  title,
+  children,
+}: {
+  icon: LucideIcon;
+  title: string;
+  children: ReactNode;
+}) {
   return (
     <section className="ajustes-group">
       <h3>
@@ -56,7 +89,15 @@ function SettingsGroup({ icon: Icon, title, children }: { icon: LucideIcon; titl
   );
 }
 
-function SettingRow({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+function SettingRow({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: ReactNode;
+}) {
   return (
     <div className="ajustes-row">
       <div className="ajustes-row-text">
@@ -68,13 +109,15 @@ function SettingRow({ label, hint, children }: { label: string; hint?: string; c
   );
 }
 
-
 export function SettingsPanel({ settings, versions, onSave }: Props) {
   const [local, setLocal] = useState(settings);
   const [displays, setDisplays] = useState<DisplayInfo[]>([]);
-  const [browserAccess, setBrowserAccess] = useState<BrowserAccessInfo | null>(browserAccessCache);
+  const [browserAccess, setBrowserAccess] = useState<BrowserAccessInfo | null>(
+    browserAccessCache,
+  );
   const [browserAccessBusy, setBrowserAccessBusy] = useState(false);
-  const [browserQrCodes, setBrowserQrCodes] = useState<Record<string, string>>(browserQrCache);
+  const [browserQrCodes, setBrowserQrCodes] =
+    useState<Record<string, string>>(browserQrCache);
   const [codeCopied, setCodeCopied] = useState(false);
   const [codeRotating, setCodeRotating] = useState(false);
   const installedFonts = useInstalledFonts();
@@ -99,10 +142,13 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
   }, [local]);
 
   // Leaving before the timer fires still keeps the last change.
-  useEffect(() => () => {
-    window.clearTimeout(saveTimer.current);
-    if (pendingSave.current) void onSave(pendingSave.current);
-  }, []);
+  useEffect(
+    () => () => {
+      window.clearTimeout(saveTimer.current);
+      if (pendingSave.current) void onSave(pendingSave.current);
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!browserAccess) return;
@@ -124,7 +170,8 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
 
   useEffect(() => {
     void window.proyector?.listDisplays().then(setDisplays);
-    if (!window.__LUMEN_BROWSER__ && !browserAccessCache) void window.proyector?.getBrowserAccess().then(setBrowserAccess);
+    if (!window.__LUMEN_BROWSER__ && !browserAccessCache)
+      void window.proyector?.getBrowserAccess().then(setBrowserAccess);
   }, []);
 
   const pickLogo = async () => {
@@ -132,7 +179,9 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
       const path = await window.proyector?.pickLogoImage();
       if (path) setLocal((current) => ({ ...current, logoImagePath: path }));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "No se pudo elegir el logo");
+      toast.error(
+        error instanceof Error ? error.message : "No se pudo elegir el logo",
+      );
     }
   };
 
@@ -159,10 +208,14 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
     if (codeRotating) return;
     setCodeRotating(true);
     try {
-      setBrowserAccess(await window.proyector?.rotateBrowserAccessCode() ?? browserAccess);
+      setBrowserAccess(
+        (await window.proyector?.rotateBrowserAccessCode()) ?? browserAccess,
+      );
       toast.success("Código cambiado. El anterior ya no funciona.");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "No se pudo cambiar el código");
+      toast.error(
+        error instanceof Error ? error.message : "No se pudo cambiar el código",
+      );
     } finally {
       setCodeRotating(false);
     }
@@ -172,7 +225,10 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
     if (browserAccessBusy || !browserAccess) return;
     setBrowserAccessBusy(true);
     try {
-      setBrowserAccess(await window.proyector?.setBrowserAccess(!browserAccess.enabled) ?? browserAccess);
+      setBrowserAccess(
+        (await window.proyector?.setBrowserAccess(!browserAccess.enabled)) ??
+          browserAccess,
+      );
     } finally {
       setBrowserAccessBusy(false);
     }
@@ -180,7 +236,11 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
 
   // A removed font can no longer be projected: fall back to the system font.
   const forgetFont = (id: string) =>
-    setLocal((current) => (current.fontFamily === id ? { ...current, fontFamily: "system" } : current));
+    setLocal((current) =>
+      current.fontFamily === id
+        ? { ...current, fontFamily: "system" }
+        : current,
+    );
 
   return (
     <div className="settings">
@@ -209,53 +269,70 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
                         <li key={address}>
                           <div className="ajustes-access-qr-slot">
                             {browserQrCodes[address] && (
-                              <img src={browserQrCodes[address]} alt={`Código QR para conectar a ${address}`} />
+                              <img
+                                src={browserQrCodes[address]}
+                                alt={`Código QR para conectar a ${address}`}
+                              />
                             )}
                           </div>
-                          <a href={`http://${address}:${browserAccess.port}`} target="_blank" rel="noreferrer">
+                          <a
+                            href={`http://${address}:${browserAccess.port}`}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
                             {address}:{browserAccess.port}
                           </a>
                         </li>
                       ))}
                     </ul>
                   ) : (
-                    <p className="ajustes-note">No se detectó una dirección de red activa.</p>
+                    <p className="ajustes-note">
+                      No se detectó una dirección de red activa.
+                    </p>
                   )}
                   <div className="ajustes-access-side">
-                  <div className="ajustes-access-code">
-                    <small>Código de acceso</small>
-                    <code>{browserAccess.pairingCode}</code>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      aria-label="Copiar código"
-                      onClick={() => void copyPairingCode(browserAccess.pairingCode)}
-                    >
-                      {codeCopied ? <Check size={14} aria-hidden /> : <Copy size={14} aria-hidden />}
-                      {codeCopied ? "Copiado" : "Copiar"}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={codeRotating}
-                      onClick={() => void rotateCode()}
-                    >
-                      <RefreshCw size={14} aria-hidden />
-                      Cambiar código
-                    </Button>
-                  </div>
-                  <div className="ajustes-access-split">
-                    <div className="ajustes-access-explain">
-                      <p className="ajustes-note">
-                        Escanee el QR o abra la dirección e ingrese el código.
-                      </p>
+                    <div className="ajustes-access-code">
+                      <small>Código de acceso</small>
+                      <code>{browserAccess.pairingCode}</code>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        aria-label="Copiar código"
+                        onClick={() =>
+                          void copyPairingCode(browserAccess.pairingCode)
+                        }
+                      >
+                        {codeCopied ? (
+                          <Check size={14} aria-hidden />
+                        ) : (
+                          <Copy size={14} aria-hidden />
+                        )}
+                        {codeCopied ? "Copiado" : "Copiar"}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={codeRotating}
+                        onClick={() => void rotateCode()}
+                      >
+                        <RefreshCw size={14} aria-hidden />
+                        Cambiar código
+                      </Button>
+                    </div>
+                    <div className="ajustes-access-split">
+                      <div className="ajustes-access-explain">
+                        <p className="ajustes-note">
+                          Escanee el QR o abra la dirección e ingrese el código.
+                        </p>
+                      </div>
                     </div>
                   </div>
-                  </div>
                 </div>
-                <p className="ajustes-access-warn">Compártalo solo con operadores de confianza.</p>
+                <p className="ajustes-access-warn">
+                  Compártalo solo con operadores de confianza.
+                </p>
               </div>
             )}
           </div>
@@ -263,22 +340,53 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
       )}
 
       <SettingsGroup icon={Timer} title="Transiciones">
-        <TransitionRow label="Biblia" content="hebrew" value={local.fadeMs} onChange={(ms) => setLocal({ ...local, fadeMs: ms })} />
-        <TransitionRow label="Canciones" content="letra" value={local.songFadeMs} onChange={(ms) => setLocal({ ...local, songFadeMs: ms })} />
-        <TransitionRow label="Fondo" content="gradient" value={local.backgroundFadeMs} onChange={(ms) => setLocal({ ...local, backgroundFadeMs: ms })} />
+        <TransitionRow
+          label="Biblia"
+          content="hebrew"
+          value={local.fadeMs}
+          onChange={(ms) => setLocal({ ...local, fadeMs: ms })}
+        />
+        <TransitionRow
+          label="Canciones"
+          content="letra"
+          value={local.songFadeMs}
+          onChange={(ms) => setLocal({ ...local, songFadeMs: ms })}
+        />
+        <TransitionRow
+          label="Fondo"
+          content="gradient"
+          value={local.backgroundFadeMs}
+          onChange={(ms) => setLocal({ ...local, backgroundFadeMs: ms })}
+        />
         <SettingRow label="Animar ventanas" hint="Fundido al abrir y cerrar">
           <Switch
             checked={local.overlayAnimation}
-            onCheckedChange={(checked) => setLocal({ ...local, overlayAnimation: checked === true })}
+            onCheckedChange={(checked) =>
+              setLocal({ ...local, overlayAnimation: checked === true })
+            }
           />
         </SettingRow>
       </SettingsGroup>
 
       <SettingsGroup icon={Palette} title="Texto">
         <SettingRow label="Color del texto" hint="Se aplica a lo proyectado">
-          <Select value={local.theme} items={[{ value: "dark", label: "Texto claro" }, { value: "light", label: "Texto oscuro" }]} onValueChange={(value) => value && setLocal({ ...local, theme: value as "dark" | "light" })}>
-            <SelectTrigger className="ajustes-select"><SelectValue /></SelectTrigger>
-            <SelectContent className="ajustes-select-popup" alignItemWithTrigger={false}>
+          <Select
+            value={local.theme}
+            items={[
+              { value: "dark", label: "Texto claro" },
+              { value: "light", label: "Texto oscuro" },
+            ]}
+            onValueChange={(value) =>
+              value && setLocal({ ...local, theme: value as "dark" | "light" })
+            }
+          >
+            <SelectTrigger className="ajustes-select">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent
+              className="ajustes-select-popup"
+              alignItemWithTrigger={false}
+            >
               <SelectItem value="dark">Texto claro</SelectItem>
               <SelectItem value="light">Texto oscuro</SelectItem>
             </SelectContent>
@@ -296,20 +404,30 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
           </div>
         </SettingRow>
 
-        <SettingRow label="Canciones en mayúsculas" hint="Solo en canciones, no en la Biblia">
+        <SettingRow
+          label="Canciones en mayúsculas"
+          hint="Solo en canciones, no en la Biblia"
+        >
           <Switch
             checked={local.songUppercase}
-            onCheckedChange={(checked) => setLocal({ ...local, songUppercase: checked === true })}
+            onCheckedChange={(checked) =>
+              setLocal({ ...local, songUppercase: checked === true })
+            }
           />
         </SettingRow>
 
         <SettingRow label="Color de acento" hint="Referencia y versión">
-          <label className="ajustes-swatch" style={{ background: local.accentColor }}>
+          <label
+            className="ajustes-swatch"
+            style={{ background: local.accentColor }}
+          >
             <span className="sr-only">Color de acento</span>
             <Input
               type="color"
               value={local.accentColor}
-              onChange={(e) => setLocal({ ...local, accentColor: e.target.value })}
+              onChange={(e) =>
+                setLocal({ ...local, accentColor: e.target.value })
+              }
             />
           </label>
         </SettingRow>
@@ -319,9 +437,18 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
         <SettingRow label="Imagen del logo" hint="Se muestra con el botón Logo">
           <div className="ajustes-logo">
             {local.logoImagePath && (
-              <img className="ajustes-logo-preview" src={backgroundImageUrl(local.logoImagePath)} alt="Logo actual" />
+              <img
+                className="ajustes-logo-preview"
+                src={backgroundImageUrl(local.logoImagePath)}
+                alt="Logo actual"
+              />
             )}
-            <Button type="button" variant="outline" size="sm" onClick={() => void pickLogo()}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => void pickLogo()}
+            >
               {local.logoImagePath ? "Cambiar" : "Agregar"}
             </Button>
           </div>
@@ -331,7 +458,11 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
       <SettingsGroup icon={MonitorPlay} title="Proyector">
         <SettingRow label="Pantalla" hint="Dónde se muestra la proyección">
           <Select
-            value={local.projectorDisplayId == null ? "auto" : String(local.projectorDisplayId)}
+            value={
+              local.projectorDisplayId == null
+                ? "auto"
+                : String(local.projectorDisplayId)
+            }
             items={[
               { value: "auto", label: "Automática (segunda pantalla)" },
               ...displays.map((d) => ({
@@ -340,12 +471,24 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
               })),
             ]}
             onValueChange={(value) =>
-              value && setLocal({ ...local, projectorDisplayId: value === "auto" ? null : parseInt(value, 10) })
+              value &&
+              setLocal({
+                ...local,
+                projectorDisplayId:
+                  value === "auto" ? null : parseInt(value, 10),
+              })
             }
           >
-            <SelectTrigger className="ajustes-select"><SelectValue /></SelectTrigger>
-            <SelectContent className="ajustes-select-popup" alignItemWithTrigger={false}>
-              <SelectItem value="auto">Automática (segunda pantalla)</SelectItem>
+            <SelectTrigger className="ajustes-select">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent
+              className="ajustes-select-popup"
+              alignItemWithTrigger={false}
+            >
+              <SelectItem value="auto">
+                Automática (segunda pantalla)
+              </SelectItem>
               {displays.map((d) => (
                 <SelectItem key={d.id} value={String(d.id)}>
                   {d.label} {d.primary ? "(principal)" : ""}
@@ -355,10 +498,15 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
           </Select>
         </SettingRow>
 
-        <SettingRow label="Dos versiones lado a lado" hint="Muestra dos textos en la misma diapositiva">
+        <SettingRow
+          label="Dos versiones lado a lado"
+          hint="Muestra dos textos en la misma diapositiva"
+        >
           <Switch
             checked={local.dualView}
-            onCheckedChange={(checked) => setLocal({ ...local, dualView: checked === true })}
+            onCheckedChange={(checked) =>
+              setLocal({ ...local, dualView: checked === true })
+            }
           />
         </SettingRow>
 
@@ -370,16 +518,35 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
                 { value: "none", label: "—" },
                 ...versions.map((v) => ({ value: v.id, label: v.name })),
               ]}
-              onValueChange={(value) => value && setLocal({ ...local, secondaryVersionId: value === "none" ? null : value })}
+              onValueChange={(value) =>
+                value &&
+                setLocal({
+                  ...local,
+                  secondaryVersionId: value === "none" ? null : value,
+                })
+              }
             >
-              <SelectTrigger className="ajustes-select"><SelectValue /></SelectTrigger>
-              <SelectContent className="ajustes-select-popup" alignItemWithTrigger={false}>
+              <SelectTrigger className="ajustes-select">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent
+                className="ajustes-select-popup"
+                alignItemWithTrigger={false}
+              >
                 <SelectItem value="none">—</SelectItem>
                 {versions
                   .filter((v) => v.id !== local.primaryVersionId)
                   .map((v) => (
-                    <SelectItem key={v.id} value={v.id} disabled={v.locked} title={v.lockedReason}>
-                      {v.name}{v.online ? " (en línea)" : ""}{v.custom ? " (mía)" : ""}{v.locked ? " · requiere licencia" : ""}
+                    <SelectItem
+                      key={v.id}
+                      value={v.id}
+                      disabled={v.locked}
+                      title={v.lockedReason}
+                    >
+                      {v.name}
+                      {v.online ? " (en línea)" : ""}
+                      {v.custom ? " (mía)" : ""}
+                      {v.locked ? " · requiere licencia" : ""}
                     </SelectItem>
                   ))}
               </SelectContent>
@@ -387,7 +554,6 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
           </SettingRow>
         )}
       </SettingsGroup>
-
     </div>
   );
 }

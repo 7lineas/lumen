@@ -26,7 +26,10 @@ function useAppUpdateState() {
   useEffect(() => {
     const api = window.proyector;
     if (!api) return;
-    void api.getAppUpdateState().then(setState).catch(() => undefined);
+    void api
+      .getAppUpdateState()
+      .then(setState)
+      .catch(() => undefined);
     return api.onAppUpdateState(setState);
   }, []);
 
@@ -41,7 +44,8 @@ export function UpdateCheckButton() {
   const [state, setState] = useAppUpdateState();
 
   // En desarrollo no hay nada que comprobar.
-  if (!state || state.mode === "disabled" || shouldShowUpdateButton(state)) return null;
+  if (!state || state.mode === "disabled" || shouldShowUpdateButton(state))
+    return null;
 
   const checking = state.status === "checking";
 
@@ -113,7 +117,8 @@ export function UpdateButton() {
     setDialogState(null);
     if (!api || !current) return;
     try {
-      if (resolveUpdateButtonAction(current) === "install") setState(await api.installAppUpdate());
+      if (resolveUpdateButtonAction(current) === "install")
+        setState(await api.installAppUpdate());
       else setState(await api.startAppUpdate());
     } catch {
       // El proceso principal informa los fallos mediante el estado.
@@ -131,32 +136,59 @@ export function UpdateButton() {
         data-state={downloading ? "downloading" : action}
         disabled={downloading || busy}
         title={updateButtonTitle(state)}
-        style={downloading ? ({ "--update-progress": `${percent}%` } as React.CSSProperties) : undefined}
+        style={
+          downloading
+            ? ({ "--update-progress": `${percent}%` } as React.CSSProperties)
+            : undefined
+        }
         onClick={() => void onPress()}
       >
         {updateButtonLabel(state)}
       </Button>
-      {state.message && state.errorContext && state.errorContext !== "check" && !downloading && (
-        <span className="update-note" role="status" data-testid="update-error">
-          {state.message}
-        </span>
-      )}
-      <AlertDialog open={dialogState !== null} onOpenChange={(open) => !open && setDialogState(null)}>
-        <AlertDialogContent data-testid="update-dialog" className="update-dialog">
+      {state.message &&
+        state.errorContext &&
+        state.errorContext !== "check" &&
+        !downloading && (
+          <span
+            className="update-note"
+            role="status"
+            data-testid="update-error"
+          >
+            {state.message}
+          </span>
+        )}
+      <AlertDialog
+        open={dialogState !== null}
+        onOpenChange={(open) => !open && setDialogState(null)}
+      >
+        <AlertDialogContent
+          data-testid="update-dialog"
+          className="update-dialog"
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>{confirmation?.title}</AlertDialogTitle>
-            <AlertDialogDescription>{confirmation?.description}</AlertDialogDescription>
+            <AlertDialogDescription>
+              {confirmation?.description}
+            </AlertDialogDescription>
           </AlertDialogHeader>
           {confirmation?.projectionWarning && (
-            <p className="update-warning" role="alert" data-testid="update-projection-warning">
+            <p
+              className="update-warning"
+              role="alert"
+              data-testid="update-projection-warning"
+            >
               {confirmation.projectionWarning}
             </p>
           )}
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="update-cancel">Ahora no</AlertDialogCancel>
+            <AlertDialogCancel data-testid="update-cancel">
+              Ahora no
+            </AlertDialogCancel>
             <AlertDialogAction
               data-testid="update-confirm"
-              variant={confirmation?.projectionWarning ? "destructive" : "default"}
+              variant={
+                confirmation?.projectionWarning ? "destructive" : "default"
+              }
               onClick={() => void confirm()}
             >
               {confirmation?.confirmLabel}

@@ -11,7 +11,9 @@ export function safeObjectKey(filename) {
 }
 
 export function joinDownloadUrl(base, filename) {
-  const root = String(base ?? "").trim().replace(/\/+$/, "");
+  const root = String(base ?? "")
+    .trim()
+    .replace(/\/+$/, "");
   const key = safeObjectKey(filename);
   if (!root || !key) return "";
   return `${root}/${key}`;

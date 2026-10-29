@@ -4,9 +4,17 @@ import { Progress } from "@/components/ui/progress";
 import { Check } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { AppSettings, BibleVersionMeta } from "@shared/types";
-import { isDefaultOnlineVersionId, type OnlineSearchHit, type OnlineVersionsResult } from "@shared/youversion";
+import {
+  isDefaultOnlineVersionId,
+  type OnlineSearchHit,
+  type OnlineVersionsResult,
+} from "@shared/youversion";
 import { ImportBibleCard } from "./ImportBibleCard";
-import type { BibleDownloadProgress, BibleLibraryEntry, BibleLibraryView } from "../vite-env.d";
+import type {
+  BibleDownloadProgress,
+  BibleLibraryEntry,
+  BibleLibraryView,
+} from "../vite-env.d";
 
 const SEARCH_DEBOUNCE_MS = 300;
 
@@ -14,7 +22,9 @@ interface Props {
   onChanged: (settings?: AppSettings) => void;
   online?: OnlineVersionsResult;
   onRefreshOnline?: () => void;
-  onSearchOnline?: (query: string) => Promise<{ hits: OnlineSearchHit[]; error?: string; stale?: boolean }>;
+  onSearchOnline?: (
+    query: string,
+  ) => Promise<{ hits: OnlineSearchHit[]; error?: string; stale?: boolean }>;
   onAddOnline?: (id: string) => Promise<void>;
   onRemoveOnline?: (id: string) => Promise<void>;
   /** Bibles the user imported from files. */
@@ -49,7 +59,10 @@ export function BiblesPanel({
   const [error, setError] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [progress, setProgress] = useState<BibleDownloadProgress | null>(null);
-  const [rowError, setRowError] = useState<{ id: string; message: string } | null>(null);
+  const [rowError, setRowError] = useState<{
+    id: string;
+    message: string;
+  } | null>(null);
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<OnlineSearchHit[]>([]);
   const [searching, setSearching] = useState(false);
@@ -76,7 +89,12 @@ export function BiblesPanel({
         }
       })
       .catch((reason: unknown) => {
-        if (!cancelled) setError(reason instanceof Error ? reason.message : "No se pudo leer el catálogo");
+        if (!cancelled)
+          setError(
+            reason instanceof Error
+              ? reason.message
+              : "No se pudo leer el catálogo",
+          );
       });
     return () => {
       cancelled = true;
@@ -110,7 +128,9 @@ export function BiblesPanel({
         .catch((reason: unknown) => {
           if (seq !== searchSeq.current) return;
           setHits([]);
-          setSearchError(reason instanceof Error ? reason.message : "No se pudo buscar");
+          setSearchError(
+            reason instanceof Error ? reason.message : "No se pudo buscar",
+          );
         })
         .finally(() => {
           if (seq === searchSeq.current) setSearching(false);
@@ -130,7 +150,8 @@ export function BiblesPanel({
     } catch (reason) {
       setRowError({
         id,
-        message: reason instanceof Error ? reason.message : "No se pudo descargar",
+        message:
+          reason instanceof Error ? reason.message : "No se pudo descargar",
       });
     } finally {
       setActiveId(null);
@@ -158,7 +179,9 @@ export function BiblesPanel({
     setRowError(null);
     try {
       await onAddOnline(id);
-      setHits((prev) => prev.map((hit) => (hit.id === id ? { ...hit, added: true } : hit)));
+      setHits((prev) =>
+        prev.map((hit) => (hit.id === id ? { ...hit, added: true } : hit)),
+      );
     } catch (reason) {
       setRowError({
         id,
@@ -175,7 +198,9 @@ export function BiblesPanel({
     setRowError(null);
     try {
       await onRemoveOnline(id);
-      setHits((prev) => prev.map((hit) => (hit.id === id ? { ...hit, added: false } : hit)));
+      setHits((prev) =>
+        prev.map((hit) => (hit.id === id ? { ...hit, added: false } : hit)),
+      );
     } catch (reason) {
       setRowError({
         id,
@@ -191,8 +216,8 @@ export function BiblesPanel({
       <section className="bible-section">
         {library?.offline && (
           <p className="bible-banner">
-            No hay conexión al catálogo. Se muestran las versiones conocidas. Las que ya descargó siguen
-            disponibles.
+            No hay conexión al catálogo. Se muestran las versiones conocidas.
+            Las que ya descargó siguen disponibles.
           </p>
         )}
         {error && <p className="error">{error}</p>}
@@ -230,23 +255,32 @@ export function BiblesPanel({
       <section className="bible-section" data-testid="online-bibles-section">
         <h2>En línea (YouVersion)</h2>
         {!online?.configured && (
-          <p className="muted">Esta compilación no incluye la clave de YouVersion Platform, así que las Biblias en línea no están disponibles.</p>
+          <p className="muted">
+            Esta compilación no incluye la clave de YouVersion Platform, así que
+            las Biblias en línea no están disponibles.
+          </p>
         )}
         {online?.configured && (
           <>
             <p className="bible-intro">
-              Por defecto aparecen NVI 2025, NBLA, LBLA y RVES. Puede buscar otras versiones del catálogo y
-              añadirlas a esta instalación. Se consultan al elegirlas y cada capítulo se guarda en este
-              equipo por 30 días.
+              Por defecto aparecen NVI 2025, NBLA, LBLA y RVES. Puede buscar
+              otras versiones del catálogo y añadirlas a esta instalación. Se
+              consultan al elegirlas y cada capítulo se guarda en este equipo
+              por 30 días.
             </p>
             <div className="online-toolbar">
-              <Button type="button" onClick={onRefreshOnline} data-testid="online-refresh">
+              <Button
+                type="button"
+                onClick={onRefreshOnline}
+                data-testid="online-refresh"
+              >
                 Actualizar catálogo
               </Button>
             </div>
             {online.stale && (
               <p className="bible-banner">
-                Sin conexión: se muestra la lista guardada.{online.error ? ` (${online.error})` : ""}
+                Sin conexión: se muestra la lista guardada.
+                {online.error ? ` (${online.error})` : ""}
               </p>
             )}
             {!online.stale && online.error && online.versions.length === 0 && (
@@ -269,23 +303,36 @@ export function BiblesPanel({
               />
             </label>
             {query.trim() && (
-              <div className="bible-list online-search-results" data-testid="online-search-results">
-                {searching && hits.length === 0 && <p className="muted">Buscando…</p>}
+              <div
+                className="bible-list online-search-results"
+                data-testid="online-search-results"
+              >
+                {searching && hits.length === 0 && (
+                  <p className="muted">Buscando…</p>
+                )}
                 {searchError && <p className="error">{searchError}</p>}
                 {!searching && !searchError && hits.length === 0 && (
-                  <p className="muted">Ninguna versión coincide con “{query.trim()}”.</p>
+                  <p className="muted">
+                    Ninguna versión coincide con “{query.trim()}”.
+                  </p>
                 )}
                 {hits.map((hit) => (
-                  <article className="bible-row" key={hit.id} data-testid={`online-hit-${hit.id}`}>
+                  <article
+                    className="bible-row"
+                    key={hit.id}
+                    data-testid={`online-hit-${hit.id}`}
+                  >
                     <span className="bible-abbr">{hit.abbr}</span>
-      <h3>{hit.name}</h3>
+                    <h3>{hit.name}</h3>
                     <p className="bible-meta">
                       {hit.abbr} · {hit.language}
                       {hit.license ? ` · ${hit.license}` : ""}
                       {hit.locked ? " · licencia pendiente" : ""}
                     </p>
                     <div className="bible-actions">
-                      {hit.locked && <span className="error">{hit.lockedReason}</span>}
+                      {hit.locked && (
+                        <span className="error">{hit.lockedReason}</span>
+                      )}
                       {hit.added ? (
                         <span className="bible-status">
                           <Check size={16} strokeWidth={2.5} aria-hidden />
@@ -303,7 +350,9 @@ export function BiblesPanel({
                         </Button>
                       )}
                     </div>
-                    {rowError?.id === hit.id && <p className="error">{rowError.message}</p>}
+                    {rowError?.id === hit.id && (
+                      <p className="error">{rowError.message}</p>
+                    )}
                   </article>
                 ))}
               </div>
@@ -314,18 +363,28 @@ export function BiblesPanel({
               {online.versions.map((version) => {
                 const canRemove = !isDefaultOnlineVersionId(version.id);
                 return (
-                  <article className="bible-row" key={version.id} data-testid={`online-row-${version.id}`}>
+                  <article
+                    className="bible-row"
+                    key={version.id}
+                    data-testid={`online-row-${version.id}`}
+                  >
                     <span className="bible-abbr">{version.abbr}</span>
-      <h3>{version.name}</h3>
+                    <h3>{version.name}</h3>
                     <p className="bible-meta">
                       {version.abbr} · {version.language}
-                      {version.license ? ` · ${version.license}` : " · YouVersion Platform"}
+                      {version.license
+                        ? ` · ${version.license}`
+                        : " · YouVersion Platform"}
                     </p>
                     <div className="bible-actions">
                       {version.locked ? (
                         <span className="error">{version.lockedReason}</span>
                       ) : (
-                        <span className="bible-status" role="img" aria-label="Disponible en el selector de versión">
+                        <span
+                          className="bible-status"
+                          role="img"
+                          aria-label="Disponible en el selector de versión"
+                        >
                           <Check size={16} strokeWidth={2.5} aria-hidden />
                         </span>
                       )}
@@ -340,7 +399,9 @@ export function BiblesPanel({
                         </Button>
                       )}
                     </div>
-                    {rowError?.id === version.id && <p className="error">{rowError.message}</p>}
+                    {rowError?.id === version.id && (
+                      <p className="error">{rowError.message}</p>
+                    )}
                   </article>
                 );
               })}
@@ -373,7 +434,9 @@ function BibleRow({
   onRemove: () => void;
 }) {
   const percent =
-    progress?.total && progress.total > 0 ? Math.min(100, Math.round((progress.loaded / progress.total) * 100)) : null;
+    progress?.total && progress.total > 0
+      ? Math.min(100, Math.round((progress.loaded / progress.total) * 100))
+      : null;
 
   return (
     <article className="bible-row" data-testid={`bible-row-${entry.id}`}>
@@ -401,7 +464,12 @@ function BibleRow({
           </>
         )}
         {entry.availability === "available" && !downloading && (
-          <Button type="button" className="primary" onClick={onDownload} disabled={busy}>
+          <Button
+            type="button"
+            className="primary"
+            onClick={onDownload}
+            disabled={busy}
+          >
             {error ? "Reintentar" : "Descargar"}
           </Button>
         )}

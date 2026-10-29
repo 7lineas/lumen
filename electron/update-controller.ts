@@ -54,14 +54,20 @@ export interface UpdateController {
   install(): AppUpdateState;
 }
 
-export function createUpdateController(deps: UpdateControllerDeps): UpdateController {
+export function createUpdateController(
+  deps: UpdateControllerDeps,
+): UpdateController {
   const now = deps.now ?? (() => new Date());
-  const setTimer = deps.setTimer ?? ((fn, ms) => {
-    const handle = setTimeout(fn, ms);
-    (handle as { unref?: () => void }).unref?.();
-    return handle;
-  });
-  const clearTimer = deps.clearTimer ?? ((handle) => clearTimeout(handle as ReturnType<typeof setTimeout>));
+  const setTimer =
+    deps.setTimer ??
+    ((fn, ms) => {
+      const handle = setTimeout(fn, ms);
+      (handle as { unref?: () => void }).unref?.();
+      return handle;
+    });
+  const clearTimer =
+    deps.clearTimer ??
+    ((handle) => clearTimeout(handle as ReturnType<typeof setTimeout>));
   const log = deps.log ?? (() => undefined);
 
   let state = createInitialUpdateState(deps.currentVersion, deps.mode);
@@ -104,12 +110,26 @@ export function createUpdateController(deps: UpdateControllerDeps): UpdateContro
       set(reduceOnCheckStart(state, now().toISOString()));
       try {
         const latest = await deps.backend.check();
-        set(reduceOnCheckResult(state, latest?.version ?? null, now().toISOString()));
+        set(
+          reduceOnCheckResult(
+            state,
+            latest?.version ?? null,
+            now().toISOString(),
+          ),
+        );
       } catch (error) {
         failed = true;
         const raw = error instanceof Error ? error.message : String(error);
-        log(`[updater] comprobación fallida${isOfflineError(raw) ? " (sin red)" : ""}: ${raw}`);
-        set(reduceOnCheckFailure(state, friendlyUpdateError(error, "check"), now().toISOString()));
+        log(
+          `[updater] comprobación fallida${isOfflineError(raw) ? " (sin red)" : ""}: ${raw}`,
+        );
+        set(
+          reduceOnCheckFailure(
+            state,
+            friendlyUpdateError(error, "check"),
+            now().toISOString(),
+          ),
+        );
       } finally {
         checking = null;
         schedule(failed ? UPDATE_RETRY_INTERVAL_MS : UPDATE_CHECK_INTERVAL_MS);
@@ -128,8 +148,14 @@ export function createUpdateController(deps: UpdateControllerDeps): UpdateContro
       try {
         await deps.backend.download(() => undefined);
       } catch (error) {
-        log(`[updater] no se pudo abrir la descarga: ${error instanceof Error ? error.message : String(error)}`);
-        set({ ...state, message: "No se pudo abrir la página de descarga.", errorContext: "download" });
+        log(
+          `[updater] no se pudo abrir la descarga: ${error instanceof Error ? error.message : String(error)}`,
+        );
+        set({
+          ...state,
+          message: "No se pudo abrir la página de descarga.",
+          errorContext: "download",
+        });
       }
       return snapshot();
     }
@@ -149,7 +175,12 @@ export function createUpdateController(deps: UpdateControllerDeps): UpdateContro
       } catch (error) {
         const raw = error instanceof Error ? error.message : String(error);
         log(`[updater] descarga fallida: ${raw}`);
-        set(reduceOnDownloadFailure(state, friendlyUpdateError(error, "download")));
+        set(
+          reduceOnDownloadFailure(
+            state,
+            friendlyUpdateError(error, "download"),
+          ),
+        );
       } finally {
         downloading = null;
       }
@@ -159,18 +190,22 @@ export function createUpdateController(deps: UpdateControllerDeps): UpdateContro
   }
 
   function install(): AppUpdateState {
-    if (state.mode !== "auto" || state.status !== "downloaded" || installing) return snapshot();
+    if (state.mode !== "auto" || state.status !== "downloaded" || installing)
+      return snapshot();
     installing = true;
     const fail = (error: unknown) => {
       installing = false;
-      log(`[updater] instalación fallida: ${error instanceof Error ? error.message : String(error)}`);
+      log(
+        `[updater] instalación fallida: ${error instanceof Error ? error.message : String(error)}`,
+      );
       set(reduceOnInstallFailure(state, friendlyUpdateError(error, "install")));
     };
     try {
       deps.backend.install();
       // quitAndInstall cierra la app enseguida; si sigue viva, algo falló en silencio.
       setTimer(() => {
-        if (installing) fail(new Error("La app no se cerró tras pedir la instalación"));
+        if (installing)
+          fail(new Error("La app no se cerró tras pedir la instalación"));
       }, INSTALL_WATCHDOG_MS);
     } catch (error) {
       fail(error);

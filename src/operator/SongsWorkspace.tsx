@@ -52,7 +52,10 @@ interface Props {
   /** Ajustes > Tipo de letra, shown in the song dialog as the default typeface. */
   defaultFontFamily: FontFamilyId;
   onToggleProjectOnClick: (value: boolean) => void;
-  onSelectSong: (songId: string | null, selection: SongSelection | null) => void;
+  onSelectSong: (
+    songId: string | null,
+    selection: SongSelection | null,
+  ) => void;
   onSelectPart: (index: number) => void;
   /** Double-click: stage the part and project it. */
   onTakePart: (index: number) => void;
@@ -76,9 +79,22 @@ function stageOf(song: Song, index = 0): SongSelection {
   };
 }
 
-const normalize = (s: string) => s.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
+const normalize = (s: string) =>
+  s.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
 
-export function SongsWorkspace({ staged, selectedId, liveText, liveIndex, projectOnClick, defaultFadeMs, defaultFontFamily, onToggleProjectOnClick, onSelectSong, onSelectPart, onTakePart }: Props) {
+export function SongsWorkspace({
+  staged,
+  selectedId,
+  liveText,
+  liveIndex,
+  projectOnClick,
+  defaultFadeMs,
+  defaultFontFamily,
+  onToggleProjectOnClick,
+  onSelectSong,
+  onSelectPart,
+  onTakePart,
+}: Props) {
   const [songs, setSongs] = useState<Song[]>([]);
   const [songsLoaded, setSongsLoaded] = useState(false);
   const [query, setQuery] = useState("");
@@ -92,14 +108,18 @@ export function SongsWorkspace({ staged, selectedId, liveText, liveIndex, projec
     const api = window.proyector;
     if (!api) {
       setSongsLoaded(true);
-      return () => { cancelled = true; };
+      return () => {
+        cancelled = true;
+      };
     }
     void api.getSongs().then((saved) => {
       if (cancelled) return;
       setSongs(Array.isArray(saved) ? saved : []);
       setSongsLoaded(true);
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -109,32 +129,65 @@ export function SongsWorkspace({ staged, selectedId, liveText, liveIndex, projec
   const visibleSongs = useMemo(() => {
     const q = normalize(query.trim());
     return songs
-      .filter((song) => !q || normalize(`${song.title} ${song.author ?? ""}`).includes(q))
+      .filter(
+        (song) =>
+          !q || normalize(`${song.title} ${song.author ?? ""}`).includes(q),
+      )
       .sort((a, b) => Number(b.pinned) - Number(a.pinned));
   }, [songs, query]);
 
-  const selectedSong = useMemo(() => songs.find((song) => song.id === selectedId) ?? null, [songs, selectedId]);
-  const editingSong = editing && editing !== "new" ? songs.find((song) => song.id === editing) ?? null : null;
-  const parts = useMemo<SongSection[]>(() => (selectedSong ? songParts(selectedSong.lyrics) : []), [selectedSong]);
+  const selectedSong = useMemo(
+    () => songs.find((song) => song.id === selectedId) ?? null,
+    [songs, selectedId],
+  );
+  const editingSong =
+    editing && editing !== "new"
+      ? (songs.find((song) => song.id === editing) ?? null)
+      : null;
+  const parts = useMemo<SongSection[]>(
+    () => (selectedSong ? songParts(selectedSong.lyrics) : []),
+    [selectedSong],
+  );
   // Until the library has loaded, the staged song is what the operator sees.
   const shown: SongSection[] = selectedSong
     ? parts
-    : (staged?.slides ?? []).map((text, i) => ({ key: `staged-${i}`, label: staged?.labels[i] ?? "", text }));
+    : (staged?.slides ?? []).map((text, i) => ({
+        key: `staged-${i}`,
+        label: staged?.labels[i] ?? "",
+        text,
+      }));
   const slide = staged?.index ?? 0;
   const gridRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    gridRef.current?.querySelector("[data-current]")?.scrollIntoView({ block: "nearest" });
+    gridRef.current
+      ?.querySelector("[data-current]")
+      ?.scrollIntoView({ block: "nearest" });
   }, [slide, staged?.title]);
 
   const togglePin = (songId: string) => {
-    setSongs((current) => current.map((song) => (song.id === songId ? { ...song, pinned: !song.pinned } : song)));
+    setSongs((current) =>
+      current.map((song) =>
+        song.id === songId ? { ...song, pinned: !song.pinned } : song,
+      ),
+    );
   };
 
   const save = (draft: SongDraft) => {
     const stored = editingSong;
-    const base: Song = stored ?? { id: id(), title: "", lyrics: "", updatedAt: 0, pinned: false };
-    const next: Song = { ...base, title: draft.title, lyrics: draft.lyrics, updatedAt: Date.now() };
+    const base: Song = stored ?? {
+      id: id(),
+      title: "",
+      lyrics: "",
+      updatedAt: 0,
+      pinned: false,
+    };
+    const next: Song = {
+      ...base,
+      title: draft.title,
+      lyrics: draft.lyrics,
+      updatedAt: Date.now(),
+    };
     if (draft.author) next.author = draft.author;
     else delete next.author;
     if (draft.fadeMs !== undefined) next.fadeMs = draft.fadeMs;
@@ -146,12 +199,17 @@ export function SongsWorkspace({ staged, selectedId, liveText, liveIndex, projec
       delete next.fontFamily;
       delete next.fontWeight;
     }
-    setSongs((current) => (stored ? current.map((song) => (song.id === next.id ? next : song)) : [next, ...current]));
+    setSongs((current) =>
+      stored
+        ? current.map((song) => (song.id === next.id ? next : song))
+        : [next, ...current],
+    );
     setEditing(null);
     setQuery("");
     // A new song opens straight away; an edited one keeps the part that was staged.
     if (!stored) onSelectSong(next.id, stageOf(next));
-    else if (next.id === selectedId) onSelectSong(next.id, stageOf(next, staged?.index ?? 0));
+    else if (next.id === selectedId)
+      onSelectSong(next.id, stageOf(next, staged?.index ?? 0));
   };
 
   const removeSong = (song: Song) => {
@@ -168,7 +226,14 @@ export function SongsWorkspace({ staged, selectedId, liveText, liveIndex, projec
       <aside className="lx-lib">
         <div className="lx-lib-head">
           <span className="lx-h">Canciones</span>
-          <button type="button" className="lx-icon-btn" aria-label="Nueva canción" title="Nueva canción" data-testid="btn-new-song" onClick={() => setEditing("new")}>
+          <button
+            type="button"
+            className="lx-icon-btn"
+            aria-label="Nueva canción"
+            title="Nueva canción"
+            data-testid="btn-new-song"
+            onClick={() => setEditing("new")}
+          >
             <Plus />
           </button>
         </div>
@@ -179,7 +244,8 @@ export function SongsWorkspace({ staged, selectedId, liveText, liveIndex, projec
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             onKeyDown={(event) => {
-              if (event.key === "Enter" && visibleSongs[0]) onSelectSong(visibleSongs[0].id, stageOf(visibleSongs[0]));
+              if (event.key === "Enter" && visibleSongs[0])
+                onSelectSong(visibleSongs[0].id, stageOf(visibleSongs[0]));
               else if (event.key === "Escape") {
                 setQuery("");
                 event.currentTarget.blur();
@@ -193,12 +259,25 @@ export function SongsWorkspace({ staged, selectedId, liveText, liveIndex, projec
         </label>
         <div className="lx-lib-scroll">
           {visibleSongs.map((song) => (
-            <div key={song.id} className={`lx-item${song.id === selectedId ? " on" : ""}`}>
-              <button type="button" className="lx-item-main" aria-label={`Seleccionar ${song.title}`} onClick={() => onSelectSong(song.id, stageOf(song))} onDoubleClick={() => setEditing(song.id)}>
-                <span className="lx-ico"><SongIcon /></span>
+            <div
+              key={song.id}
+              className={`lx-item${song.id === selectedId ? " on" : ""}`}
+            >
+              <button
+                type="button"
+                className="lx-item-main"
+                aria-label={`Seleccionar ${song.title}`}
+                onClick={() => onSelectSong(song.id, stageOf(song))}
+                onDoubleClick={() => setEditing(song.id)}
+              >
+                <span className="lx-ico">
+                  <SongIcon />
+                </span>
                 <span className="lx-item-text">
                   <span className="t">{song.title}</span>
-                  <span className="s">{song.author || `${songParts(song.lyrics).length} partes`}</span>
+                  <span className="s">
+                    {song.author || `${songParts(song.lyrics).length} partes`}
+                  </span>
                 </span>
               </button>
               <span className={`lx-item-actions${song.pinned ? " keep" : ""}`}>
@@ -209,26 +288,55 @@ export function SongsWorkspace({ staged, selectedId, liveText, liveIndex, projec
                   onEdit={() => setEditing(song.id)}
                   onDelete={() => setDeletingId(song.id)}
                 />
-                <AlertDialog open={deletingId === song.id} onOpenChange={(open) => setDeletingId(open ? song.id : null)}>
+                <AlertDialog
+                  open={deletingId === song.id}
+                  onOpenChange={(open) => setDeletingId(open ? song.id : null)}
+                >
                   <AlertDialogContent>
                     <AlertDialogHeader>
                       <AlertDialogTitle>Eliminar canción</AlertDialogTitle>
-                      <AlertDialogDescription>¿Eliminar “{song.title}”? Esta acción no se puede deshacer.</AlertDialogDescription>
+                      <AlertDialogDescription>
+                        ¿Eliminar “{song.title}”? Esta acción no se puede
+                        deshacer.
+                      </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction variant="destructive" data-testid={`confirm-delete-song-${song.id}`} onClick={() => { setDeletingId(null); removeSong(song); }}>Eliminar</AlertDialogAction>
+                      <AlertDialogAction
+                        variant="destructive"
+                        data-testid={`confirm-delete-song-${song.id}`}
+                        onClick={() => {
+                          setDeletingId(null);
+                          removeSong(song);
+                        }}
+                      >
+                        Eliminar
+                      </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
-                <button type="button" className={song.pinned ? "lx-ghost on" : "lx-ghost"} aria-label={song.pinned ? "Desfijar canción" : "Fijar canción"} aria-pressed={song.pinned} title={song.pinned ? "Desfijar" : "Fijar"} data-testid={`btn-pin-song-${song.id}`} onClick={() => togglePin(song.id)}>
+                <button
+                  type="button"
+                  className={song.pinned ? "lx-ghost on" : "lx-ghost"}
+                  aria-label={
+                    song.pinned ? "Desfijar canción" : "Fijar canción"
+                  }
+                  aria-pressed={song.pinned}
+                  title={song.pinned ? "Desfijar" : "Fijar"}
+                  data-testid={`btn-pin-song-${song.id}`}
+                  onClick={() => togglePin(song.id)}
+                >
                   <Pin />
                 </button>
               </span>
             </div>
           ))}
           {songsLoaded && visibleSongs.length === 0 && (
-            <p className="lx-empty">{songs.length === 0 ? "Aún no hay canciones." : `Ninguna canción coincide con “${query.trim()}”.`}</p>
+            <p className="lx-empty">
+              {songs.length === 0
+                ? "Aún no hay canciones."
+                : `Ninguna canción coincide con “${query.trim()}”.`}
+            </p>
           )}
         </div>
       </aside>
@@ -238,18 +346,33 @@ export function SongsWorkspace({ staged, selectedId, liveText, liveIndex, projec
           <>
             <div className="lx-ws-head">
               <div className="lx-ws-heading">
-                <div className="lx-ws-title" title={title}>{title}</div>
+                <div className="lx-ws-title" title={title}>
+                  {title}
+                </div>
                 <div className="lx-ws-sub">
-                  {[author, `${shown.length} ${shown.length === 1 ? "diapositiva" : "diapositivas"}`].filter(Boolean).join(" · ")}
+                  {[
+                    author,
+                    `${shown.length} ${shown.length === 1 ? "diapositiva" : "diapositivas"}`,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
                 </div>
               </div>
               <div className="lx-ws-tools">
                 <label className="lx-toggle">
-                  <Switch checked={projectOnClick} onCheckedChange={onToggleProjectOnClick} aria-label="Proyectar al hacer clic" />
+                  <Switch
+                    checked={projectOnClick}
+                    onCheckedChange={onToggleProjectOnClick}
+                    aria-label="Proyectar al hacer clic"
+                  />
                   <span>Proyectar al clic</span>
                 </label>
                 {selectedSong && (
-                  <button type="button" className="lx-btn" onClick={() => setEditing(selectedSong.id)}>
+                  <button
+                    type="button"
+                    className="lx-btn"
+                    onClick={() => setEditing(selectedSong.id)}
+                  >
                     <Pencil /> Editar
                   </button>
                 )}
@@ -259,7 +382,10 @@ export function SongsWorkspace({ staged, selectedId, liveText, liveIndex, projec
             {shown.length > 0 ? (
               <div className="lx-slides" ref={gridRef}>
                 {shown.map((part, index) => {
-                  const isLive = liveText != null && part.text === liveText && (liveIndex == null || liveIndex === index);
+                  const isLive =
+                    liveText != null &&
+                    part.text === liveText &&
+                    (liveIndex == null || liveIndex === index);
                   return (
                     <button
                       key={`${index}-${part.key}`}
@@ -280,20 +406,40 @@ export function SongsWorkspace({ staged, selectedId, liveText, liveIndex, projec
                 })}
               </div>
             ) : (
-              <p className="lx-empty-ws">Esta canción no tiene letra. Edítala para añadir sus partes.</p>
+              <p className="lx-empty-ws">
+                Esta canción no tiene letra. Edítala para añadir sus partes.
+              </p>
             )}
           </>
         ) : (
           <div className="lx-empty-ws">
-            <p>{songs.length === 0 ? "Crea tu primera canción para proyectar su letra." : "Elige una canción de la biblioteca."}</p>
-            <button type="button" className="lx-btn pri" onClick={() => setEditing("new")}>
+            <p>
+              {songs.length === 0
+                ? "Crea tu primera canción para proyectar su letra."
+                : "Elige una canción de la biblioteca."}
+            </p>
+            <button
+              type="button"
+              className="lx-btn pri"
+              onClick={() => setEditing("new")}
+            >
               <Plus /> Nueva canción
             </button>
           </div>
         )}
       </main>
 
-      <SongDialog open={editing !== null} song={editingSong} defaultFadeMs={defaultFadeMs} defaultFontFamily={defaultFontFamily} onOpenChange={(open) => !open && setEditing(null)} onSave={save} onDelete={() => { if (editingSong) removeSong(editingSong); }} />
+      <SongDialog
+        open={editing !== null}
+        song={editingSong}
+        defaultFadeMs={defaultFadeMs}
+        defaultFontFamily={defaultFontFamily}
+        onOpenChange={(open) => !open && setEditing(null)}
+        onSave={save}
+        onDelete={() => {
+          if (editingSong) removeSong(editingSong);
+        }}
+      />
     </>
   );
 }

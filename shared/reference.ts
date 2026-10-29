@@ -55,7 +55,9 @@ export function normalizeSearchText(s: string): string {
   return normalizeToken(s);
 }
 
-function parseVersePart(part: string): { chapter: number; verseStart: number; verseEnd?: number } | null {
+function parseVersePart(
+  part: string,
+): { chapter: number; verseStart: number; verseEnd?: number } | null {
   const cleaned = part.replace(/\s+/g, " ").trim();
   const rangeMatch = cleaned.match(/^(\d+)\s*:\s*(\d+)\s*-\s*(\d+)$/);
   if (rangeMatch) {
@@ -117,7 +119,9 @@ export function parseReference(input: string): ParseReferenceResult {
 
   let working = trimmed.replace(/\s+/g, " ");
 
-  const numberedPrefix = working.match(/^(\d)\s*([a-záéíóúñA-ZÁÉÍÓÚÑ.]+)\s+(.+)$/i);
+  const numberedPrefix = working.match(
+    /^(\d)\s*([a-záéíóúñA-ZÁÉÍÓÚÑ.]+)\s+(.+)$/i,
+  );
   if (numberedPrefix) {
     working = `${numberedPrefix[1]} ${numberedPrefix[2]} ${numberedPrefix[3]}`;
   }
@@ -198,7 +202,10 @@ export function parseReference(input: string): ParseReferenceResult {
     return { ok: false, message: "Rango de versículos no válido" };
   }
   if (start.chapter > resolved.chapters) {
-    return { ok: false, message: `El libro solo tiene ${resolved.chapters} capítulos` };
+    return {
+      ok: false,
+      message: `El libro solo tiene ${resolved.chapters} capítulos`,
+    };
   }
 
   return { ok: true, range: { start, end } };
@@ -240,7 +247,11 @@ export function expandRange(range: VerseRange, maxVerses = 30): VerseRef[] {
   return refs;
 }
 
-export function stepVerse(ref: VerseRef, delta: number, verseCountInChapter: number): VerseRef | null {
+export function stepVerse(
+  ref: VerseRef,
+  delta: number,
+  verseCountInChapter: number,
+): VerseRef | null {
   const book = BOOK_BY_CODE.get(ref.book);
   if (!book) return null;
 

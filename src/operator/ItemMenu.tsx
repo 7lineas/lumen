@@ -21,7 +21,14 @@ interface Props {
 }
 
 /** Row menu with edit, download (when there is one) and remove, opened from a ⋮ button. */
-export function ItemMenu({ label, testId, editLabel, onEdit, onDownload, onDelete }: Props) {
+export function ItemMenu({
+  label,
+  testId,
+  editLabel,
+  onEdit,
+  onDownload,
+  onDelete,
+}: Props) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
@@ -37,7 +44,11 @@ export function ItemMenu({ label, testId, editLabel, onEdit, onDownload, onDelet
         <EllipsisVertical />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => onEdit(triggerRef.current!.closest(".lx-item") as HTMLElement)}>
+        <DropdownMenuItem
+          onClick={() =>
+            onEdit(triggerRef.current!.closest(".lx-item") as HTMLElement)
+          }
+        >
           <Pencil /> {editLabel}
         </DropdownMenuItem>
         {onDownload && (

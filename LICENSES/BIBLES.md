@@ -22,20 +22,20 @@ Las Biblias que el usuario importa desde sus propios archivos (Biblias → Mis b
 
 ## Reina-Valera 1909 (id: `rv1909`, abrev: RV1909)
 
-| Campo | Valor |
-| --- | --- |
-| Idioma | Español |
-| Fuente | [eBible.org](https://ebible.org/Scriptures/spaRV1909_vpl.zip) — archivo VPL (`spaRV1909_vpl.txt`) |
-| Licencia | **Dominio público** (traducción de 1909) |
-| Notas | Canon protestante de 66 libros. Verificado en importación (conteo de libros y versículos). |
+| Campo    | Valor                                                                                             |
+| -------- | ------------------------------------------------------------------------------------------------- |
+| Idioma   | Español                                                                                           |
+| Fuente   | [eBible.org](https://ebible.org/Scriptures/spaRV1909_vpl.zip) — archivo VPL (`spaRV1909_vpl.txt`) |
+| Licencia | **Dominio público** (traducción de 1909)                                                          |
+| Notas    | Canon protestante de 66 libros. Verificado en importación (conteo de libros y versículos).        |
 
 ## Descargables (no van en el instalador)
 
-| Id | Nombre | Licencia | Notas |
-| --- | --- | --- | --- |
-| `bes` | Biblia en Español Sencillo | CC BY 4.0 | AudioBiblia.org e Irma Flores, 2018–2019. |
-| `onbv` | Biblica® Open Nueva Biblia Viva™ 2008 | CC BY-SA 4.0 | © 2006, 2008 Biblica, Inc. Conservar título y copyright. El texto no se modifica. Génesis 1 no tiene 31 versículos. |
-| `pddpt` | Palabra de Dios para ti | CC BY 4.0 | © 2020 Asociación Bíblica Latinoamericana. |
+| Id      | Nombre                                | Licencia     | Notas                                                                                                               |
+| ------- | ------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------- |
+| `bes`   | Biblia en Español Sencillo            | CC BY 4.0    | AudioBiblia.org e Irma Flores, 2018–2019.                                                                           |
+| `onbv`  | Biblica® Open Nueva Biblia Viva™ 2008 | CC BY-SA 4.0 | © 2006, 2008 Biblica, Inc. Conservar título y copyright. El texto no se modifica. Génesis 1 no tiene 31 versículos. |
+| `pddpt` | Palabra de Dios para ti               | CC BY 4.0    | © 2020 Asociación Bíblica Latinoamericana.                                                                          |
 
 ## Traducciones NO incluidas (derechos de autor)
 

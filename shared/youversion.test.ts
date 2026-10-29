@@ -20,10 +20,30 @@ import {
 import { parseChapterContent } from "./youversion-parse";
 
 const catalog: YvBible[] = [
-  { id: 3365, abbreviation: "spaPdDpt", title: "Palabla de Dios para ti", copyright: "© PdDpt" },
-  { id: 147, abbreviation: "RVES", title: "Reina-Valera Antigua", copyright: '"Dominio público"' },
-  { id: 2664, abbreviation: "NVI-S", title: "Nueva Versión Internacional 2015", copyright: "© Biblica" },
-  { id: 128, abbreviation: "NVI-S", title: "Nueva Versión Internacional 2025", copyright: "© Biblica" },
+  {
+    id: 3365,
+    abbreviation: "spaPdDpt",
+    title: "Palabla de Dios para ti",
+    copyright: "© PdDpt",
+  },
+  {
+    id: 147,
+    abbreviation: "RVES",
+    title: "Reina-Valera Antigua",
+    copyright: '"Dominio público"',
+  },
+  {
+    id: 2664,
+    abbreviation: "NVI-S",
+    title: "Nueva Versión Internacional 2015",
+    copyright: "© Biblica",
+  },
+  {
+    id: 128,
+    abbreviation: "NVI-S",
+    title: "Nueva Versión Internacional 2025",
+    copyright: "© Biblica",
+  },
   { id: 89, abbreviation: "LBLA", title: "La Biblia de las Américas" },
   { id: 103, abbreviation: "NBLA", title: "Nueva Biblia de las Américas" },
   { id: 9999, abbreviation: "ZZZ", title: "Otra" },
@@ -45,10 +65,22 @@ describe("youversion ids", () => {
 });
 
 describe("buildOnlineVersions", () => {
-  const versions = buildOnlineVersions(catalog, new Set([147, 3365, 9999]), licenses);
+  const versions = buildOnlineVersions(
+    catalog,
+    new Set([147, 3365, 9999]),
+    licenses,
+  );
 
   it("orders by popularity in Colombia, unknown ones last", () => {
-    expect(versions.map((v) => v.id)).toEqual(["yv-128", "yv-103", "yv-89", "yv-147", "yv-2664", "yv-3365", "yv-9999"]);
+    expect(versions.map((v) => v.id)).toEqual([
+      "yv-128",
+      "yv-103",
+      "yv-89",
+      "yv-147",
+      "yv-2664",
+      "yv-3365",
+      "yv-9999",
+    ]);
     // 2664 and 3365 are not defaults, so they sort after the defaults when present in the catalog
   });
 
@@ -71,22 +103,43 @@ describe("buildOnlineVersions", () => {
 
   it("labels 3365 as PdDpt, not PDT (PDT is bible.com 197, absent from Platform)", () => {
     expect(versions.find((v) => v.id === "yv-3365")!.abbr).toBe("PdDpt");
-    expect(versions.find((v) => v.id === "yv-3365")!.name).toMatch(/Palabla de Dios para ti/i);
+    expect(versions.find((v) => v.id === "yv-3365")!.name).toMatch(
+      /Palabla de Dios para ti/i,
+    );
   });
 
   it("puts multi-line publisher notices on one line", () => {
-    const [nvi] = buildOnlineVersions([{ id: 2664, abbreviation: "NVI-S", title: "NVI 2015", copyright: "Línea uno\n© 2019 Biblica\nTodos los derechos" }], new Set([2664]), []);
-    expect(nvi.copyright).toBe("Línea uno · © 2019 Biblica · Todos los derechos");
+    const [nvi] = buildOnlineVersions(
+      [
+        {
+          id: 2664,
+          abbreviation: "NVI-S",
+          title: "NVI 2015",
+          copyright: "Línea uno\n© 2019 Biblica\nTodos los derechos",
+        },
+      ],
+      new Set([2664]),
+      [],
+    );
+    expect(nvi.copyright).toBe(
+      "Línea uno · © 2019 Biblica · Todos los derechos",
+    );
   });
 
   it("unquotes the API copyright", () => {
-    expect(versions.find((v) => v.id === "yv-147")!.copyright).toBe("Dominio público");
+    expect(versions.find((v) => v.id === "yv-147")!.copyright).toBe(
+      "Dominio público",
+    );
   });
 });
 
 describe("mergeChapter", () => {
   it("adds chapters, replaces repeats and keeps the search index in sync", () => {
-    const bible = emptyOnlineBible(buildOnlineVersions(catalog, new Set([147]), licenses).find((v) => v.id === "yv-147")!);
+    const bible = emptyOnlineBible(
+      buildOnlineVersions(catalog, new Set([147]), licenses).find(
+        (v) => v.id === "yv-147",
+      )!,
+    );
     expect(hasChapter(bible, "JHN", 3)).toBe(false);
     mergeChapter(bible, "JHN", 3, { "1": "Había un hombre", "2": "Este vino" });
     mergeChapter(bible, "JHN", 4, { "1": "Cuando el Señor" });
@@ -99,7 +152,6 @@ describe("mergeChapter", () => {
   });
 });
 
-
 describe("default online list", () => {
   it("ships NVI 2025, NBLA, LBLA and RVES in Colombia order (no NVI 2015, no PDT: not on Platform)", () => {
     expect([...DEFAULT_ONLINE_VERSION_IDS]).toEqual([128, 103, 89, 147]);
@@ -109,8 +161,12 @@ describe("default online list", () => {
   });
 
   it("keeps defaults first and appends user-added ids without duplicates", () => {
-    expect(mergeSelectedOnlineIds([3365, 9999, 128, 42])).toEqual([128, 103, 89, 147, 3365, 9999, 42]);
-    expect(sanitizeCustomOnlineIds([128, 3365, 9999, 9999, -1, 42.5, 42])).toEqual([3365, 9999, 42]);
+    expect(mergeSelectedOnlineIds([3365, 9999, 128, 42])).toEqual([
+      128, 103, 89, 147, 3365, 9999, 42,
+    ]);
+    expect(
+      sanitizeCustomOnlineIds([128, 3365, 9999, 9999, -1, 42.5, 42]),
+    ).toEqual([3365, 9999, 42]);
   });
 
   it("picks only selected versions from the full catalog, in selection order", () => {
@@ -118,19 +174,29 @@ describe("default online list", () => {
       [
         { id: 9999, abbreviation: "ZZZ", title: "Otra" },
         { id: 147, abbreviation: "RVES", title: "Reina-Valera Antigua" },
-        { id: 128, abbreviation: "NVI-S", title: "Nueva Versión Internacional 2025" },
+        {
+          id: 128,
+          abbreviation: "NVI-S",
+          title: "Nueva Versión Internacional 2025",
+        },
       ],
       new Set([147, 128, 9999]),
       [],
     );
-    expect(pickSelectedOnlineVersions(catalog, [128, 9999]).map((v) => v.id)).toEqual(["yv-128", "yv-9999"]);
+    expect(
+      pickSelectedOnlineVersions(catalog, [128, 9999]).map((v) => v.id),
+    ).toEqual(["yv-128", "yv-9999"]);
   });
 });
 
 describe("searchOnlineCatalog", () => {
   const catalog = buildOnlineVersions(
     [
-      { id: 128, abbreviation: "NVI-S", title: "Nueva Versión Internacional 2025" },
+      {
+        id: 128,
+        abbreviation: "NVI-S",
+        title: "Nueva Versión Internacional 2025",
+      },
       { id: 3365, abbreviation: "spaPdDpt", title: "Palabla de Dios para ti" },
       { id: 147, abbreviation: "RVES", title: "Reina-Valera Antigua" },
       { id: 9999, abbreviation: "ZZZ", title: "Traducción libre" },
@@ -143,12 +209,22 @@ describe("searchOnlineCatalog", () => {
     expect(normalizeSearchText("Niño NVI")).toBe("nino nvi");
     const byAbbr = searchOnlineCatalog(catalog, "pddpt", new Set(["yv-128"]));
     expect(byAbbr.map((h) => h.id)).toEqual(["yv-3365"]);
-    expect(byAbbr[0]).toMatchObject({ abbr: "PdDpt", added: false, language: "Español" });
+    expect(byAbbr[0]).toMatchObject({
+      abbr: "PdDpt",
+      added: false,
+      language: "Español",
+    });
     // Searching "PDT" must not pretend 3365 is "Palabra de Dios para Todos"
-    expect(searchOnlineCatalog(catalog, "pdt", new Set()).every((h) => h.abbr !== "PDT")).toBe(true);
+    expect(
+      searchOnlineCatalog(catalog, "pdt", new Set()).every(
+        (h) => h.abbr !== "PDT",
+      ),
+    ).toBe(true);
     const byName = searchOnlineCatalog(catalog, "reina", new Set(["yv-147"]));
     expect(byName[0]).toMatchObject({ id: "yv-147", added: true });
-    expect(searchOnlineCatalog(catalog, "yv-9999", new Set()).map((h) => h.id)).toEqual(["yv-9999"]);
+    expect(
+      searchOnlineCatalog(catalog, "yv-9999", new Set()).map((h) => h.id),
+    ).toEqual(["yv-9999"]);
   });
 
   it("returns nothing for an empty query and reports locked hits", () => {
@@ -195,6 +271,8 @@ describe("parseChapterContent", () => {
     const html =
       '<div><div class="p"><span class="yv-v" v="16"></span><span class="yv-vlbl">16</span><span class="wj">»Porque tanto amó Dios al mundo </span>' +
       '<span class="it">que</span> dio a su Hijo único.</div></div>';
-    expect(parseChapterContent(html)).toEqual({ 16: "»Porque tanto amó Dios al mundo que dio a su Hijo único." });
+    expect(parseChapterContent(html)).toEqual({
+      16: "»Porque tanto amó Dios al mundo que dio a su Hijo único.",
+    });
   });
 });

@@ -46,6 +46,7 @@ Use this skill for an explicit release request such as â€œrelease a new versionâ
    ```
 
    It checks that `${DOWNLOAD_BASE_URL}/releases.json` and `latest.yml` name the new version, that `releases.json` has the same sizes and SHA-256 values as the local manifest, and that both versioned executables, the builder `.exe` named by `latest.yml` and its `.blockmap` answer 200 with the expected size. Do not commit or report completion while any check fails or while the public `latest.yml` still names the previous version (installed apps update from it).
+
 8. Only after step 7 passes, in this order: commit the version and generated manifest/config changes with `Release v<version>`, create an annotated tag `v<version>` (`git tag -a v<version> -m "Release v<version>"`), then `git push origin main` and `git push origin v<version>`. Do not commit `release/`; it is ignored. If publishing succeeded but verification or push fails, report the exact completed step and do not claim the release is complete.
 9. Finish with the version, public download URLs, commit/tag, validation results, and any known limitation. State clearly whether users can download the new release.
 

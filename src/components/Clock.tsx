@@ -12,13 +12,33 @@ function useNow(intervalMs: number): number {
 }
 
 /** Time left until `endsAt` (epoch ms), shown as m:ss. */
-export function CountdownClock({ endsAt, className }: { endsAt: number; className?: string }) {
+export function CountdownClock({
+  endsAt,
+  className,
+}: {
+  endsAt: number;
+  className?: string;
+}) {
   const now = useNow(250);
-  return <span className={className}>{formatClock(secondsUntil(endsAt, now))}</span>;
+  return (
+    <span className={className}>{formatClock(secondsUntil(endsAt, now))}</span>
+  );
 }
 
 /** Time since `since` (epoch ms), shown as m:ss. */
-export function ElapsedClock({ since, className, title }: { since: number; className?: string; title?: string }) {
+export function ElapsedClock({
+  since,
+  className,
+  title,
+}: {
+  since: number;
+  className?: string;
+  title?: string;
+}) {
   const now = useNow(1000);
-  return <span className={className} title={title}>{formatClock(secondsSince(since, now))}</span>;
+  return (
+    <span className={className} title={title}>
+      {formatClock(secondsSince(since, now))}
+    </span>
+  );
 }

@@ -52,10 +52,20 @@ describe("update state", () => {
   it("hides the button until a newer version exists", () => {
     expect(shouldShowUpdateButton(base)).toBe(false);
     expect(shouldShowUpdateButton(reduceOnCheckStart(base, at))).toBe(false);
-    expect(shouldShowUpdateButton(reduceOnCheckResult(base, "1.0.6", at))).toBe(false);
-    expect(shouldShowUpdateButton(reduceOnCheckResult(base, "1.0.5", at))).toBe(false);
-    expect(shouldShowUpdateButton(reduceOnCheckFailure(base, "Sin conexión a internet.", at))).toBe(false);
-    expect(shouldShowUpdateButton(createInitialUpdateState("1.0.6", "disabled"))).toBe(false);
+    expect(shouldShowUpdateButton(reduceOnCheckResult(base, "1.0.6", at))).toBe(
+      false,
+    );
+    expect(shouldShowUpdateButton(reduceOnCheckResult(base, "1.0.5", at))).toBe(
+      false,
+    );
+    expect(
+      shouldShowUpdateButton(
+        reduceOnCheckFailure(base, "Sin conexión a internet.", at),
+      ),
+    ).toBe(false);
+    expect(
+      shouldShowUpdateButton(createInitialUpdateState("1.0.6", "disabled")),
+    ).toBe(false);
     expect(shouldShowUpdateButton(null)).toBe(false);
   });
 
@@ -68,7 +78,11 @@ describe("update state", () => {
   });
 
   it("offers a plain download link in manual mode", () => {
-    const available = reduceOnCheckResult(createInitialUpdateState("1.0.6", "manual"), "1.0.7", at);
+    const available = reduceOnCheckResult(
+      createInitialUpdateState("1.0.6", "manual"),
+      "1.0.7",
+      at,
+    );
     expect(resolveUpdateButtonAction(available)).toBe("open");
     expect(updateButtonLabel(available)).toBe("Descargar nueva versión v1.0.7");
   });
@@ -88,23 +102,37 @@ describe("update state", () => {
 
   it("keeps a visible update when a later check fails or finds nothing new", () => {
     const available = reduceOnCheckResult(base, "1.0.7", at);
-    expect(reduceOnCheckFailure(available, "Sin conexión a internet.", at).status).toBe("available");
+    expect(
+      reduceOnCheckFailure(available, "Sin conexión a internet.", at).status,
+    ).toBe("available");
     expect(reduceOnCheckStart(available, at).status).toBe("available");
     const downloaded = reduceOnDownloadComplete(available, "1.0.7");
     expect(reduceOnCheckResult(downloaded, null, at).status).toBe("downloaded");
-    expect(reduceOnCheckResult(downloaded, "1.0.7", at).status).toBe("downloaded");
+    expect(reduceOnCheckResult(downloaded, "1.0.7", at).status).toBe(
+      "downloaded",
+    );
   });
 
   it("returns to the retry state after a failed download or install", () => {
     const available = reduceOnCheckResult(base, "1.0.7", at);
-    const failed = reduceOnDownloadFailure(reduceOnDownloadStart(available), "No se pudo descargar la actualización.");
+    const failed = reduceOnDownloadFailure(
+      reduceOnDownloadStart(available),
+      "No se pudo descargar la actualización.",
+    );
     expect(failed.status).toBe("available");
     expect(failed.errorContext).toBe("download");
     expect(updateButtonLabel(failed)).toBe("Reintentar actualización v1.0.7");
-    expect(updateButtonTitle(failed)).toBe("No se pudo descargar la actualización.");
-    const installFailed = reduceOnInstallFailure(reduceOnDownloadComplete(available, "1.0.7"), "No se pudo instalar.");
+    expect(updateButtonTitle(failed)).toBe(
+      "No se pudo descargar la actualización.",
+    );
+    const installFailed = reduceOnInstallFailure(
+      reduceOnDownloadComplete(available, "1.0.7"),
+      "No se pudo instalar.",
+    );
     expect(installFailed.status).toBe("downloaded");
-    expect(updateButtonLabel(installFailed)).toBe("Reintentar instalación v1.0.7");
+    expect(updateButtonLabel(installFailed)).toBe(
+      "Reintentar instalación v1.0.7",
+    );
   });
 
   it("warns about interruption and, when projecting, about the live projection", () => {
@@ -114,19 +142,35 @@ describe("update state", () => {
     expect(quiet.description).toMatch(/cerrará y se reiniciará/);
     expect(quiet.description).toMatch(/interrumpirá/);
     expect(quiet.projectionWarning).toBeNull();
-    const live = getUpdateConfirmation({ ...available, projectionActive: true });
+    const live = getUpdateConfirmation({
+      ...available,
+      projectionActive: true,
+    });
     expect(live.projectionWarning).toMatch(/proyección en vivo/);
-    const ready = getUpdateConfirmation(reduceOnDownloadComplete(available, "1.0.7"));
+    const ready = getUpdateConfirmation(
+      reduceOnDownloadComplete(available, "1.0.7"),
+    );
     expect(ready.confirmLabel).toBe("Reiniciar y actualizar");
   });
 
   it("recognises offline errors and words them for the operator", () => {
     expect(isOfflineError("net::ERR_INTERNET_DISCONNECTED")).toBe(true);
-    expect(isOfflineError("getaddrinfo ENOTFOUND downloads.7lineas.com")).toBe(true);
+    expect(isOfflineError("getaddrinfo ENOTFOUND downloads.7lineas.com")).toBe(
+      true,
+    );
     expect(isOfflineError("Cannot parse latest.yml")).toBe(false);
-    expect(friendlyUpdateError(new Error("net::ERR_INTERNET_DISCONNECTED"), "download")).toMatch(/sin conexión/);
-    expect(friendlyUpdateError(new Error("boom"), "download")).toMatch(/No se pudo descargar/);
-    expect(friendlyUpdateError(new Error("boom"), "install")).toMatch(/No se pudo instalar/);
+    expect(
+      friendlyUpdateError(
+        new Error("net::ERR_INTERNET_DISCONNECTED"),
+        "download",
+      ),
+    ).toMatch(/sin conexión/);
+    expect(friendlyUpdateError(new Error("boom"), "download")).toMatch(
+      /No se pudo descargar/,
+    );
+    expect(friendlyUpdateError(new Error("boom"), "install")).toMatch(
+      /No se pudo instalar/,
+    );
   });
 
   it("keeps the polling gentle", () => {

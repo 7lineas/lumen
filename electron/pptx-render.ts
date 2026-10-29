@@ -1,6 +1,9 @@
 import { utilityProcess } from "electron";
 import path from "path";
-import type { PptxWorkerRequest, PptxWorkerResponse } from "./pptx-worker-protocol";
+import type {
+  PptxWorkerRequest,
+  PptxWorkerResponse,
+} from "./pptx-worker-protocol";
 
 export interface RenderPptxOptions {
   file: string;
@@ -20,9 +23,15 @@ export interface RenderPptxResult {
 }
 
 /** Render a .pptx to one PNG per slide in a utilityProcess (system fonts, no UI blocking). */
-export function renderPptxInWorker(options: RenderPptxOptions): Promise<RenderPptxResult> {
+export function renderPptxInWorker(
+  options: RenderPptxOptions,
+): Promise<RenderPptxResult> {
   return new Promise((resolve, reject) => {
-    const child = utilityProcess.fork(path.join(__dirname, "pptx-worker.js"), [], { serviceName: "lumen-pptx-render" });
+    const child = utilityProcess.fork(
+      path.join(__dirname, "pptx-worker.js"),
+      [],
+      { serviceName: "lumen-pptx-render" },
+    );
     let settled = false;
     const finish = (action: () => void) => {
       if (settled) return;
@@ -32,16 +41,29 @@ export function renderPptxInWorker(options: RenderPptxOptions): Promise<RenderPp
       action();
     };
     const timer = setTimeout(
-      () => finish(() => reject(new Error("La conversión tardó demasiado y se canceló."))),
+      () =>
+        finish(() =>
+          reject(new Error("La conversión tardó demasiado y se canceló.")),
+        ),
       options.timeoutMs ?? 10 * 60 * 1000,
     );
     child.on("message", (message: PptxWorkerResponse) => {
-      if (message.type === "progress") options.onProgress?.(message.done, message.total);
-      else if (message.type === "done") finish(() => resolve({ files: message.files, warnings: message.warnings }));
+      if (message.type === "progress")
+        options.onProgress?.(message.done, message.total);
+      else if (message.type === "done")
+        finish(() =>
+          resolve({ files: message.files, warnings: message.warnings }),
+        );
       else finish(() => reject(new Error(message.message)));
     });
     child.on("exit", (code) => {
-      finish(() => reject(new Error(`El proceso de conversión terminó inesperadamente (código ${code}).`)));
+      finish(() =>
+        reject(
+          new Error(
+            `El proceso de conversión terminó inesperadamente (código ${code}).`,
+          ),
+        ),
+      );
     });
     const request: PptxWorkerRequest = {
       type: "render",

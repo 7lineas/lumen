@@ -56,7 +56,11 @@ export function AudioDock({ track, onClose, onPlayingChange }: Props) {
   };
 
   return (
-    <section className="lx-audio" aria-label="Reproductor de audio" data-testid="audio-dock">
+    <section
+      className="lx-audio"
+      aria-label="Reproductor de audio"
+      data-testid="audio-dock"
+    >
       <audio
         ref={ref}
         src={backgroundImageUrl(track.file)}
@@ -65,21 +69,44 @@ export function AudioDock({ track, onClose, onPlayingChange }: Props) {
         onPause={() => setPlaying(false)}
         onEnded={() => setPlaying(false)}
         onTimeUpdate={(event) => setTime(event.currentTarget.currentTime)}
-        onDurationChange={(event) => setDuration(Number.isFinite(event.currentTarget.duration) ? event.currentTarget.duration : 0)}
+        onDurationChange={(event) =>
+          setDuration(
+            Number.isFinite(event.currentTarget.duration)
+              ? event.currentTarget.duration
+              : 0,
+          )
+        }
         onError={() => setFailed(true)}
       />
       <header>
-        <span className="lx-mon-tag"><AudioIcon /> Audio</span>
-        <span className="lx-mon-label" title={track.title}>{track.title}</span>
-        <button type="button" className="lx-ghost" aria-label="Cerrar audio" title="Detener y cerrar" onClick={onClose}>
+        <span className="lx-mon-tag">
+          <AudioIcon /> Audio
+        </span>
+        <span className="lx-mon-label" title={track.title}>
+          {track.title}
+        </span>
+        <button
+          type="button"
+          className="lx-ghost"
+          aria-label="Cerrar audio"
+          title="Detener y cerrar"
+          onClick={onClose}
+        >
           <X />
         </button>
       </header>
       {failed ? (
-        <p className="lx-note" role="alert">No se pudo reproducir este archivo de audio.</p>
+        <p className="lx-note" role="alert">
+          No se pudo reproducir este archivo de audio.
+        </p>
       ) : (
         <div className="lx-transport">
-          <button type="button" className="lx-sq" aria-label={playing ? "Pausar audio" : "Reproducir audio"} onClick={toggle}>
+          <button
+            type="button"
+            className="lx-sq"
+            aria-label={playing ? "Pausar audio" : "Reproducir audio"}
+            onClick={toggle}
+          >
             {playing ? <Pause /> : <Play />}
           </button>
           <input
@@ -96,10 +123,21 @@ export function AudioDock({ track, onClose, onPlayingChange }: Props) {
               setTime(next);
             }}
           />
-          <span className="lx-time">{formatClock(time)} / {formatClock(duration)}</span>
+          <span className="lx-time">
+            {formatClock(time)} / {formatClock(duration)}
+          </span>
           <label className="lx-volume" title="Volumen">
             <Volume2 aria-hidden />
-            <input type="range" className="lx-range" aria-label="Volumen del audio" min={0} max={1} step={0.05} value={volume} onChange={(event) => setVolume(Number(event.target.value))} />
+            <input
+              type="range"
+              className="lx-range"
+              aria-label="Volumen del audio"
+              min={0}
+              max={1}
+              step={0.05}
+              value={volume}
+              onChange={(event) => setVolume(Number(event.target.value))}
+            />
           </label>
         </div>
       )}

@@ -44,8 +44,12 @@ export function ProjectorView() {
   useEffect(() => {
     const api = window.proyector;
     if (!api) return;
-    void api.getSettings().then((s) => setSettings({ ...DEFAULT_SETTINGS, ...s }));
-    const offSettings = api.onSettingsUpdate?.((s) => setSettings({ ...DEFAULT_SETTINGS, ...s }));
+    void api
+      .getSettings()
+      .then((s) => setSettings({ ...DEFAULT_SETTINGS, ...s }));
+    const offSettings = api.onSettingsUpdate?.((s) =>
+      setSettings({ ...DEFAULT_SETTINGS, ...s }),
+    );
     const show = (v: boolean) => {
       visibleRef.current = v;
       setVisible(v);
@@ -59,7 +63,10 @@ export function ProjectorView() {
     };
     const off = api.onProjectorUpdate((p) => {
       setSlidesActive(p.mode === "slides" || p.mode === "video");
-      const ms = Math.max(0, p.fadeMs ?? settingsRef.current.fadeMs ?? DEFAULT_SETTINGS.fadeMs);
+      const ms = Math.max(
+        0,
+        p.fadeMs ?? settingsRef.current.fadeMs ?? DEFAULT_SETTINGS.fadeMs,
+      );
       setFadeMsNow(ms);
       if (timerRef.current !== null) {
         clearTimeout(timerRef.current);
@@ -107,19 +114,38 @@ export function ProjectorView() {
   // Songs and texts can bring their own typeface; everything else uses Ajustes.
   const fontFamily = payload.fontFamily ?? settings.fontFamily;
 
-  const themeClass = (payload.theme ?? settings.theme) === "light" ? "projector light" : "projector dark";
+  const themeClass =
+    (payload.theme ?? settings.theme) === "light"
+      ? "projector light"
+      : "projector dark";
   const brightness = payload.brightness ?? settings.brightness ?? 1;
-  const fadeMs = fadeMsNow ?? payload.fadeMs ?? settings.fadeMs ?? DEFAULT_SETTINGS.fadeMs;
-  const fadeStyle: React.CSSProperties = { transitionDuration: `${Math.max(0, fadeMs)}ms` };
+  const fadeMs =
+    fadeMsNow ?? payload.fadeMs ?? settings.fadeMs ?? DEFAULT_SETTINGS.fadeMs;
+  const fadeStyle: React.CSSProperties = {
+    transitionDuration: `${Math.max(0, fadeMs)}ms`,
+  };
   // Background media is an application setting, so it must stay identical to
   // the operator's preview/live monitors even when the last payload was sent
   // before the user changed the selected image or video.
   // While slides are shown the background is always the solid color (the
   // media fades out over backgroundFadeMs and fades back in when they hide).
-  const backgroundPath = slidesActive ? undefined : settings.backgroundImagePath;
-  const backgroundFadeMs = Math.max(0, payload.backgroundFadeMs ?? settings.backgroundFadeMs ?? DEFAULT_SETTINGS.backgroundFadeMs);
+  const backgroundPath = slidesActive
+    ? undefined
+    : settings.backgroundImagePath;
+  const backgroundFadeMs = Math.max(
+    0,
+    payload.backgroundFadeMs ??
+      settings.backgroundFadeMs ??
+      DEFAULT_SETTINGS.backgroundFadeMs,
+  );
   const backgroundMedia = (
-    <FadingBackgroundMedia path={backgroundPath} brightness={brightness} fadeMs={backgroundFadeMs} fit={settings.backgroundFit ?? DEFAULT_SETTINGS.backgroundFit} className="projector-background-media" />
+    <FadingBackgroundMedia
+      path={backgroundPath}
+      brightness={brightness}
+      fadeMs={backgroundFadeMs}
+      fit={settings.backgroundFit ?? DEFAULT_SETTINGS.backgroundFit}
+      className="projector-background-media"
+    />
   );
   const style: React.CSSProperties = {
     fontSize: `${fontSize}px`,
@@ -150,8 +176,13 @@ export function ProjectorView() {
       <div className={themeClass} style={style}>
         <div className="projector-background-layer" style={backgroundStyle} />
         {backgroundMedia}
-        <div className={`projector-inner projector-countdown fade ${visible ? "show" : ""}`} style={fadeStyle}>
-          {countdown?.caption && <p className="projector-countdown-caption">{countdown.caption}</p>}
+        <div
+          className={`projector-inner projector-countdown fade ${visible ? "show" : ""}`}
+          style={fadeStyle}
+        >
+          {countdown?.caption && (
+            <p className="projector-countdown-caption">{countdown.caption}</p>
+          )}
           <p className="projector-countdown-time">
             {countdown ? <CountdownClock endsAt={countdown.endsAt} /> : "00:00"}
           </p>
@@ -166,8 +197,16 @@ export function ProjectorView() {
       <div className={themeClass} style={{ ...style, padding: 0 }}>
         <div className="projector-background-layer" style={backgroundStyle} />
         {backgroundMedia}
-        <div className={`projector-inner projector-inner-slide fade ${visible ? "show" : ""}`} style={fadeStyle}>
-          <SyncedVideo playback={payload.video} muted={false} fit={settings.slideFit ?? DEFAULT_SETTINGS.slideFit} className="projector-slide" />
+        <div
+          className={`projector-inner projector-inner-slide fade ${visible ? "show" : ""}`}
+          style={fadeStyle}
+        >
+          <SyncedVideo
+            playback={payload.video}
+            muted={false}
+            fit={settings.slideFit ?? DEFAULT_SETTINGS.slideFit}
+            className="projector-slide"
+          />
         </div>
       </div>
     );
@@ -178,7 +217,13 @@ export function ProjectorView() {
     return (
       <div className={themeClass} style={style}>
         <div className="projector-background-layer" style={backgroundStyle} />
-        <FadingBackgroundMedia path={payload.logoImagePath ?? settings.logoImagePath} brightness={brightness} fadeMs={backgroundFadeMs} fit="cover" className="projector-background-media" />
+        <FadingBackgroundMedia
+          path={payload.logoImagePath ?? settings.logoImagePath}
+          brightness={brightness}
+          fadeMs={backgroundFadeMs}
+          fit="cover"
+          className="projector-background-media"
+        />
       </div>
     );
   }
@@ -189,12 +234,21 @@ export function ProjectorView() {
     versionColor?: string;
   };
   const referenceColor =
-    payload.referenceColor ?? settings.accentColor ?? legacyColors.referenceColor ?? "#f6a623";
+    payload.referenceColor ??
+    settings.accentColor ??
+    legacyColors.referenceColor ??
+    "#f6a623";
   const versionColor =
-    payload.versionColor ?? settings.accentColor ?? legacyColors.versionColor ?? "#f6a623";
+    payload.versionColor ??
+    settings.accentColor ??
+    legacyColors.versionColor ??
+    "#f6a623";
 
-  const slideImage = payload.mode === "slides" ? payload.slideImagePath ?? null : null;
-  const slideImageUrl = slideImage ? backgroundImageUrl(slideImage) ?? undefined : undefined;
+  const slideImage =
+    payload.mode === "slides" ? (payload.slideImagePath ?? null) : null;
+  const slideImageUrl = slideImage
+    ? (backgroundImageUrl(slideImage) ?? undefined)
+    : undefined;
 
   if (slideImage && slideImageUrl) {
     return (
@@ -203,8 +257,18 @@ export function ProjectorView() {
       <div className={themeClass} style={{ ...style, padding: 0 }}>
         <div className="projector-background-layer" style={backgroundStyle} />
         {backgroundMedia}
-        <div className={`projector-inner projector-inner-slide fade ${visible ? "show" : ""}`} style={fadeStyle}>
-          <img src={slideImageUrl} alt="" className="projector-slide" style={{ objectFit: settings.slideFit ?? DEFAULT_SETTINGS.slideFit }} />
+        <div
+          className={`projector-inner projector-inner-slide fade ${visible ? "show" : ""}`}
+          style={fadeStyle}
+        >
+          <img
+            src={slideImageUrl}
+            alt=""
+            className="projector-slide"
+            style={{
+              objectFit: settings.slideFit ?? DEFAULT_SETTINGS.slideFit,
+            }}
+          />
         </div>
       </div>
     );
