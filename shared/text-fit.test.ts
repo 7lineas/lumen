@@ -1,7 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { fitFontSize } from "./text-fit";
 
-function linearFit(start: number, fits: (size: number) => boolean, floor = 28): number {
+function linearFit(
+  start: number,
+  fits: (size: number) => boolean,
+  floor = 28,
+): number {
   let size = start;
   let guard = 500;
   while (guard-- > 0 && size > floor && !fits(size)) size -= 2;

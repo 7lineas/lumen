@@ -11,7 +11,8 @@ function formatBytes(bytes) {
 }
 
 function formatDate(isoDate) {
-  if (!isoDate || typeof isoDate !== "string") return "pendiente de publicación";
+  if (!isoDate || typeof isoDate !== "string")
+    return "pendiente de publicación";
   const date = new Date(`${isoDate}T12:00:00Z`);
   if (Number.isNaN(date.getTime())) return isoDate;
   return new Intl.DateTimeFormat("es-CO", {
@@ -58,7 +59,8 @@ function renderFacts(container, file) {
 
 function wireDownload(anchor, pending, file, base) {
   const href = file ? joinDownloadUrl(base, file.filename) : "";
-  const urlLine = anchor.id === "download-setup" ? $("setup-url") : $("portable-url");
+  const urlLine =
+    anchor.id === "download-setup" ? $("setup-url") : $("portable-url");
   if (href) {
     anchor.href = href;
     anchor.hidden = false;
@@ -96,7 +98,11 @@ function renderBibles(licenses) {
       const link = document.createElement("a");
       link.href = version.sourceUrl;
       link.textContent = version.sourceName || version.sourceUrl;
-      item.append(document.createTextNode("Fuente: "), link, document.createTextNode(". "));
+      item.append(
+        document.createTextNode("Fuente: "),
+        link,
+        document.createTextNode(". "),
+      );
     } else if (version.sourceName) {
       item.append(document.createTextNode(`Fuente: ${version.sourceName}. `));
     }
@@ -120,7 +126,12 @@ function renderBibles(licenses) {
 function safeSupportHref(href) {
   try {
     const url = new URL(href);
-    if (url.protocol === "https:" || url.protocol === "http:" || url.protocol === "mailto:") return url.href;
+    if (
+      url.protocol === "https:" ||
+      url.protocol === "http:" ||
+      url.protocol === "mailto:"
+    )
+      return url.href;
   } catch {
     return "";
   }
@@ -134,7 +145,11 @@ function renderSupport(config) {
   const link = document.createElement("a");
   link.href = href;
   link.textContent = config.supportLabel || href;
-  copy.append(document.createTextNode(" También puede escribir a "), link, document.createTextNode("."));
+  copy.append(
+    document.createTextNode(" También puede escribir a "),
+    link,
+    document.createTextNode("."),
+  );
 }
 
 async function main() {
@@ -148,27 +163,41 @@ async function main() {
   renderSupport(config);
 
   const releases = localReleases;
-  const base = String(config.DOWNLOAD_BASE_URL || releases.downloadBaseUrl || "").trim();
+  const base = String(
+    config.DOWNLOAD_BASE_URL || releases.downloadBaseUrl || "",
+  ).trim();
 
   const files = Array.isArray(releases.files) ? releases.files : [];
-  const setup = files.find((file) => file.role === "primary" || file.id === "setup");
-  const portable = files.find((file) => file.role === "secondary" || file.id === "portable");
+  const setup = files.find(
+    (file) => file.role === "primary" || file.id === "setup",
+  );
+  const portable = files.find(
+    (file) => file.role === "secondary" || file.id === "portable",
+  );
 
-  $("release-meta").textContent = `Versión ${releases.version || "—"} · ${formatDate(releases.releasedAt)}`;
+  $("release-meta").textContent =
+    `Versión ${releases.version || "—"} · ${formatDate(releases.releasedAt)}`;
   wireDownload($("download-setup"), $("download-setup-pending"), setup, base);
-  wireDownload($("download-portable"), $("download-portable-pending"), portable, base);
+  wireDownload(
+    $("download-portable"),
+    $("download-portable-pending"),
+    portable,
+    base,
+  );
   renderFacts($("setup-facts"), setup);
   renderFacts($("portable-facts"), portable);
   document.documentElement.dataset.ready = "1";
 }
 
 main().catch((error) => {
-  const message = error instanceof Error ? error.message : "No se pudo cargar la página.";
+  const message =
+    error instanceof Error ? error.message : "No se pudo cargar la página.";
   for (const id of ["download-error", "bible-error"]) {
     const node = $(id);
     node.hidden = false;
     node.textContent = message;
   }
-  $("release-meta").textContent = "No se pudieron cargar los datos de la descarga.";
+  $("release-meta").textContent =
+    "No se pudieron cargar los datos de la descarga.";
   document.documentElement.dataset.ready = "error";
 });

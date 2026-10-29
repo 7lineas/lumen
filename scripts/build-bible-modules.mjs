@@ -27,12 +27,72 @@ const outDir = path.join(root, "data", "bible-modules");
 const BIBLES_DOWNLOAD_BASE = "https://downloads.7lineas.com/bibles";
 
 const PROTESTANT_BOOKS = [
-  "GEN", "EXO", "LEV", "NUM", "DEU", "JOS", "JDG", "RUT", "1SA", "2SA", "1KI", "2KI",
-  "1CH", "2CH", "EZR", "NEH", "EST", "JOB", "PSA", "PRO", "ECC", "SNG", "ISA", "JER",
-  "LAM", "EZK", "DAN", "HOS", "JOL", "AMO", "OBA", "JON", "MIC", "NAM", "HAB", "ZEP",
-  "HAG", "ZEC", "MAL", "MAT", "MRK", "LUK", "JHN", "ACT", "ROM", "1CO", "2CO", "GAL",
-  "EPH", "PHP", "COL", "1TH", "2TH", "1TI", "2TI", "TIT", "PHM", "HEB", "JAS", "1PE",
-  "2PE", "1JN", "2JN", "3JN", "JUD", "REV",
+  "GEN",
+  "EXO",
+  "LEV",
+  "NUM",
+  "DEU",
+  "JOS",
+  "JDG",
+  "RUT",
+  "1SA",
+  "2SA",
+  "1KI",
+  "2KI",
+  "1CH",
+  "2CH",
+  "EZR",
+  "NEH",
+  "EST",
+  "JOB",
+  "PSA",
+  "PRO",
+  "ECC",
+  "SNG",
+  "ISA",
+  "JER",
+  "LAM",
+  "EZK",
+  "DAN",
+  "HOS",
+  "JOL",
+  "AMO",
+  "OBA",
+  "JON",
+  "MIC",
+  "NAM",
+  "HAB",
+  "ZEP",
+  "HAG",
+  "ZEC",
+  "MAL",
+  "MAT",
+  "MRK",
+  "LUK",
+  "JHN",
+  "ACT",
+  "ROM",
+  "1CO",
+  "2CO",
+  "GAL",
+  "EPH",
+  "PHP",
+  "COL",
+  "1TH",
+  "2TH",
+  "1TI",
+  "2TI",
+  "TIT",
+  "PHM",
+  "HEB",
+  "JAS",
+  "1PE",
+  "2PE",
+  "1JN",
+  "2JN",
+  "3JN",
+  "JUD",
+  "REV",
 ];
 const BOOK_SET = new Set(PROTESTANT_BOOKS);
 const VPL_TO_USFM = {
@@ -54,9 +114,12 @@ function normalizeBookCode(code) {
 }
 
 function loadSources() {
-  const licenses = JSON.parse(fs.readFileSync(path.join(root, "shared", "bible-licenses.json"), "utf8"));
+  const licenses = JSON.parse(
+    fs.readFileSync(path.join(root, "shared", "bible-licenses.json"), "utf8"),
+  );
   const sources = licenses.versions.filter((version) => version.vplZip);
-  if (sources.length === 0) throw new Error("Ninguna ficha de licencia tiene vplZip");
+  if (sources.length === 0)
+    throw new Error("Ninguna ficha de licencia tiene vplZip");
   return { licenses, sources };
 }
 
@@ -74,7 +137,10 @@ function ensureZip(src) {
 async function parseVplFile(txtPath) {
   const verses = {};
   const searchIndex = [];
-  const rl = createInterface({ input: createReadStream(txtPath), crlfDelay: Infinity });
+  const rl = createInterface({
+    input: createReadStream(txtPath),
+    crlfDelay: Infinity,
+  });
   for await (const line of rl) {
     const match = line.match(/^([A-Z0-9]{3})\s+(\d+):(\d+)\s+(.+)$/);
     if (!match) continue;
@@ -114,12 +180,16 @@ function assertModule(src, verses) {
   const count = verseCount(verses);
   console.log(`[${src.id}] 66 libros, ${count} versículos`);
   if (count < src.minVerses) {
-    throw new Error(`[${src.id}] Muy pocos versículos: ${count} < ${src.minVerses}`);
+    throw new Error(
+      `[${src.id}] Muy pocos versículos: ${count} < ${src.minVerses}`,
+    );
   }
   const spot = src.spot;
   const sample = verses[spot.book]?.[spot.chapter]?.[spot.verse] ?? "";
   if (!sample.toLowerCase().includes(String(spot.includes).toLowerCase())) {
-    throw new Error(`[${src.id}] La muestra ${spot.book} ${spot.chapter}:${spot.verse} no contiene «${spot.includes}». Texto: ${sample}`);
+    throw new Error(
+      `[${src.id}] La muestra ${spot.book} ${spot.chapter}:${spot.verse} no contiene «${spot.includes}». Texto: ${sample}`,
+    );
   }
   return count;
 }
@@ -133,8 +203,12 @@ async function main() {
     const zipPath = ensureZip(src);
     const extractDir = path.join(tmpDir, `module-${src.id}`);
     fs.mkdirSync(extractDir, { recursive: true });
-    execSync(`unzip -o -q "${zipPath}" "${src.vplTxt}" -d "${extractDir}"`, { stdio: "inherit" });
-    const { verses, searchIndex } = await parseVplFile(path.join(extractDir, src.vplTxt));
+    execSync(`unzip -o -q "${zipPath}" "${src.vplTxt}" -d "${extractDir}"`, {
+      stdio: "inherit",
+    });
+    const { verses, searchIndex } = await parseVplFile(
+      path.join(extractDir, src.vplTxt),
+    );
     assertModule(src, verses);
 
     const module = {
@@ -155,8 +229,12 @@ async function main() {
     const outPath = path.join(outDir, `${src.id}.json`);
     fs.writeFileSync(outPath, JSON.stringify(module));
     const bytes = fs.statSync(outPath).size;
-    const sha256 = createHash("sha256").update(fs.readFileSync(outPath)).digest("hex");
-    console.log(`Wrote ${outPath} (${(bytes / 1024 / 1024).toFixed(2)} MiB) ${sha256}`);
+    const sha256 = createHash("sha256")
+      .update(fs.readFileSync(outPath))
+      .digest("hex");
+    console.log(
+      `Wrote ${outPath} (${(bytes / 1024 / 1024).toFixed(2)} MiB) ${sha256}`,
+    );
     versions.push({
       id: src.id,
       name: src.name,

@@ -20,9 +20,11 @@ Generate a pre-deployment checklist to verify readiness before shipping.
 
 ```markdown
 ## Deploy Checklist: [Service/Release]
+
 **Date:** [Date] | **Deployer:** [Name]
 
 ### Pre-Deploy
+
 - [ ] All tests passing in CI
 - [ ] Code reviewed and approved
 - [ ] No known critical bugs in release
@@ -32,6 +34,7 @@ Generate a pre-deployment checklist to verify readiness before shipping.
 - [ ] On-call team notified
 
 ### Deploy
+
 - [ ] Deploy to staging and verify
 - [ ] Run smoke tests
 - [ ] Deploy to production (canary if available)
@@ -39,12 +42,14 @@ Generate a pre-deployment checklist to verify readiness before shipping.
 - [ ] Verify key user flows
 
 ### Post-Deploy
+
 - [ ] Confirm metrics are nominal
 - [ ] Update release notes / changelog
 - [ ] Notify stakeholders
 - [ ] Close related tickets
 
 ### Rollback Triggers
+
 - Error rate exceeds [X]%
 - P50 latency exceeds [X]ms
 - [Critical user flow] fails
@@ -53,6 +58,7 @@ Generate a pre-deployment checklist to verify readiness before shipping.
 ## Customization
 
 Tell me about your deploy and I'll customize the checklist:
+
 - "We use feature flags" → adds flag verification steps
 - "This includes a database migration" → adds migration-specific checks
 - "This is a breaking API change" → adds consumer notification steps
@@ -60,14 +66,17 @@ Tell me about your deploy and I'll customize the checklist:
 ## If Connectors Available
 
 If **~~source control** is connected:
+
 - Pull the release diff and list of changes
 - Verify all PRs are approved and merged
 
 If **~~CI/CD** is connected:
+
 - Check build and test status automatically
 - Verify pipeline is green before deploy
 
 If **~~monitoring** is connected:
+
 - Pre-fill rollback trigger thresholds from current baselines
 - Set up post-deploy metric watch
 

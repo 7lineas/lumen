@@ -9,10 +9,14 @@ export interface ImportPreview {
   hint: ImportMetaHint;
 }
 
-export type ImportPreviewResult = { ok: true; preview: ImportPreview } | { ok: false; error: string };
+export type ImportPreviewResult =
+  | { ok: true; preview: ImportPreview }
+  | { ok: false; error: string };
 
 /** What the file dialog IPC answers: a preview, an error to show, or "canceled". */
-export type BibleImportPickResult = { ok: true; preview: ImportPreview } | { ok: false; error?: string; canceled?: boolean };
+export type BibleImportPickResult =
+  | { ok: true; preview: ImportPreview }
+  | { ok: false; error?: string; canceled?: boolean };
 
 export type BibleImportCommitResult =
   | { ok: true; version: BibleVersionMeta }

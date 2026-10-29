@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import type { DragEvent } from "react";
 import { ChevronLeft, ChevronRight, History, X } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import type { HistoryEntry, QueueEntry } from "@shared/types";
 
 interface Props {
@@ -26,7 +30,11 @@ export function SavedStrip(props: Props) {
 
   useEffect(() => {
     if (props.queue.length > countRef.current) {
-      rowRef.current?.lastElementChild?.scrollIntoView({ inline: "nearest", block: "nearest", behavior: "smooth" });
+      rowRef.current?.lastElementChild?.scrollIntoView({
+        inline: "nearest",
+        block: "nearest",
+        behavior: "smooth",
+      });
     }
     countRef.current = props.queue.length;
   }, [props.queue.length]);
@@ -38,7 +46,8 @@ export function SavedStrip(props: Props) {
 
   const onDrop = (event: DragEvent<HTMLDivElement>, index: number) => {
     event.preventDefault();
-    if (dragIndex != null && dragIndex !== index) props.onReorder(dragIndex, index);
+    if (dragIndex != null && dragIndex !== index)
+      props.onReorder(dragIndex, index);
     endDrag();
   };
 
@@ -46,10 +55,23 @@ export function SavedStrip(props: Props) {
     <footer className="lx-svc" aria-label="Versículos guardados">
       <div className="lx-svc-head">
         <span className="lx-h">Guardados</span>
-        <span className="lx-svc-count">{props.queue.length} {props.queue.length === 1 ? "versículo" : "versículos"}</span>
+        <span className="lx-svc-count">
+          {props.queue.length}{" "}
+          {props.queue.length === 1 ? "versículo" : "versículos"}
+        </span>
         <span className="lx-spacer" />
         <Popover open={historyOpen} onOpenChange={setHistoryOpen}>
-          <PopoverTrigger render={<button type="button" className="lx-ghost lx-ghost-text" disabled={props.history.length === 0}><History /> Historial</button>} />
+          <PopoverTrigger
+            render={
+              <button
+                type="button"
+                className="lx-ghost lx-ghost-text"
+                disabled={props.history.length === 0}
+              >
+                <History /> Historial
+              </button>
+            }
+          />
           <PopoverContent side="top" align="end" className="lx-history">
             <ul>
               {props.history.map((entry) => (
@@ -68,15 +90,32 @@ export function SavedStrip(props: Props) {
             </ul>
           </PopoverContent>
         </Popover>
-        <button type="button" className="lx-ghost" onClick={props.onPrev} disabled={props.queue.length === 0} aria-label="Proyectar el guardado anterior">
+        <button
+          type="button"
+          className="lx-ghost"
+          onClick={props.onPrev}
+          disabled={props.queue.length === 0}
+          aria-label="Proyectar el guardado anterior"
+        >
           <ChevronLeft />
         </button>
-        <button type="button" className="lx-ghost" onClick={props.onNext} disabled={props.queue.length === 0} aria-label="Proyectar el guardado siguiente">
+        <button
+          type="button"
+          className="lx-ghost"
+          onClick={props.onNext}
+          disabled={props.queue.length === 0}
+          aria-label="Proyectar el guardado siguiente"
+        >
           <ChevronRight />
         </button>
       </div>
       <div className="lx-svc-row" ref={rowRef}>
-        {props.queue.length === 0 && <p className="lx-svc-empty">Guarda versículos antes del servicio y proyéctalos desde aquí con un clic.</p>}
+        {props.queue.length === 0 && (
+          <p className="lx-svc-empty">
+            Guarda versículos antes del servicio y proyéctalos desde aquí con un
+            clic.
+          </p>
+        )}
         {props.queue.map((item, idx) => (
           <div
             key={item.id}
@@ -84,8 +123,12 @@ export function SavedStrip(props: Props) {
               "lx-chip",
               item.id === props.activeId ? "on" : "",
               dragIndex === idx ? "drag" : "",
-              overIndex === idx && dragIndex !== null && dragIndex !== idx ? "drop" : "",
-            ].filter(Boolean).join(" ")}
+              overIndex === idx && dragIndex !== null && dragIndex !== idx
+                ? "drop"
+                : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
             draggable
             onDragStart={(event) => {
               setDragIndex(idx);
@@ -101,11 +144,21 @@ export function SavedStrip(props: Props) {
             onDrop={(event) => onDrop(event, idx)}
             onDragEnd={endDrag}
           >
-            <button type="button" className="lx-chip-main" title="Proyectar" onClick={() => props.onProject(item)}>
+            <button
+              type="button"
+              className="lx-chip-main"
+              title="Proyectar"
+              onClick={() => props.onProject(item)}
+            >
               <span className="k">{idx + 1} · Escritura</span>
               <span className="t">{item.reference}</span>
             </button>
-            <button type="button" className="lx-chip-x" onClick={() => props.onRemove(item.id)} aria-label={`Quitar ${item.reference}`}>
+            <button
+              type="button"
+              className="lx-chip-x"
+              onClick={() => props.onRemove(item.id)}
+              aria-label={`Quitar ${item.reference}`}
+            >
               <X />
             </button>
           </div>

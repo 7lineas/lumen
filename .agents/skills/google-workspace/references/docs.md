@@ -230,8 +230,13 @@ Each recipe is one `update_doc` call. Add `tabId` to every `location` and `range
 **Change a word or phrase.** `replaceAllText` needs no read and no indexes:
 
 ```json
-{"replaceAllText": {"containsText": {"text": "Q3 launch", "matchCase": true},
-  "replaceText": "Q4 launch", "tabsCriteria": {"tabIds": ["t.0"]}}}
+{
+  "replaceAllText": {
+    "containsText": { "text": "Q3 launch", "matchCase": true },
+    "replaceText": "Q4 launch",
+    "tabsCriteria": { "tabIds": ["t.0"] }
+  }
+}
 ```
 
 The reply reports `occurrencesChanged`. Zero means the text didn't match exactly: check it against `read_file_content`, but remember that file escapes characters like `&` and `*`. The replacement takes the style of the first character it replaces, so replacing a span that starts in bold makes the whole replacement bold. If that matters, start the find on an unstyled character, or check the result with `find` afterward. It changes every match in the tabs it covers (every tab unless `tabsCriteria` names some), so use it when every match should change, such as a date or a name the user wants changed throughout. When only one occurrence should change, or the find text is short enough to occur inside unrelated text (a bare number such as "7", a common word), delete and insert at the range `find` gives for that occurrence. Never put a paragraph's trailing newline in the find text: the replaced paragraph can take the next paragraph's style (a body paragraph becomes a heading), or the next paragraph can lose its heading style.
@@ -239,8 +244,15 @@ The reply reports `occurrencesChanged`. Zero means the text didn't match exactly
 **Rewrite a paragraph.** Take its `startIndex` and `endIndex` from `outline`. Delete `[start, end - 1]`, which keeps the paragraph's newline and style, then insert at `start`:
 
 ```json
-[{"deleteContentRange": {"range": {"startIndex": 120, "endIndex": 184}}},
- {"insertText": {"location": {"index": 120}, "text": "New paragraph text."}}]
+[
+  { "deleteContentRange": { "range": { "startIndex": 120, "endIndex": 184 } } },
+  {
+    "insertText": {
+      "location": { "index": 120 },
+      "text": "New paragraph text."
+    }
+  }
+]
 ```
 
 For several paragraphs, do the highest one first. When only some words in the paragraph change, delete and insert only those words at the range `find` gives, not the whole paragraph. A footnote mark, chip or image elsewhere in the paragraph then stays, and in suggestion mode the suggestion shows only the words that changed. To delete a whole paragraph, delete `[start, end]`. In three cases that range is refused, with "Invalid deletion range" or "The range cannot include the newline character at the end of the segment"; use these ranges instead. For the doc's last paragraph, delete from the previous paragraph's `endIndex - 1` to the last paragraph's `endIndex - 1`. For the paragraph just before a table, and for a table cell's only paragraph, delete the text only, `[start, end - 1]`; an empty paragraph stays, because Google keeps one before every table and in every cell.
@@ -280,14 +292,14 @@ To fill a table that already exists, a cell's text goes at its first paragraph's
 
 ## Docs failures
 
-| Symptom | Cause | Fix |
-|---|---|---|
-| `read_doc` result too large or cut off | Full document JSON for a long or table-heavy doc | Orient with Drive `read_file_content`. Use `replaceAllText` where the find text matches only the text you mean to change (add neighboring words until it does). If the result was saved to a file, run `docs_index.py` on it. |
-| An edit landed in the wrong tab | No `tabId` in the location or range | Add the `tabId` from the read or from the URL's `?tab=` value. |
-| `replaceAllText` changed other tabs | No `tabsCriteria` | Scope it with `tabsCriteria.tabIds`. |
-| `replaceAllText` reports 0 occurrences | Find text copied from `read_file_content`, which escapes `&`, `*`, and similar characters, or glues suggestions | Use the literal text, or check it with `docs_index.py find`. |
-| Text shows as "RBRunning back" | A pending suggestion read as plain text | Read with `read_doc`. `outline` marks suggested text as `[+...]` and `[-...]`. |
-| A heading loses its bold after an edit | A style reset was applied to the heading | Reset styles only on body text. |
-| Replaced text turned bold | The replacement inherited the style of the first replaced character | Clear it with `updateTextStyle` over the new range. |
-| Edits land in the wrong place | Requests ran from the lowest index to the highest, or used indexes from before an earlier write | Order requests from the highest index to the lowest, and read again after every write. |
-| Typed "- " shows as text, not a bullet | Lists are paragraph properties | Delete the typed markers, then use `createParagraphBullets` over the range. Bulleting keeps typed markers as text. |
+| Symptom                                | Cause                                                                                                           | Fix                                                                                                                                                                                                                           |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `read_doc` result too large or cut off | Full document JSON for a long or table-heavy doc                                                                | Orient with Drive `read_file_content`. Use `replaceAllText` where the find text matches only the text you mean to change (add neighboring words until it does). If the result was saved to a file, run `docs_index.py` on it. |
+| An edit landed in the wrong tab        | No `tabId` in the location or range                                                                             | Add the `tabId` from the read or from the URL's `?tab=` value.                                                                                                                                                                |
+| `replaceAllText` changed other tabs    | No `tabsCriteria`                                                                                               | Scope it with `tabsCriteria.tabIds`.                                                                                                                                                                                          |
+| `replaceAllText` reports 0 occurrences | Find text copied from `read_file_content`, which escapes `&`, `*`, and similar characters, or glues suggestions | Use the literal text, or check it with `docs_index.py find`.                                                                                                                                                                  |
+| Text shows as "RBRunning back"         | A pending suggestion read as plain text                                                                         | Read with `read_doc`. `outline` marks suggested text as `[+...]` and `[-...]`.                                                                                                                                                |
+| A heading loses its bold after an edit | A style reset was applied to the heading                                                                        | Reset styles only on body text.                                                                                                                                                                                               |
+| Replaced text turned bold              | The replacement inherited the style of the first replaced character                                             | Clear it with `updateTextStyle` over the new range.                                                                                                                                                                           |
+| Edits land in the wrong place          | Requests ran from the lowest index to the highest, or used indexes from before an earlier write                 | Order requests from the highest index to the lowest, and read again after every write.                                                                                                                                        |
+| Typed "- " shows as text, not a bullet | Lists are paragraph properties                                                                                  | Delete the typed markers, then use `createParagraphBullets` over the range. Bulleting keeps typed markers as text.                                                                                                            |

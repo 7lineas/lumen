@@ -83,7 +83,10 @@ export interface AppUpdateState {
 
 export type AppUpdateButtonAction = "download" | "install" | "open" | "none";
 
-export function createInitialUpdateState(currentVersion: string, mode: AppUpdateMode): AppUpdateState {
+export function createInitialUpdateState(
+  currentVersion: string,
+  mode: AppUpdateMode,
+): AppUpdateState {
   return {
     mode,
     status: mode === "disabled" ? "disabled" : "idle",
@@ -98,12 +101,25 @@ export function createInitialUpdateState(currentVersion: string, mode: AppUpdate
   };
 }
 
-export function reduceOnCheckStart(state: AppUpdateState, checkedAt: string): AppUpdateState {
+export function reduceOnCheckStart(
+  state: AppUpdateState,
+  checkedAt: string,
+): AppUpdateState {
   // Una comprobación en segundo plano no debe esconder un botón ya visible.
-  if (state.status === "available" || state.status === "downloaded" || state.status === "downloading") {
+  if (
+    state.status === "available" ||
+    state.status === "downloaded" ||
+    state.status === "downloading"
+  ) {
     return { ...state, checkedAt };
   }
-  return { ...state, status: "checking", checkedAt, message: null, errorContext: null };
+  return {
+    ...state,
+    status: "checking",
+    checkedAt,
+    message: null,
+    errorContext: null,
+  };
 }
 
 export function reduceOnCheckResult(
@@ -111,8 +127,17 @@ export function reduceOnCheckResult(
   latestVersion: string | null,
   checkedAt: string,
 ): AppUpdateState {
-  if (state.downloadedVersion && (!latestVersion || latestVersion === state.downloadedVersion)) {
-    return { ...state, status: "downloaded", checkedAt, message: null, errorContext: null };
+  if (
+    state.downloadedVersion &&
+    (!latestVersion || latestVersion === state.downloadedVersion)
+  ) {
+    return {
+      ...state,
+      status: "downloaded",
+      checkedAt,
+      message: null,
+      errorContext: null,
+    };
   }
   if (state.status === "downloading") return { ...state, checkedAt };
   if (!latestVersion || !isNewerVersion(state.currentVersion, latestVersion)) {
@@ -131,7 +156,8 @@ export function reduceOnCheckResult(
     ...state,
     status: "available",
     availableVersion: latestVersion,
-    downloadedVersion: state.downloadedVersion === latestVersion ? latestVersion : null,
+    downloadedVersion:
+      state.downloadedVersion === latestVersion ? latestVersion : null,
     downloadPercent: null,
     checkedAt,
     message: null,
@@ -140,23 +166,56 @@ export function reduceOnCheckResult(
 }
 
 /** Un fallo al comprobar nunca molesta: se conserva lo que ya se sabía. */
-export function reduceOnCheckFailure(state: AppUpdateState, message: string, checkedAt: string): AppUpdateState {
-  if (state.status === "available" || state.status === "downloaded" || state.status === "downloading") {
+export function reduceOnCheckFailure(
+  state: AppUpdateState,
+  message: string,
+  checkedAt: string,
+): AppUpdateState {
+  if (
+    state.status === "available" ||
+    state.status === "downloaded" ||
+    state.status === "downloading"
+  ) {
     return { ...state, checkedAt };
   }
-  return { ...state, status: "error", checkedAt, message, errorContext: "check", downloadPercent: null };
+  return {
+    ...state,
+    status: "error",
+    checkedAt,
+    message,
+    errorContext: "check",
+    downloadPercent: null,
+  };
 }
 
 export function reduceOnDownloadStart(state: AppUpdateState): AppUpdateState {
-  return { ...state, status: "downloading", downloadPercent: 0, message: null, errorContext: null };
+  return {
+    ...state,
+    status: "downloading",
+    downloadPercent: 0,
+    message: null,
+    errorContext: null,
+  };
 }
 
-export function reduceOnDownloadProgress(state: AppUpdateState, percent: number): AppUpdateState {
+export function reduceOnDownloadProgress(
+  state: AppUpdateState,
+  percent: number,
+): AppUpdateState {
   const clamped = Math.max(0, Math.min(100, Math.round(percent)));
-  return { ...state, status: "downloading", downloadPercent: clamped, message: null, errorContext: null };
+  return {
+    ...state,
+    status: "downloading",
+    downloadPercent: clamped,
+    message: null,
+    errorContext: null,
+  };
 }
 
-export function reduceOnDownloadComplete(state: AppUpdateState, version: string): AppUpdateState {
+export function reduceOnDownloadComplete(
+  state: AppUpdateState,
+  version: string,
+): AppUpdateState {
   return {
     ...state,
     status: "downloaded",
@@ -168,7 +227,10 @@ export function reduceOnDownloadComplete(state: AppUpdateState, version: string)
   };
 }
 
-export function reduceOnDownloadFailure(state: AppUpdateState, message: string): AppUpdateState {
+export function reduceOnDownloadFailure(
+  state: AppUpdateState,
+  message: string,
+): AppUpdateState {
   return {
     ...state,
     status: state.availableVersion ? "available" : "error",
@@ -178,14 +240,20 @@ export function reduceOnDownloadFailure(state: AppUpdateState, message: string):
   };
 }
 
-export function reduceOnInstallFailure(state: AppUpdateState, message: string): AppUpdateState {
+export function reduceOnInstallFailure(
+  state: AppUpdateState,
+  message: string,
+): AppUpdateState {
   return { ...state, status: "downloaded", message, errorContext: "install" };
 }
 
 /** Qué hace el botón ahora mismo (o `none` si no debe verse). */
-export function resolveUpdateButtonAction(state: AppUpdateState | null): AppUpdateButtonAction {
+export function resolveUpdateButtonAction(
+  state: AppUpdateState | null,
+): AppUpdateButtonAction {
   if (!state || state.mode === "disabled") return "none";
-  if (state.status === "downloaded" && state.downloadedVersion) return "install";
+  if (state.status === "downloaded" && state.downloadedVersion)
+    return "install";
   if (state.status === "available" && state.availableVersion) {
     return state.mode === "manual" ? "open" : "download";
   }
@@ -203,25 +271,33 @@ export function updateButtonLabel(state: AppUpdateState): string {
   const version = state.downloadedVersion ?? state.availableVersion;
   const suffix = version ? ` v${version}` : "";
   if (state.status === "downloading") {
-    const percent = typeof state.downloadPercent === "number" ? ` ${Math.floor(state.downloadPercent)}%` : "";
+    const percent =
+      typeof state.downloadPercent === "number"
+        ? ` ${Math.floor(state.downloadPercent)}%`
+        : "";
     return `Descargando${percent}`;
   }
   const action = resolveUpdateButtonAction(state);
-  if (state.errorContext === "download" && action === "download") return `Reintentar actualización${suffix}`;
-  if (state.errorContext === "install" && action === "install") return `Reintentar instalación${suffix}`;
+  if (state.errorContext === "download" && action === "download")
+    return `Reintentar actualización${suffix}`;
+  if (state.errorContext === "install" && action === "install")
+    return `Reintentar instalación${suffix}`;
   if (action === "install") return `Reiniciar para actualizar${suffix}`;
   if (action === "open") return `Descargar nueva versión${suffix}`;
   return `Actualizar${suffix}`;
 }
 
 export function updateButtonTitle(state: AppUpdateState): string {
-  if (state.message && state.errorContext && state.errorContext !== "check") return state.message;
+  if (state.message && state.errorContext && state.errorContext !== "check")
+    return state.message;
   const version = state.downloadedVersion ?? state.availableVersion;
   const versionText = version ? ` ${version}` : "";
   if (state.status === "downloading") return "Descargando la actualización…";
   const action = resolveUpdateButtonAction(state);
-  if (action === "install") return `La versión${versionText} está lista. Lumen se reiniciará para instalarla.`;
-  if (action === "open") return `Hay una versión nueva${versionText}. Se abrirá la página de descarga.`;
+  if (action === "install")
+    return `La versión${versionText} está lista. Lumen se reiniciará para instalarla.`;
+  if (action === "open")
+    return `Hay una versión nueva${versionText}. Se abrirá la página de descarga.`;
   return `Hay una versión nueva de Lumen${versionText}. Tu versión: ${state.currentVersion}.`;
 }
 
@@ -234,7 +310,9 @@ export interface UpdateConfirmation {
 }
 
 /** Texto del diálogo de confirmación antes de descargar/instalar. */
-export function getUpdateConfirmation(state: AppUpdateState): UpdateConfirmation {
+export function getUpdateConfirmation(
+  state: AppUpdateState,
+): UpdateConfirmation {
   const version = state.downloadedVersion ?? state.availableVersion;
   const versionLabel = version ? ` a la versión ${version}` : "";
   const installing = resolveUpdateButtonAction(state) === "install";
@@ -246,7 +324,9 @@ export function getUpdateConfirmation(state: AppUpdateState): UpdateConfirmation
     projectionWarning: state.projectionActive
       ? "Hay una proyección en vivo: la pantalla de proyección se cerrará y la congregación dejará de ver el contenido hasta que Lumen vuelva a abrir. Se recomienda actualizar fuera del servicio."
       : null,
-    confirmLabel: installing ? "Reiniciar y actualizar" : "Descargar y actualizar",
+    confirmLabel: installing
+      ? "Reiniciar y actualizar"
+      : "Descargar y actualizar",
   };
 }
 
@@ -258,15 +338,20 @@ export function isOfflineError(message: string | null | undefined): boolean {
 }
 
 /** Mensaje corto y en español para mostrar al operador. */
-export function friendlyUpdateError(error: unknown, context: AppUpdateErrorContext): string {
+export function friendlyUpdateError(
+  error: unknown,
+  context: AppUpdateErrorContext,
+): string {
   const raw = error instanceof Error ? error.message : String(error ?? "");
   if (isOfflineError(raw)) {
     return context === "download"
       ? "No se pudo descargar la actualización: sin conexión a internet. Inténtalo de nuevo cuando haya red."
       : "Sin conexión a internet.";
   }
-  if (context === "download") return "No se pudo descargar la actualización. Inténtalo de nuevo en unos minutos.";
-  if (context === "install") return "No se pudo instalar la actualización. Inténtalo de nuevo o descarga el instalador desde la página.";
+  if (context === "download")
+    return "No se pudo descargar la actualización. Inténtalo de nuevo en unos minutos.";
+  if (context === "install")
+    return "No se pudo instalar la actualización. Inténtalo de nuevo o descarga el instalador desde la página.";
   return "No se pudo buscar la actualización.";
 }
 

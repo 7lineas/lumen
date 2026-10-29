@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { backgroundImageUrl, isBackgroundVideo } from "@shared/background-image";
+import {
+  backgroundImageUrl,
+  isBackgroundVideo,
+} from "@shared/background-image";
 import type { MediaFit } from "@shared/types";
 
 interface Layer {
@@ -108,12 +111,27 @@ function BackgroundVideo({
  * `<video>` keeps playing seamlessly underneath the fade instead of
  * remounting (which would restart it from 0 and feel glitchy).
  */
-export function FadingBackgroundMedia({ path, brightness, fadeMs, fit = "cover", className }: FadingBackgroundMediaProps) {
+export function FadingBackgroundMedia({
+  path,
+  brightness,
+  fadeMs,
+  fit = "cover",
+  className,
+}: FadingBackgroundMediaProps) {
   const url = backgroundImageUrl(path);
   const duration = Math.max(0, fadeMs);
 
   const [layers, setLayers] = useState<Layer[]>(() =>
-    url ? [{ src: url, video: isBackgroundVideo(path), leaving: false, fresh: false }] : [],
+    url
+      ? [
+          {
+            src: url,
+            video: isBackgroundVideo(path),
+            leaving: false,
+            fresh: false,
+          },
+        ]
+      : [],
   );
   // The top layer stays hidden until its file decodes, so a slow load never
   // flashes a half-ready frame over the old media.
@@ -126,16 +144,21 @@ export function FadingBackgroundMedia({ path, brightness, fadeMs, fit = "cover",
     lastUrlRef.current = target;
     if (!url) {
       // Back to solid color: fade the stacked media out.
-      setLayers((prev) => (prev.length > 0 ? prev.map((l) => ({ ...l, leaving: true })) : prev));
+      setLayers((prev) =>
+        prev.length > 0 ? prev.map((l) => ({ ...l, leaving: true })) : prev,
+      );
       return;
     }
     const video = isBackgroundVideo(path);
     setLayers((prev) => {
       const top = prev[prev.length - 1];
       // Re-selecting the fading-out media just brings it back.
-      if (top && top.src === url) return prev.map((l) => ({ ...l, leaving: false }));
+      if (top && top.src === url)
+        return prev.map((l) => ({ ...l, leaving: false }));
       return [
-        ...prev.filter((l) => l.src !== url).map((l) => ({ ...l, leaving: false })),
+        ...prev
+          .filter((l) => l.src !== url)
+          .map((l) => ({ ...l, leaving: false })),
         { src: url, video, leaving: false, fresh: true },
       ];
     });
@@ -152,7 +175,8 @@ export function FadingBackgroundMedia({ path, brightness, fadeMs, fit = "cover",
         if (prev.length === 0) return prev;
         const prevTop = prev[prev.length - 1];
         if (prevTop.leaving) return [];
-        if (prev.length === 1) return prevTop.fresh ? [{ ...prevTop, fresh: false }] : prev;
+        if (prev.length === 1)
+          return prevTop.fresh ? [{ ...prevTop, fresh: false }] : prev;
         return [{ ...prevTop, fresh: false }];
       });
     }, duration + 80);
@@ -174,12 +198,21 @@ export function FadingBackgroundMedia({ path, brightness, fadeMs, fit = "cover",
           : isTop
             ? readySrc === layer.src
               ? layer.fresh
-                ? { opacity: 1, animation: `lumen-bg-fade-in ${duration}ms ease`, filter }
-                : { opacity: 1, transition: `opacity ${duration}ms ease`, filter }
+                ? {
+                    opacity: 1,
+                    animation: `lumen-bg-fade-in ${duration}ms ease`,
+                    filter,
+                  }
+                : {
+                    opacity: 1,
+                    transition: `opacity ${duration}ms ease`,
+                    filter,
+                  }
               : { opacity: 0, filter }
             : { opacity: 1, filter };
         const style: React.CSSProperties = { ...layerStyle, objectFit: fit };
-        const onReady = isTop && !layer.leaving ? () => setReadySrc(layer.src) : undefined;
+        const onReady =
+          isTop && !layer.leaving ? () => setReadySrc(layer.src) : undefined;
         if (layer.video) {
           return (
             <BackgroundVideo

@@ -40,12 +40,31 @@ interface Props {
   fontFamily?: FontFamilyId;
 }
 
-export function StageMonitor({ title, payload, empty, testId, isLive, aspectRatio, displayWidth, label, ratioLabel, children, onVideoDuration, backgroundFit = DEFAULT_SETTINGS.backgroundFit, slideFit = DEFAULT_SETTINGS.slideFit, liveSince, fontFamily = DEFAULT_SETTINGS.fontFamily }: Props) {
+export function StageMonitor({
+  title,
+  payload,
+  empty,
+  testId,
+  isLive,
+  aspectRatio,
+  displayWidth,
+  label,
+  ratioLabel,
+  children,
+  onVideoDuration,
+  backgroundFit = DEFAULT_SETTINGS.backgroundFit,
+  slideFit = DEFAULT_SETTINGS.slideFit,
+  liveSince,
+  fontFamily = DEFAULT_SETTINGS.fontFamily,
+}: Props) {
   // Live monitor mirrors the projector: fade out old content, swap, fade in.
   // Preview renders instantly (no fade).
   // The inner screen renders at the real projector aspect ratio so the
   // operator sees the same framing as the congregation.
-  const screenAspect = Number.isFinite(aspectRatio) && (aspectRatio ?? 0) > 0 ? aspectRatio! : 16 / 9;
+  const screenAspect =
+    Number.isFinite(aspectRatio) && (aspectRatio ?? 0) > 0
+      ? aspectRatio!
+      : 16 / 9;
   const projectorW = displayWidth && displayWidth > 0 ? displayWidth : 1920;
   const [displayed, setDisplayed] = useState(payload);
   const [visible, setVisible] = useState(true);
@@ -61,13 +80,21 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
       setDisplayed(payload);
       return;
     }
-    const ms = Math.max(0, payload?.fadeMs ?? displayedRef.current?.fadeMs ?? DEFAULT_SETTINGS.fadeMs);
+    const ms = Math.max(
+      0,
+      payload?.fadeMs ??
+        displayedRef.current?.fadeMs ??
+        DEFAULT_SETTINGS.fadeMs,
+    );
     setFadeMsNow(ms);
     if (timerRef.current !== null) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
-    if (ms === 0 || payloadContentKey(payload) === payloadContentKey(displayedRef.current)) {
+    if (
+      ms === 0 ||
+      payloadContentKey(payload) === payloadContentKey(displayedRef.current)
+    ) {
       displayedRef.current = payload;
       setDisplayed(payload);
       if (!visibleRef.current) {
@@ -102,9 +129,12 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
     }, ms);
   }, [payload, isLive]);
 
-  useEffect(() => () => {
-    if (timerRef.current !== null) clearTimeout(timerRef.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (timerRef.current !== null) clearTimeout(timerRef.current);
+    },
+    [],
+  );
 
   // "Take" flash: the live monitor pulses an on-air ring whenever new content
   // is projected. Web Animations restarts on every take, even back-to-back.
@@ -134,7 +164,12 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
   const theme = renderPayload?.theme === "light" ? "light" : "dark";
   const brightness = renderPayload?.brightness ?? 1;
   const projectorFontPx = renderPayload?.fontSize ?? DEFAULT_SETTINGS.fontSize;
-  const fadeMs = Math.max(0, (isLive ? fadeMsNow : null) ?? renderPayload?.fadeMs ?? DEFAULT_SETTINGS.fadeMs);
+  const fadeMs = Math.max(
+    0,
+    (isLive ? fadeMsNow : null) ??
+      renderPayload?.fadeMs ??
+      DEFAULT_SETTINGS.fadeMs,
+  );
   const isLogo = renderPayload?.mode === "logo";
   const projecting = renderPayload != null && renderPayload.mode !== "blank";
   const referenceColor = renderPayload?.referenceColor ?? "#f6a623";
@@ -145,13 +180,23 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
   const incomingMode = (isLive ? payload : renderPayload)?.mode;
   const slidesActive = incomingMode === "slides" || incomingMode === "video";
   // The logo takes the fondo's place (covering), as on the projector.
-  const backgroundPath = isLogo ? renderPayload?.logoImagePath : slidesActive ? undefined : renderPayload?.backgroundImagePath;
-  const backgroundFadeMs = Math.max(0, renderPayload?.backgroundFadeMs ?? DEFAULT_SETTINGS.backgroundFadeMs);
+  const backgroundPath = isLogo
+    ? renderPayload?.logoImagePath
+    : slidesActive
+      ? undefined
+      : renderPayload?.backgroundImagePath;
+  const backgroundFadeMs = Math.max(
+    0,
+    renderPayload?.backgroundFadeMs ?? DEFAULT_SETTINGS.backgroundFadeMs,
+  );
   const pad = renderPayload?.padding ?? DEFAULT_SETTINGS.padding;
 
   const screenRef = useRef<HTMLDivElement>(null);
   const monitorRef = useRef<HTMLDivElement>(null);
-  const [screenSize, setScreenSize] = useState<{ width: number; height: number } | null>(null);
+  const [screenSize, setScreenSize] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
   // Inner width of the miniature screen (inside its border): the scale of the
   // projector replica that draws verse text.
   const [screenInnerWidth, setScreenInnerWidth] = useState(0);
@@ -176,11 +221,13 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
       const height = monitor.clientHeight || 1;
       const screenWidth = Math.min(width, height * screenAspect);
       const screenHeight = screenWidth / screenAspect;
-      setScreenSize((previous) => (
-        previous && Math.abs(previous.width - screenWidth) < 0.5 && Math.abs(previous.height - screenHeight) < 0.5
+      setScreenSize((previous) =>
+        previous &&
+        Math.abs(previous.width - screenWidth) < 0.5 &&
+        Math.abs(previous.height - screenHeight) < 0.5
           ? previous
-          : { width: screenWidth, height: screenHeight }
-      ));
+          : { width: screenWidth, height: screenHeight },
+      );
     };
     measure();
     if (typeof ResizeObserver !== "undefined") {
@@ -192,26 +239,52 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
     return () => window.removeEventListener("resize", measure);
   }, [screenAspect]);
 
-  const slideImage = renderPayload?.mode === "slides" ? renderPayload.slideImagePath ?? null : null;
-  const video = renderPayload?.mode === "video" ? renderPayload.video ?? null : null;
+  const slideImage =
+    renderPayload?.mode === "slides"
+      ? (renderPayload.slideImagePath ?? null)
+      : null;
+  const video =
+    renderPayload?.mode === "video" ? (renderPayload.video ?? null) : null;
   const fullBleed = slideImage != null || video != null;
   const screenContent = (
     <>
-      {!renderPayload && empty && <p className="monitor-screen-empty">{empty}</p>}
+      {!renderPayload && empty && (
+        <p className="monitor-screen-empty">{empty}</p>
+      )}
       {slideImage && (
-        <img src={backgroundImageUrl(slideImage)} alt="" className="monitor-screen-slide" style={{ objectFit: slideFit }} />
+        <img
+          src={backgroundImageUrl(slideImage)}
+          alt=""
+          className="monitor-screen-slide"
+          style={{ objectFit: slideFit }}
+        />
       )}
       {video && (
         // A still frame: only the projector plays the video (see SyncedVideo's `still`).
-        <SyncedVideo playback={video} muted still fit={slideFit} className="monitor-screen-slide" onDuration={onVideoDuration} />
+        <SyncedVideo
+          playback={video}
+          muted
+          still
+          fit={slideFit}
+          className="monitor-screen-slide"
+          onDuration={onVideoDuration}
+        />
       )}
-      {video?.playing && <span className="monitor-video-note">Reproduciendo en la pantalla</span>}
+      {video?.playing && (
+        <span className="monitor-video-note">Reproduciendo en la pantalla</span>
+      )}
       {renderPayload?.mode === "countdown" && renderPayload.countdown && (
         // Container units keep the miniature in the same proportions as the
         // projector's vw/vh sizes.
         <div className="monitor-countdown">
-          {renderPayload.countdown.caption && <p className="monitor-countdown-caption">{renderPayload.countdown.caption}</p>}
-          <p className="monitor-countdown-time"><CountdownClock endsAt={renderPayload.countdown.endsAt} /></p>
+          {renderPayload.countdown.caption && (
+            <p className="monitor-countdown-caption">
+              {renderPayload.countdown.caption}
+            </p>
+          )}
+          <p className="monitor-countdown-time">
+            <CountdownClock endsAt={renderPayload.countdown.endsAt} />
+          </p>
         </div>
       )}
       {renderPayload?.mode === "verse" && screenInnerWidth > 0 && (
@@ -244,14 +317,30 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
     <section className={isLive ? "lx-mon-sec live" : "lx-mon-sec"}>
       <header>
         <span className={isLive ? "lx-mon-tag live" : "lx-mon-tag"}>
-          {isLive && <span className={`lx-dot${projecting ? " on" : ""}`} aria-hidden />}
+          {isLive && (
+            <span className={`lx-dot${projecting ? " on" : ""}`} aria-hidden />
+          )}
           {title}
         </span>
-        <span className="lx-mon-label" title={label}>{label}</span>
-        {isLive && liveSince != null && (renderPayload?.mode === "verse" || renderPayload?.mode === "slides" || renderPayload?.mode === "video") && (
-          <ElapsedClock since={liveSince} className="lx-mon-time" title="Tiempo en pantalla con este contenido" />
+        <span className="lx-mon-label" title={label}>
+          {label}
+        </span>
+        {isLive &&
+          liveSince != null &&
+          (renderPayload?.mode === "verse" ||
+            renderPayload?.mode === "slides" ||
+            renderPayload?.mode === "video") && (
+            <ElapsedClock
+              since={liveSince}
+              className="lx-mon-time"
+              title="Tiempo en pantalla con este contenido"
+            />
+          )}
+        {ratioLabel && (
+          <span className="lx-mon-time" title="Relación real del proyector">
+            {ratioLabel}
+          </span>
         )}
-        {ratioLabel && <span className="lx-mon-time" title="Relación real del proyector">{ratioLabel}</span>}
       </header>
       <div
         ref={monitorRef}
@@ -270,18 +359,27 @@ export function StageMonitor({ title, payload, empty, testId, isLive, aspectRati
             fontWeight: renderPayload?.fontWeight,
             // A slide image or a video is full-bleed: the text padding must not
             // shrink it. Verse text brings its own padding at projector scale.
-            padding: fullBleed || renderPayload?.mode === "verse" ? 0 : `${pad}%`,
+            padding:
+              fullBleed || renderPayload?.mode === "verse" ? 0 : `${pad}%`,
           }}
         >
           <div
             className="monitor-background-layer"
             style={{
-              background: renderPayload?.backgroundColor ?? (!renderPayload ? "#000" : undefined),
+              background:
+                renderPayload?.backgroundColor ??
+                (!renderPayload ? "#000" : undefined),
               transition: `background-color ${backgroundFadeMs}ms ease`,
               filter: `brightness(${brightness})`,
             }}
           />
-          <FadingBackgroundMedia path={backgroundPath} brightness={brightness} fadeMs={backgroundFadeMs} fit={isLogo ? "cover" : backgroundFit} className="monitor-background-media" />
+          <FadingBackgroundMedia
+            path={backgroundPath}
+            brightness={brightness}
+            fadeMs={backgroundFadeMs}
+            fit={isLogo ? "cover" : backgroundFit}
+            className="monitor-background-media"
+          />
           <div
             className={`monitor-screen-fade ${!isLive || visible ? "show" : ""}`}
             style={{ transitionDuration: `${fadeMs}ms` }}

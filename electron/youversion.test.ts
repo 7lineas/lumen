@@ -2,15 +2,30 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { CHAPTER_TTL_MS, YouVersionClient, resolveAppKey, type FetchLike } from "./youversion";
+import {
+  CHAPTER_TTL_MS,
+  YouVersionClient,
+  resolveAppKey,
+  type FetchLike,
+} from "./youversion";
 
-type Reply = { status: number; body?: unknown; headers?: Record<string, string> } | Error;
+type Reply =
+  | { status: number; body?: unknown; headers?: Record<string, string> }
+  | Error;
 
 const JHN3 =
   '<div class="p"><span class="yv-v" v="1"></span><span class="yv-vlbl">1</span>Había un hombre.</div>' +
   '<div class="p"><span class="yv-v" v="2"></span><span class="yv-vlbl">2</span>Este vino a Jesús.</div>';
 
-const INFO: Reply = { status: 200, body: { id: 147, abbreviation: "RVES", title: "Reina-Valera Antigua", copyright: "© Test" } };
+const INFO: Reply = {
+  status: 200,
+  body: {
+    id: 147,
+    abbreviation: "RVES",
+    title: "Reina-Valera Antigua",
+    copyright: "© Test",
+  },
+};
 
 let dir: string;
 let clock: number;
@@ -30,7 +45,10 @@ const fetchImpl: FetchLike = async (url, init) => {
     status: reply.status,
     ok: reply.status >= 200 && reply.status < 300,
     headers: { get: (name: string) => headers[name.toLowerCase()] ?? null },
-    text: async () => (typeof reply.body === "string" ? reply.body : JSON.stringify(reply.body ?? "")),
+    text: async () =>
+      typeof reply.body === "string"
+        ? reply.body
+        : JSON.stringify(reply.body ?? ""),
   };
 };
 
@@ -60,14 +78,19 @@ afterEach(() => fs.rmSync(dir, { recursive: true, force: true }));
 
 describe("resolveAppKey", () => {
   it("prefers the runtime environment and trims", () => {
-    expect(resolveAppKey({ YVP_APP_KEY: "  abc " } as NodeJS.ProcessEnv)).toBe("abc");
+    expect(resolveAppKey({ YVP_APP_KEY: "  abc " } as NodeJS.ProcessEnv)).toBe(
+      "abc",
+    );
     expect(resolveAppKey({} as NodeJS.ProcessEnv)).toBe("");
   });
 });
 
 describe("getChapter", () => {
   it("fetches html, parses verses, sends the key and caches on disk", async () => {
-    replies = [{ status: 200, body: { id: 147, content: JHN3, reference: "Juan 3" } }, INFO];
+    replies = [
+      { status: 200, body: { id: 147, content: JHN3, reference: "Juan 3" } },
+      INFO,
+    ];
     const result = await client().getChapter("yv-147", "JHN", 3);
     expect(result).toEqual({
       ok: true,
@@ -77,7 +100,9 @@ describe("getChapter", () => {
       copyright: "© Test",
     });
     expect(calls[1].url).toBe("https://api.youversion.com/v1/bibles/147");
-    expect(calls[0].url).toBe("https://api.youversion.com/v1/bibles/147/passages/JHN.3?format=html");
+    expect(calls[0].url).toBe(
+      "https://api.youversion.com/v1/bibles/147/passages/JHN.3?format=html",
+    );
     expect(calls[0].key).toBe("test-key");
     expect(fs.existsSync(path.join(dir, "147", "JHN.3.json"))).toBe(true);
   });
@@ -86,7 +111,12 @@ describe("getChapter", () => {
     replies = [{ status: 200, body: { content: JHN3 } }, INFO];
     await client().getChapter("yv-147", "JHN", 3);
     const again = await client().getChapter("yv-147", "JHN", 3);
-    expect(again).toMatchObject({ ok: true, fromCache: true, stale: false, copyright: "© Test" });
+    expect(again).toMatchObject({
+      ok: true,
+      fromCache: true,
+      stale: false,
+      copyright: "© Test",
+    });
     expect(calls).toHaveLength(2);
   });
 
@@ -96,7 +126,12 @@ describe("getChapter", () => {
     clock += CHAPTER_TTL_MS + 1;
     replies = Array.from({ length: 6 }, () => new TypeError("fetch failed"));
     const result = await client().getChapter("yv-147", "JHN", 3);
-    expect(result).toMatchObject({ ok: true, fromCache: true, stale: true, copyright: "© Test" });
+    expect(result).toMatchObject({
+      ok: true,
+      fromCache: true,
+      stale: true,
+      copyright: "© Test",
+    });
     expect(result.ok && result.verses["1"]).toBe("Había un hombre.");
   });
 
@@ -109,7 +144,12 @@ describe("getChapter", () => {
   });
 
   it("retries 5xx and then succeeds", async () => {
-    replies = [{ status: 503 }, { status: 502 }, { status: 200, body: { content: JHN3 } }, INFO];
+    replies = [
+      { status: 503 },
+      { status: 502 },
+      { status: 200, body: { content: JHN3 } },
+      INFO,
+    ];
     const result = await client().getChapter("yv-147", "JHN", 3);
     expect(result.ok).toBe(true);
     expect(calls).toHaveLength(4);
@@ -118,11 +158,18 @@ describe("getChapter", () => {
 
   it("gives up on persistent 5xx as an error, not offline", async () => {
     replies = [{ status: 500 }, { status: 500 }, { status: 500 }];
-    expect(await client().getChapter("yv-147", "JHN", 3)).toMatchObject({ ok: false, reason: "error" });
+    expect(await client().getChapter("yv-147", "JHN", 3)).toMatchObject({
+      ok: false,
+      reason: "error",
+    });
   });
 
   it("waits a short Retry-After and retries", async () => {
-    replies = [{ status: 429, headers: { "retry-after": "2" } }, { status: 200, body: { content: JHN3 } }, INFO];
+    replies = [
+      { status: 429, headers: { "retry-after": "2" } },
+      { status: 200, body: { content: JHN3 } },
+      INFO,
+    ];
     const result = await client().getChapter("yv-147", "JHN", 3);
     expect(result.ok).toBe(true);
     expect(sleeps).toEqual([2000]);
@@ -132,7 +179,11 @@ describe("getChapter", () => {
     replies = [{ status: 429, headers: { "retry-after": "300" } }];
     const yv = client();
     const first = await yv.getChapter("yv-147", "JHN", 3);
-    expect(first).toMatchObject({ ok: false, reason: "rate-limited", retryAfterSec: 300 });
+    expect(first).toMatchObject({
+      ok: false,
+      reason: "rate-limited",
+      retryAfterSec: 300,
+    });
     expect(sleeps).toEqual([]);
     const second = await yv.getChapter("yv-147", "JHN", 4);
     expect(second).toMatchObject({ ok: false, reason: "rate-limited" });
@@ -146,17 +197,28 @@ describe("getChapter", () => {
     replies = [{ status: 403 }];
     const locked = await client().getChapter("yv-128", "JHN", 3);
     expect(locked).toMatchObject({ ok: false, reason: "locked" });
-    expect(locked.ok === false && locked.message).toMatch(/portal de YouVersion Platform/i);
+    expect(locked.ok === false && locked.message).toMatch(
+      /portal de YouVersion Platform/i,
+    );
     replies = [{ status: 404 }];
-    expect(await client().getChapter("yv-147", "JHN", 99)).toMatchObject({ ok: false, reason: "not-found" });
+    expect(await client().getChapter("yv-147", "JHN", 99)).toMatchObject({
+      ok: false,
+      reason: "not-found",
+    });
     expect(calls).toHaveLength(2);
   });
 
   it("rejects bad references and local ids without calling the API", async () => {
     const yv = client();
-    expect(await yv.getChapter("rv1909", "JHN", 3)).toMatchObject({ ok: false });
-    expect(await yv.getChapter("yv-147", "../x", 3)).toMatchObject({ ok: false });
-    expect(await yv.getChapter("yv-147", "JHN", 0)).toMatchObject({ ok: false });
+    expect(await yv.getChapter("rv1909", "JHN", 3)).toMatchObject({
+      ok: false,
+    });
+    expect(await yv.getChapter("yv-147", "../x", 3)).toMatchObject({
+      ok: false,
+    });
+    expect(await yv.getChapter("yv-147", "JHN", 0)).toMatchObject({
+      ok: false,
+    });
     expect(calls).toHaveLength(0);
   });
 
@@ -164,50 +226,89 @@ describe("getChapter", () => {
     replies = [{ status: 200, body: { content: JHN3 } }, INFO];
     await client().getChapter("yv-147", "JHN", 3);
     const keyless = client({ appKey: "" });
-    expect(await keyless.getChapter("yv-147", "JHN", 4)).toMatchObject({ ok: false, reason: "no-key" });
-    expect(await keyless.getChapter("yv-147", "JHN", 3)).toMatchObject({ ok: true, fromCache: true });
+    expect(await keyless.getChapter("yv-147", "JHN", 4)).toMatchObject({
+      ok: false,
+      reason: "no-key",
+    });
+    expect(await keyless.getChapter("yv-147", "JHN", 3)).toMatchObject({
+      ok: true,
+      fromCache: true,
+    });
     expect(calls).toHaveLength(2);
   });
 
   it("treats a chapter without verse markers as an error and does not cache it", async () => {
     replies = [{ status: 200, body: { content: "<p>nada</p>" } }];
-    expect(await client().getChapter("yv-147", "JHN", 3)).toMatchObject({ ok: false, reason: "error" });
+    expect(await client().getChapter("yv-147", "JHN", 3)).toMatchObject({
+      ok: false,
+      reason: "error",
+    });
     expect(fs.existsSync(path.join(dir, "147", "JHN.3.json"))).toBe(false);
   });
 
   it("uses a generic attribution when the publisher gave none (public domain RVES)", async () => {
     replies = [
       { status: 200, body: { content: JHN3 } },
-      { status: 200, body: { id: 147, abbreviation: "RVES", title: "Reina-Valera Antigua", copyright: null, promotional_content: null } },
+      {
+        status: 200,
+        body: {
+          id: 147,
+          abbreviation: "RVES",
+          title: "Reina-Valera Antigua",
+          copyright: null,
+          promotional_content: null,
+        },
+      },
     ];
     const result = await client().getChapter("yv-147", "JHN", 3);
-    expect(result).toMatchObject({ ok: true, copyright: "Reina-Valera Antigua (RVES) · YouVersion Platform" });
+    expect(result).toMatchObject({
+      ok: true,
+      copyright: "Reina-Valera Antigua (RVES) · YouVersion Platform",
+    });
   });
 
   it("does not return text without attribution, but keeps the chapter on disk for the retry", async () => {
     replies = [{ status: 200, body: { content: JHN3 } }, { status: 403 }];
-    expect(await client().getChapter("yv-147", "JHN", 3)).toMatchObject({ ok: false, reason: "locked" });
+    expect(await client().getChapter("yv-147", "JHN", 3)).toMatchObject({
+      ok: false,
+      reason: "locked",
+    });
     expect(fs.existsSync(path.join(dir, "147", "JHN.3.json"))).toBe(true);
     replies = [INFO];
-    expect(await client().getChapter("yv-147", "JHN", 3)).toMatchObject({ ok: true, fromCache: true, copyright: "© Test" });
+    expect(await client().getChapter("yv-147", "JHN", 3)).toMatchObject({
+      ok: true,
+      fromCache: true,
+      copyright: "© Test",
+    });
   });
 
   it("shares one request between concurrent calls for the same chapter", async () => {
     replies = [{ status: 200, body: { content: JHN3 } }, INFO];
     const yv = client();
-    const [a, b] = await Promise.all([yv.getChapter("yv-147", "JHN", 3), yv.getChapter("yv-147", "JHN", 3)]);
+    const [a, b] = await Promise.all([
+      yv.getChapter("yv-147", "JHN", 3),
+      yv.getChapter("yv-147", "JHN", 3),
+    ]);
     expect(a.ok && b.ok).toBe(true);
     expect(calls).toHaveLength(2);
   });
 });
 
 describe("listVersions", () => {
-  const bible = (id: number, abbreviation: string) => ({ id, abbreviation, title: `Biblia ${abbreviation}` });
-  const page = (data: unknown[], next?: string) => ({ status: 200, body: { data, next_page_token: next } });
+  const bible = (id: number, abbreviation: string) => ({
+    id,
+    abbreviation,
+    title: `Biblia ${abbreviation}`,
+  });
+  const page = (data: unknown[], next?: string) => ({
+    status: 200,
+    body: { data, next_page_token: next },
+  });
 
   it("merges catalog, licensed ids and licenses, follows pagination and caches the full catalog", async () => {
     router = (url) => {
-      if (url.includes("/licenses")) return page([{ id: 2, name: "Biblica Fast-track", bible_ids: [128] }]);
+      if (url.includes("/licenses"))
+        return page([{ id: 2, name: "Biblica Fast-track", bible_ids: [128] }]);
       if (url.includes("all_available=true")) {
         return url.includes("page_token=tok")
           ? page([bible(147, "RVES"), bible(9999, "ZZZ")])
@@ -226,8 +327,15 @@ describe("listVersions", () => {
     expect(result.versions[0].lockedReason).toMatch(/Licencia no aceptada/i);
     expect(result.versions[0].lockedReason).toContain("Biblica Fast-track");
     expect(calls.some((c) => c.url.includes("page_token=tok"))).toBe(true);
-    expect(calls.every((c) => c.url.includes("language_ranges[]=es") || c.url.includes("/licenses"))).toBe(true);
-    expect(calls.filter((c) => c.url.includes("all_available=true")).length).toBeGreaterThanOrEqual(2);
+    expect(
+      calls.every(
+        (c) =>
+          c.url.includes("language_ranges[]=es") || c.url.includes("/licenses"),
+      ),
+    ).toBe(true);
+    expect(
+      calls.filter((c) => c.url.includes("all_available=true")).length,
+    ).toBeGreaterThanOrEqual(2);
     const cached = await client().listVersions();
     expect(cached.versions).toHaveLength(2);
     expect(calls.length).toBe(4);
@@ -235,8 +343,14 @@ describe("listVersions", () => {
 
   it("re-reads the list after 30 minutes while a version is locked, but not when all are open", async () => {
     const answers = (lockedToo: boolean) => (url: string) => {
-      if (url.includes("/licenses")) return page([{ id: 2, name: "Biblica", bible_ids: [128] }]);
-      if (url.includes("all_available=true")) return page(lockedToo ? [bible(128, "NVI-S"), bible(147, "RVES")] : [bible(147, "RVES")]);
+      if (url.includes("/licenses"))
+        return page([{ id: 2, name: "Biblica", bible_ids: [128] }]);
+      if (url.includes("all_available=true"))
+        return page(
+          lockedToo
+            ? [bible(128, "NVI-S"), bible(147, "RVES")]
+            : [bible(147, "RVES")],
+        );
       return page([bible(147, "RVES")]);
     };
     router = answers(true);
@@ -257,7 +371,8 @@ describe("listVersions", () => {
   });
 
   it("serves the stale list when the network fails", async () => {
-    router = (url) => (url.includes("/licenses") ? page([]) : page([bible(147, "RVES")]));
+    router = (url) =>
+      url.includes("/licenses") ? page([]) : page([bible(147, "RVES")]);
     await client().listVersions();
     clock += 8 * 24 * 60 * 60 * 1000;
     router = () => new TypeError("offline");
@@ -268,7 +383,11 @@ describe("listVersions", () => {
   });
 
   it("reports not configured without a key", async () => {
-    expect(await client({ appKey: "" }).listVersions()).toEqual({ configured: false, versions: [], stale: false });
+    expect(await client({ appKey: "" }).listVersions()).toEqual({
+      configured: false,
+      versions: [],
+      stale: false,
+    });
     expect(calls).toHaveLength(0);
   });
 });
@@ -279,11 +398,15 @@ describe("search, add and remove online versions", () => {
     abbreviation,
     title: title ?? `Biblia ${abbreviation}`,
   });
-  const page = (data: unknown[], next?: string) => ({ status: 200, body: { data, next_page_token: next } });
+  const page = (data: unknown[], next?: string) => ({
+    status: 200,
+    body: { data, next_page_token: next },
+  });
 
   function seedCatalog() {
     router = (url) => {
-      if (url.includes("/licenses")) return page([{ id: 2, name: "Biblica Fast-track", bible_ids: [128] }]);
+      if (url.includes("/licenses"))
+        return page([{ id: 2, name: "Biblica Fast-track", bible_ids: [128] }]);
       if (url.includes("all_available=true")) {
         return page([
           bible(128, "NVI-S", "Nueva Versión Internacional 2025"),
@@ -309,23 +432,41 @@ describe("search, add and remove online versions", () => {
 
     const hits = await yv.searchVersions("traducción");
     expect(hits.hits.map((h) => h.id)).toEqual(["yv-9999"]);
-    expect(hits.hits[0]).toMatchObject({ abbr: "ZZZ", added: false, language: "Español" });
+    expect(hits.hits[0]).toMatchObject({
+      abbr: "ZZZ",
+      added: false,
+      language: "Español",
+    });
     expect(calls.length).toBe(before);
 
     const listed = await yv.addVersion("yv-9999");
-    expect(listed.versions.map((v) => v.id)).toEqual(["yv-128", "yv-147", "yv-9999"]);
+    expect(listed.versions.map((v) => v.id)).toEqual([
+      "yv-128",
+      "yv-147",
+      "yv-9999",
+    ]);
     expect(fs.existsSync(path.join(dir, "selected-versions.json"))).toBe(true);
-    expect(JSON.parse(fs.readFileSync(path.join(dir, "selected-versions.json"), "utf8"))).toEqual({ ids: [9999] });
+    expect(
+      JSON.parse(
+        fs.readFileSync(path.join(dir, "selected-versions.json"), "utf8"),
+      ),
+    ).toEqual({ ids: [9999] });
 
     const again = await yv.searchVersions("zzz");
     expect(again.hits[0].added).toBe(true);
 
     // Defaults cannot be removed; custom ones can.
     await yv.removeVersion("yv-128");
-    expect((await yv.listVersions()).versions.map((v) => v.id)).toContain("yv-128");
+    expect((await yv.listVersions()).versions.map((v) => v.id)).toContain(
+      "yv-128",
+    );
     const afterRemove = await yv.removeVersion("yv-9999");
     expect(afterRemove.versions.map((v) => v.id)).toEqual(["yv-128", "yv-147"]);
-    expect(JSON.parse(fs.readFileSync(path.join(dir, "selected-versions.json"), "utf8"))).toEqual({ ids: [] });
+    expect(
+      JSON.parse(
+        fs.readFileSync(path.join(dir, "selected-versions.json"), "utf8"),
+      ),
+    ).toEqual({ ids: [] });
     expect(calls.length).toBe(before);
   });
 
@@ -333,10 +474,16 @@ describe("search, add and remove online versions", () => {
     seedCatalog();
     const yv = client();
     await yv.listVersions();
-    await expect(yv.addVersion("yv-404")).rejects.toMatchObject({ reason: "not-found" });
-    await expect(yv.addVersion("rv1909")).rejects.toMatchObject({ reason: "error" });
+    await expect(yv.addVersion("yv-404")).rejects.toMatchObject({
+      reason: "not-found",
+    });
+    await expect(yv.addVersion("rv1909")).rejects.toMatchObject({
+      reason: "error",
+    });
     await yv.addVersion("yv-42");
     const other = client();
-    expect((await other.listVersions()).versions.map((v) => v.id)).toContain("yv-42");
+    expect((await other.listVersions()).versions.map((v) => v.id)).toContain(
+      "yv-42",
+    );
   });
 });

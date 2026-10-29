@@ -30,10 +30,16 @@ function bytesToBase64(bytes: ArrayBuffer): string {
  */
 export async function rasterizePdfToPngs(
   base64: string,
-  opts: { targetWidth?: number; onProgress?: (done: number, total: number) => void } = {},
+  opts: {
+    targetWidth?: number;
+    onProgress?: (done: number, total: number) => void;
+  } = {},
 ): Promise<{ pngBase64: string[] }> {
   const targetWidth = opts.targetWidth ?? 1920;
-  const loadingTask = pdfjsLib.getDocument({ data: base64ToBytes(base64), useSystemFonts: true });
+  const loadingTask = pdfjsLib.getDocument({
+    data: base64ToBytes(base64),
+    useSystemFonts: true,
+  });
   const pdf = await loadingTask.promise;
   try {
     const total = Math.min(pdf.numPages, MAX_PAGES);
@@ -50,8 +56,11 @@ export async function rasterizePdfToPngs(
         canvas.height = Math.max(1, Math.round(scaled.height));
         const context = canvas.getContext("2d", { alpha: false });
         if (!context) throw new Error("no 2d context");
-        await page.render({ canvas, canvasContext: context, viewport: scaled }).promise;
-        const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
+        await page.render({ canvas, canvasContext: context, viewport: scaled })
+          .promise;
+        const blob = await new Promise<Blob | null>((resolve) =>
+          canvas.toBlob(resolve, "image/png"),
+        );
         if (!blob) throw new Error("rasterize failed");
         pngBase64.push(bytesToBase64(await blob.arrayBuffer()));
       } finally {

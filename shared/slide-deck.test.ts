@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { isPdfPath, isUnsupportedPresentationPath, slideLabel } from "./slide-deck";
+import {
+  isPdfPath,
+  isUnsupportedPresentationPath,
+  slideLabel,
+} from "./slide-deck";
 
 describe("slide-deck helpers", () => {
   it("detects formats that need exporting to PDF/PPTX", () => {

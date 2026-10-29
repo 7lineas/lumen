@@ -12,14 +12,19 @@ function previewName(family: string): string {
 function loadPreview(family: string): Promise<void> {
   let load = loads.get(family);
   if (!load) {
-    load = window.proyector!.previewGoogleFont(family).then((faces: GoogleFontPreviewFace[]) => {
-      // The browser downloads each file only when text needs its unicode range, so the family name costs one small file.
-      for (const face of faces) {
-        document.fonts.add(
-          new FontFace(previewName(family), `url("${face.url}")`, { weight: face.weight, unicodeRange: face.unicodeRange }),
-        );
-      }
-    });
+    load = window
+      .proyector!.previewGoogleFont(family)
+      .then((faces: GoogleFontPreviewFace[]) => {
+        // The browser downloads each file only when text needs its unicode range, so the family name costs one small file.
+        for (const face of faces) {
+          document.fonts.add(
+            new FontFace(previewName(family), `url("${face.url}")`, {
+              weight: face.weight,
+              unicodeRange: face.unicodeRange,
+            }),
+          );
+        }
+      });
     load.catch(() => loads.delete(family));
     loads.set(family, load);
   }
@@ -44,5 +49,7 @@ export function useFontPreview(family: string): string | undefined {
     };
   }, [family]);
 
-  return ready ? `"${previewName(family)}", system-ui, -apple-system, sans-serif` : undefined;
+  return ready
+    ? `"${previewName(family)}", system-ui, -apple-system, sans-serif`
+    : undefined;
 }

@@ -1,4 +1,10 @@
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Kbd } from "@/components/ui/kbd";
 
 const MOD = /Mac|iPhone|iPad/.test(navigator.userAgent) ? "⌘" : "Ctrl";
@@ -23,7 +29,11 @@ const SECTIONS: Array<{ title: string; rows: Row[] }> = [
   {
     title: "Presentar",
     rows: [
-      { keys: ["←", "→"], joiner: " ", label: "Anterior o siguiente en la vista previa" },
+      {
+        keys: ["←", "→"],
+        joiner: " ",
+        label: "Anterior o siguiente en la vista previa",
+      },
       { keys: ["↑", "↓"], joiner: " ", label: "Fila de arriba o de abajo" },
       { keys: ["Enter"], label: "Proyectar la vista previa" },
       { keys: ["Doble clic"], label: "Proyectar esa diapositiva directamente" },
@@ -51,7 +61,9 @@ export function ShortcutsDialog({ open, onOpenChange }: Props) {
       <DialogContent className="shortcuts-dialog">
         <DialogHeader>
           <DialogTitle>Atajos de teclado</DialogTitle>
-          <DialogDescription>Funcionan cuando no estás escribiendo en un campo.</DialogDescription>
+          <DialogDescription>
+            Funcionan cuando no estás escribiendo en un campo.
+          </DialogDescription>
         </DialogHeader>
         <div className="shortcuts-list">
           {SECTIONS.map((section) => (
@@ -63,7 +75,9 @@ export function ShortcutsDialog({ open, onOpenChange }: Props) {
                     <dt>
                       {row.keys.map((key, i) => (
                         <span key={`${key}-${i}`} className="shortcuts-keys">
-                          {i > 0 && <span aria-hidden>{row.joiner ?? "+"}</span>}
+                          {i > 0 && (
+                            <span aria-hidden>{row.joiner ?? "+"}</span>
+                          )}
                           <Kbd>{key}</Kbd>
                         </span>
                       ))}

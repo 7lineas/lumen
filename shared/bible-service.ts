@@ -28,7 +28,11 @@ export function getVerseText(bible: BibleData, ref: VerseRef): string | null {
   return ch ?? null;
 }
 
-export function getChapterVerseCount(bible: BibleData, book: string, chapter: number): number {
+export function getChapterVerseCount(
+  bible: BibleData,
+  book: string,
+  chapter: number,
+): number {
   const ch = bible.verses[book]?.[String(chapter)];
   if (!ch) return 0;
   return Object.keys(ch).length;
@@ -38,7 +42,10 @@ export function fetchRangeTexts(
   primaryId: string,
   secondaryId: string | null,
   range: VerseRange,
-): { referenceLabel: string; blocks: Array<{ label?: string; text: string }> } | null {
+): {
+  referenceLabel: string;
+  blocks: Array<{ label?: string; text: string }>;
+} | null {
   const primary = cache.get(primaryId);
   if (!primary) return null;
   const secondary = secondaryId ? cache.get(secondaryId) : null;
@@ -93,12 +100,24 @@ export function searchVerses(
   versionId: string,
   query: string,
   limit = 50,
-): Array<{ book: string; chapter: number; verse: number; text: string; snippet: string }> {
+): Array<{
+  book: string;
+  chapter: number;
+  verse: number;
+  text: string;
+  snippet: string;
+}> {
   const bible = cache.get(versionId);
   if (!bible || !query.trim()) return [];
 
   const q = normalizeSearchText(query);
-  const results: Array<{ book: string; chapter: number; verse: number; text: string; snippet: string }> = [];
+  const results: Array<{
+    book: string;
+    chapter: number;
+    verse: number;
+    text: string;
+    snippet: string;
+  }> = [];
   const normalized = normalizedIndex(bible.searchIndex);
 
   for (let i = 0; i < bible.searchIndex.length; i++) {

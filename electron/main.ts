@@ -43,13 +43,32 @@ function mediaFilesDir(): string {
 }
 
 /** Folders under userData whose files may be shown or played in the app windows. */
-const SERVED_MEDIA_DIRS = ["background-images", "logo-images", "slide-images", "media-files", "fonts"];
+const SERVED_MEDIA_DIRS = [
+  "background-images",
+  "logo-images",
+  "slide-images",
+  "media-files",
+  "fonts",
+];
 
 const MEDIA_CONTENT_TYPES: Record<string, string> = {
-  ".mp4": "video/mp4", ".m4v": "video/mp4", ".mov": "video/quicktime", ".webm": "video/webm", ".ogv": "video/ogg",
-  ".mp3": "audio/mpeg", ".wav": "audio/wav", ".m4a": "audio/mp4", ".aac": "audio/aac", ".ogg": "application/ogg",
-  ".oga": "audio/ogg", ".opus": "audio/ogg", ".flac": "audio/flac",
-  ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp",
+  ".mp4": "video/mp4",
+  ".m4v": "video/mp4",
+  ".mov": "video/quicktime",
+  ".webm": "video/webm",
+  ".ogv": "video/ogg",
+  ".mp3": "audio/mpeg",
+  ".wav": "audio/wav",
+  ".m4a": "audio/mp4",
+  ".aac": "audio/aac",
+  ".ogg": "application/ogg",
+  ".oga": "audio/ogg",
+  ".opus": "audio/ogg",
+  ".flac": "audio/flac",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
 };
 
 /**
@@ -63,17 +82,31 @@ function rangeResponse(target: string, rangeHeader: string): Response | null {
   const size = fs.statSync(target).size;
   const match = /^bytes=(\d*)-(\d*)$/.exec(rangeHeader.trim());
   if (!match || (!match[1] && !match[2])) return null;
-  const start = match[1] ? Number(match[1]) : Math.max(0, size - Number(match[2]));
-  const end = match[1] && match[2] ? Math.min(Number(match[2]), size - 1) : size - 1;
+  const start = match[1]
+    ? Number(match[1])
+    : Math.max(0, size - Number(match[2]));
+  const end =
+    match[1] && match[2] ? Math.min(Number(match[2]), size - 1) : size - 1;
   if (start >= size || end < start) {
-    return new Response(null, { status: 416, headers: { "content-range": `bytes */${size}`, "accept-ranges": "bytes" } });
+    return new Response(null, {
+      status: 416,
+      headers: { "content-range": `bytes */${size}`, "accept-ranges": "bytes" },
+    });
   }
   // Large chunks: a video is read through this process, and 64 KB pieces make an hour-long file tens of thousands of hops.
-  const stream = Readable.toWeb(fs.createReadStream(target, { start, end, highWaterMark: MEDIA_CHUNK_BYTES })) as unknown as ReadableStream;
+  const stream = Readable.toWeb(
+    fs.createReadStream(target, {
+      start,
+      end,
+      highWaterMark: MEDIA_CHUNK_BYTES,
+    }),
+  ) as unknown as ReadableStream;
   return new Response(stream, {
     status: 206,
     headers: {
-      "content-type": MEDIA_CONTENT_TYPES[path.extname(target).toLowerCase()] ?? "application/octet-stream",
+      "content-type":
+        MEDIA_CONTENT_TYPES[path.extname(target).toLowerCase()] ??
+        "application/octet-stream",
       "content-length": String(end - start + 1),
       "content-range": `bytes ${start}-${end}/${size}`,
       "accept-ranges": "bytes",
@@ -90,8 +123,15 @@ async function copyToMediaFiles(filePath: string): Promise<string | null> {
     const dir = mediaFilesDir();
     await fs.promises.mkdir(dir, { recursive: true });
     const ext = path.extname(filePath).toLowerCase();
-    const storedPath = path.join(dir, `${Date.now()}-${Math.random().toString(36).slice(2, 9)}${ext}`);
-    await fs.promises.copyFile(filePath, storedPath, fs.constants.COPYFILE_FICLONE);
+    const storedPath = path.join(
+      dir,
+      `${Date.now()}-${Math.random().toString(36).slice(2, 9)}${ext}`,
+    );
+    await fs.promises.copyFile(
+      filePath,
+      storedPath,
+      fs.constants.COPYFILE_FICLONE,
+    );
     return storedPath;
   } catch (error) {
     console.error("[media] copyToMediaFiles failed", error);
@@ -104,10 +144,13 @@ function pruneOrphanMediaFiles(next: Array<{ file?: string }>): void {
   try {
     const dir = path.resolve(mediaFilesDir());
     if (!fs.existsSync(dir)) return;
-    const referenced = new Set(next.flatMap((item) => (item.file ? [item.file] : [])));
+    const referenced = new Set(
+      next.flatMap((item) => (item.file ? [item.file] : [])),
+    );
     for (const name of fs.readdirSync(dir)) {
       const full = path.join(dir, name);
-      if (!referenced.has(full) && !isRecent(full)) fs.rmSync(full, { force: true });
+      if (!referenced.has(full) && !isRecent(full))
+        fs.rmSync(full, { force: true });
     }
   } catch {
     // pruning is best-effort
@@ -147,7 +190,10 @@ function copyToSlideImages(filePath: string): string | null {
     const dir = slideImagesDir();
     fs.mkdirSync(dir, { recursive: true });
     const ext = path.extname(filePath).toLowerCase();
-    const storedPath = path.join(dir, `${Date.now()}-${Math.random().toString(36).slice(2, 9)}${ext}`);
+    const storedPath = path.join(
+      dir,
+      `${Date.now()}-${Math.random().toString(36).slice(2, 9)}${ext}`,
+    );
     fs.copyFileSync(filePath, storedPath);
     return storedPath;
   } catch (error) {
@@ -168,12 +214,16 @@ function isRecent(fullPath: string): boolean {
 }
 
 /** Delete managed slide images no longer referenced by any stored deck. */
-function pruneOrphanSlideImages(next: Array<{ images: Array<string | null> }>): void {
+function pruneOrphanSlideImages(
+  next: Array<{ images: Array<string | null> }>,
+): void {
   try {
     const dir = path.resolve(slideImagesDir());
     if (!fs.existsSync(dir)) return;
     const referenced = new Set(
-      next.flatMap((deck) => deck.images).filter((entry): entry is string => typeof entry === "string"),
+      next
+        .flatMap((deck) => deck.images)
+        .filter((entry): entry is string => typeof entry === "string"),
     );
     for (const name of fs.readdirSync(dir)) {
       const full = path.join(dir, name);
@@ -200,7 +250,8 @@ function pruneStaleSlideSources(): void {
     for (const name of fs.readdirSync(dir)) {
       const full = path.join(dir, name);
       try {
-        if (Date.now() - fs.statSync(full).mtimeMs > SOURCE_MAX_AGE_MS) fs.rmSync(full, { force: true });
+        if (Date.now() - fs.statSync(full).mtimeMs > SOURCE_MAX_AGE_MS)
+          fs.rmSync(full, { force: true });
       } catch {
         // ignore single-file failures
       }
@@ -209,9 +260,21 @@ function pruneStaleSlideSources(): void {
     // pruning is best-effort
   }
 }
-import type { AppSettings, ProjectorPayload, QueueEntry, HistoryEntry, StoredSong, StoredText, StoredSlideDeck, SlideImportResult } from "../shared/types";
+import type {
+  AppSettings,
+  ProjectorPayload,
+  QueueEntry,
+  HistoryEntry,
+  StoredSong,
+  StoredText,
+  StoredSlideDeck,
+  SlideImportResult,
+} from "../shared/types";
 import { DEFAULT_SETTINGS } from "../shared/types";
-import { buildBibleDataCandidates, resolveBibleDataDir } from "./bible-data-path";
+import {
+  buildBibleDataCandidates,
+  resolveBibleDataDir,
+} from "./bible-data-path";
 import { setupUpdater } from "./updater";
 import { YouVersionClient, resolveAppKey } from "./youversion";
 import {
@@ -228,20 +291,46 @@ import {
   resolveModulePath,
 } from "./bible-library";
 import { ImportSession } from "./bible-import";
-import { installGoogleFont, installedFontId, loadGoogleFontCatalog, previewGoogleFont, removeInstalledFont, searchGoogleFonts, type GoogleFontEntry } from "./google-fonts";
-import { isFontFamilyId, type FontFamilyId, type InstalledFont } from "../shared/fonts";
+import {
+  installGoogleFont,
+  installedFontId,
+  loadGoogleFontCatalog,
+  previewGoogleFont,
+  removeInstalledFont,
+  searchGoogleFonts,
+  type GoogleFontEntry,
+} from "./google-fonts";
+import {
+  isFontFamilyId,
+  type FontFamilyId,
+  type InstalledFont,
+} from "../shared/fonts";
 import type { ImportMetaInput } from "../shared/bible-import/build";
-import { publishBrowserEvent, registerBrowserRpc, rotateBrowserPairingCode, startBrowserService, stopBrowserService } from "./browser-service";
+import {
+  publishBrowserEvent,
+  registerBrowserRpc,
+  rotateBrowserPairingCode,
+  startBrowserService,
+  stopBrowserService,
+} from "./browser-service";
 
 function registerIpcHandle<TArgs extends unknown[], TResult>(
   channel: string,
   handler: (event: Electron.IpcMainInvokeEvent, ...args: TArgs) => TResult,
 ): void {
   ipcMain.handle(channel, handler as never);
-  registerBrowserRpc(channel, (args) => handler({ sender: {
-    isDestroyed: () => false,
-    send: (event: string, payload: unknown) => publishBrowserEvent(event, payload),
-  } } as unknown as Electron.IpcMainInvokeEvent, ...args as TArgs));
+  registerBrowserRpc(channel, (args) =>
+    handler(
+      {
+        sender: {
+          isDestroyed: () => false,
+          send: (event: string, payload: unknown) =>
+            publishBrowserEvent(event, payload),
+        },
+      } as unknown as Electron.IpcMainInvokeEvent,
+      ...(args as TArgs),
+    ),
+  );
 }
 
 // Isolated profile for automated checks (never used in normal installs).
@@ -287,13 +376,19 @@ const isDev = !app.isPackaged && process.env.PROYECTOR_SCREENSHOT !== "1";
 protocol.registerSchemesAsPrivileged([
   {
     scheme: "lumen-media",
-    privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true },
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      stream: true,
+    },
   },
 ]);
 
 function devServerUrl(): string {
   const fromPlugin = process.env.VITE_DEV_SERVER_URL;
-  if (fromPlugin) return fromPlugin.endsWith("/") ? fromPlugin : `${fromPlugin}/`;
+  if (fromPlugin)
+    return fromPlugin.endsWith("/") ? fromPlugin : `${fromPlugin}/`;
   const port = process.env.PORT ?? "43123";
   return `http://localhost:${port}/`;
 }
@@ -307,7 +402,12 @@ let bibleDataDir: string | null = null;
 function biblesPath(): string {
   if (!bibleDataDir) {
     bibleDataDir = resolveBibleDataDir(
-      buildBibleDataCandidates(process.resourcesPath, app.getAppPath(), __dirname, process.cwd()),
+      buildBibleDataCandidates(
+        process.resourcesPath,
+        app.getAppPath(),
+        __dirname,
+        process.cwd(),
+      ),
     );
   }
   return bibleDataDir;
@@ -336,7 +436,12 @@ function broadcastInstalledFonts(): void {
 
 function catalogPath(): string {
   return resolveCatalogPath(
-    catalogCandidates(process.resourcesPath, app.getAppPath(), __dirname, process.cwd()),
+    catalogCandidates(
+      process.resourcesPath,
+      app.getAppPath(),
+      __dirname,
+      process.cwd(),
+    ),
   );
 }
 
@@ -370,7 +475,10 @@ function createOperatorWindow(): void {
     // the traffic lights inside it. Elsewhere the window is frameless and the top
     // bar draws its own window controls, so dialogs can cover them like any content.
     ...(process.platform === "darwin"
-      ? { titleBarStyle: "hiddenInset" as const, trafficLightPosition: { x: 16, y: 16 } }
+      ? {
+          titleBarStyle: "hiddenInset" as const,
+          trafficLightPosition: { x: 16, y: 16 },
+        }
       : { frame: false }),
     autoHideMenuBar: true,
     webPreferences: {
@@ -396,7 +504,10 @@ function createOperatorWindow(): void {
 
   const sendMaximized = () => {
     if (operatorWindow && !operatorWindow.isDestroyed()) {
-      operatorWindow.webContents.send("window:maximized", operatorWindow.isMaximized());
+      operatorWindow.webContents.send(
+        "window:maximized",
+        operatorWindow.isMaximized(),
+      );
     }
   };
   operatorWindow.on("maximize", sendMaximized);
@@ -405,18 +516,26 @@ function createOperatorWindow(): void {
 
 // Window controls for the frameless operator window (see the top bar). Only the
 // operator window may drive them, so these stay off the LAN browser RPC.
-ipcMain.handle("window:control", (event, action: "minimize" | "toggle-maximize" | "close") => {
-  const win = operatorWindow;
-  if (!win || win.isDestroyed() || event.sender !== win.webContents) return;
-  if (action === "minimize") win.minimize();
-  else if (action === "toggle-maximize") {
-    if (win.isMaximized()) win.unmaximize();
-    else win.maximize();
-  } else if (action === "close") win.close();
-});
+ipcMain.handle(
+  "window:control",
+  (event, action: "minimize" | "toggle-maximize" | "close") => {
+    const win = operatorWindow;
+    if (!win || win.isDestroyed() || event.sender !== win.webContents) return;
+    if (action === "minimize") win.minimize();
+    else if (action === "toggle-maximize") {
+      if (win.isMaximized()) win.unmaximize();
+      else win.maximize();
+    } else if (action === "close") win.close();
+  },
+);
 ipcMain.handle("window:is-maximized", (event) => {
   const win = operatorWindow;
-  return Boolean(win && !win.isDestroyed() && event.sender === win.webContents && win.isMaximized());
+  return Boolean(
+    win &&
+    !win.isDestroyed() &&
+    event.sender === win.webContents &&
+    win.isMaximized(),
+  );
 });
 
 function getTargetDisplay(): Electron.Display {
@@ -439,10 +558,20 @@ function createProjectorWindow(): void {
 
   const display = getTargetDisplay();
   const singleDisplay = displaysCount() <= 1;
-  const width = singleDisplay ? Math.min(960, display.bounds.width - 48) : display.bounds.width;
-  const height = singleDisplay ? Math.min(540, display.bounds.height - 96) : display.bounds.height;
-  const x = singleDisplay ? display.bounds.x + Math.max(24, Math.round((display.bounds.width - width) / 2)) : display.bounds.x;
-  const y = singleDisplay ? display.bounds.y + Math.max(48, Math.round((display.bounds.height - height) / 2)) : display.bounds.y;
+  const width = singleDisplay
+    ? Math.min(960, display.bounds.width - 48)
+    : display.bounds.width;
+  const height = singleDisplay
+    ? Math.min(540, display.bounds.height - 96)
+    : display.bounds.height;
+  const x = singleDisplay
+    ? display.bounds.x +
+      Math.max(24, Math.round((display.bounds.width - width) / 2))
+    : display.bounds.x;
+  const y = singleDisplay
+    ? display.bounds.y +
+      Math.max(48, Math.round((display.bounds.height - height) / 2))
+    : display.bounds.y;
 
   projectorReady = false;
   projectorWindow = new BrowserWindow({
@@ -467,7 +596,9 @@ function createProjectorWindow(): void {
   if (isDev) {
     void projectorWindow.loadURL(`${devServerUrl()}${hash}`);
   } else {
-    void projectorWindow.loadFile(path.join(__dirname, "../dist/index.html"), { hash: "/projector" });
+    void projectorWindow.loadFile(path.join(__dirname, "../dist/index.html"), {
+      hash: "/projector",
+    });
   }
 
   projectorWindow.webContents.on("did-finish-load", () => {
@@ -513,7 +644,12 @@ function emitProjectorBounds(): void {
 
 /** Hay una ventana de proyección abierta y mostrando algo (no en negro). */
 function isProjectionActive(): boolean {
-  return Boolean(projectorWindow && !projectorWindow.isDestroyed() && lastProjectorMode && lastProjectorMode !== "blank");
+  return Boolean(
+    projectorWindow &&
+    !projectorWindow.isDestroyed() &&
+    lastProjectorMode &&
+    lastProjectorMode !== "blank",
+  );
 }
 
 function sendToProjector(payload: ProjectorPayload): void {
@@ -547,8 +683,12 @@ async function waitForOperatorReady(win: BrowserWindow): Promise<void> {
     if (ready) return;
     await delay(400);
   }
-  const body = await win.webContents.executeJavaScript("document.body.innerText");
-  throw new Error(`Operator UI did not load bibles. Body snippet: ${String(body).slice(0, 400)}`);
+  const body = await win.webContents.executeJavaScript(
+    "document.body.innerText",
+  );
+  throw new Error(
+    `Operator UI did not load bibles. Body snippet: ${String(body).slice(0, 400)}`,
+  );
 }
 
 async function captureScreenshots(): Promise<void> {
@@ -556,16 +696,20 @@ async function captureScreenshots(): Promise<void> {
   fs.mkdirSync(outDir, { recursive: true });
 
   // Prove path resolution before UI loads
-  const manifest = JSON.parse(fs.readFileSync(path.join(biblesPath(), "manifest.json"), "utf-8"));
+  const manifest = JSON.parse(
+    fs.readFileSync(path.join(biblesPath(), "manifest.json"), "utf-8"),
+  );
   if (!Array.isArray(manifest) || manifest.length < 1) {
     throw new Error("manifest.json vacío o inválido");
   }
 
   createOperatorWindow();
   if (!operatorWindow) throw new Error("No operator window");
-  await operatorWindow.webContents.executeJavaScript(`
+  await operatorWindow.webContents
+    .executeJavaScript(`
     localStorage.clear();
-  `).catch(() => undefined);
+  `)
+    .catch(() => undefined);
   await waitForOperatorReady(operatorWindow);
 
   await operatorWindow.webContents.executeJavaScript(`
@@ -592,14 +736,20 @@ async function captureScreenshots(): Promise<void> {
   await delay(900);
 
   const operatorImg = await operatorWindow.webContents.capturePage();
-  fs.writeFileSync(path.join(outDir, "operator-window.png"), operatorImg.toPNG());
+  fs.writeFileSync(
+    path.join(outDir, "operator-window.png"),
+    operatorImg.toPNG(),
+  );
 
   await operatorWindow.webContents.executeJavaScript(`
     document.querySelector('[data-testid="tab-ajustes"]')?.click();
   `);
   await delay(600);
   const settingsImg = await operatorWindow.webContents.capturePage();
-  fs.writeFileSync(path.join(outDir, "settings-window.png"), settingsImg.toPNG());
+  fs.writeFileSync(
+    path.join(outDir, "settings-window.png"),
+    settingsImg.toPNG(),
+  );
 
   operatorWindow.setSize(1280, 1700);
   await operatorWindow.webContents.executeJavaScript(`
@@ -628,10 +778,15 @@ async function captureScreenshots(): Promise<void> {
   app.quit();
 }
 
-  app.whenReady().then(() => {
+app.whenReady().then(() => {
   app.setName("Lumen");
   // Warm the remote Bible catalog so the first Biblias overlay opens without waiting.
-  void buildLibraryView(biblesPath(), userBiblesDir(), catalogPath(), nodeFetch).catch(() => undefined);
+  void buildLibraryView(
+    biblesPath(),
+    userBiblesDir(),
+    catalogPath(),
+    nodeFetch,
+  ).catch(() => undefined);
   app.setAppUserModelId("com.7lineas.lumen");
   Menu.setApplicationMenu(null);
   protocol.handle("lumen-media", async (request) => {
@@ -640,8 +795,11 @@ async function captureScreenshots(): Promise<void> {
     const userData = path.resolve(app.getPath("userData"));
     // Only folders whose files are meant to be shown on screen. slide-decks
     // (original PPTX/PDF sources) is deliberately NOT served.
-    const allowed = SERVED_MEDIA_DIRS.map((dir) => `${path.join(userData, dir)}${path.sep}`);
-    if (!allowed.some((root) => target.startsWith(root))) return new Response("Forbidden", { status: 403 });
+    const allowed = SERVED_MEDIA_DIRS.map(
+      (dir) => `${path.join(userData, dir)}${path.sep}`,
+    );
+    if (!allowed.some((root) => target.startsWith(root)))
+      return new Response("Forbidden", { status: 403 });
     const range = request.headers.get("range");
     let ranged: Response | null = null;
     if (range) {
@@ -651,27 +809,42 @@ async function captureScreenshots(): Promise<void> {
         return new Response("Not found", { status: 404 });
       }
     }
-    const response = ranged ?? await net.fetch(pathToFileURL(target).toString());
+    const response =
+      ranged ?? (await net.fetch(pathToFileURL(target).toString()));
     const origin = request.headers.get("origin");
     let localAppOrigin = origin === "null";
     if (origin && origin !== "null") {
       try {
         const parsed = new URL(origin);
-        localAppOrigin = (parsed.protocol === "http:" || parsed.protocol === "https:")
-          && (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1" || parsed.hostname === "::1" || parsed.hostname.endsWith(".localhost"));
-      } catch { localAppOrigin = false; }
+        localAppOrigin =
+          (parsed.protocol === "http:" || parsed.protocol === "https:") &&
+          (parsed.hostname === "localhost" ||
+            parsed.hostname === "127.0.0.1" ||
+            parsed.hostname === "::1" ||
+            parsed.hostname.endsWith(".localhost"));
+      } catch {
+        localAppOrigin = false;
+      }
     }
     if (!localAppOrigin || !origin) return response;
     const headers = new Headers(response.headers);
     headers.set("access-control-allow-origin", origin);
     headers.set("vary", "Origin");
-    return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
   });
   setupUpdater({ getOperatorWindow: () => operatorWindow, isProjectionActive });
   const browserAccess = store.get("browserAccess");
-  const accessConfig = browserAccess.enabled && !/^\d{6}$/.test(browserAccess.pairingCode)
-    ? { enabled: true, pairingCode: String(randomInt(0, 1_000_000)).padStart(6, "0") }
-    : browserAccess;
+  const accessConfig =
+    browserAccess.enabled && !/^\d{6}$/.test(browserAccess.pairingCode)
+      ? {
+          enabled: true,
+          pairingCode: String(randomInt(0, 1_000_000)).padStart(6, "0"),
+        }
+      : browserAccess;
   if (accessConfig !== browserAccess) store.set("browserAccess", accessConfig);
   startBrowserService({
     root: path.join(app.getAppPath(), "dist"),
@@ -709,30 +882,62 @@ app.on("window-all-closed", () => {
   }
 });
 
-registerIpcHandle("bibles:list", () => listSelectableVersions(biblesPath(), userBiblesDir()));
+registerIpcHandle("bibles:list", () =>
+  listSelectableVersions(biblesPath(), userBiblesDir()),
+);
 
 function browserAccessInfo() {
   const config = store.get("browserAccess");
   const isPrivateIpv4 = (address: string) => {
     const octets = address.split(".").map(Number);
-    if (octets.length !== 4 || octets.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) return false;
+    if (
+      octets.length !== 4 ||
+      octets.some((part) => !Number.isInteger(part) || part < 0 || part > 255)
+    )
+      return false;
     const [first, second] = octets;
-    return first === 10 || (first === 172 && second! >= 16 && second! <= 31) || (first === 192 && second === 168) || (first === 169 && second === 254);
+    return (
+      first === 10 ||
+      (first === 172 && second! >= 16 && second! <= 31) ||
+      (first === 192 && second === 168) ||
+      (first === 169 && second === 254)
+    );
   };
   const addresses = Object.values(os.networkInterfaces()).flatMap((entries) =>
-    (entries ?? []).filter((entry) => (String(entry.family) === "IPv4" || String(entry.family) === "4") && !entry.internal && isPrivateIpv4(entry.address)).map((entry) => entry.address),
+    (entries ?? [])
+      .filter(
+        (entry) =>
+          (String(entry.family) === "IPv4" || String(entry.family) === "4") &&
+          !entry.internal &&
+          isPrivateIpv4(entry.address),
+      )
+      .map((entry) => entry.address),
   );
   const port = Number(process.env.LUMEN_BROWSER_PORT ?? 43124);
-  return { enabled: config.enabled, pairingCode: config.pairingCode, port, addresses };
+  return {
+    enabled: config.enabled,
+    pairingCode: config.pairingCode,
+    port,
+    addresses,
+  };
 }
 
 registerIpcHandle("browser:status", () => browserAccessInfo());
 registerIpcHandle("browser:configure", (_event, enabled: boolean) => {
   const stored = store.get("browserAccess");
-  const previous = stored.enabled && !/^\d{6}$/.test(stored.pairingCode)
-    ? { enabled: true, pairingCode: String(randomInt(0, 1_000_000)).padStart(6, "0") }
-    : stored;
-  const next = { enabled: enabled === true, pairingCode: enabled ? previous.pairingCode || String(randomInt(0, 1_000_000)).padStart(6, "0") : "" };
+  const previous =
+    stored.enabled && !/^\d{6}$/.test(stored.pairingCode)
+      ? {
+          enabled: true,
+          pairingCode: String(randomInt(0, 1_000_000)).padStart(6, "0"),
+        }
+      : stored;
+  const next = {
+    enabled: enabled === true,
+    pairingCode: enabled
+      ? previous.pairingCode || String(randomInt(0, 1_000_000)).padStart(6, "0")
+      : "",
+  };
   store.set("browserAccess", next);
   stopBrowserService();
   startBrowserService({
@@ -745,9 +950,11 @@ registerIpcHandle("browser:configure", (_event, enabled: boolean) => {
 });
 registerIpcHandle("browser:rotate-code", () => {
   const stored = store.get("browserAccess");
-  if (!stored.enabled) throw new Error("El acceso desde otros dispositivos está apagado.");
+  if (!stored.enabled)
+    throw new Error("El acceso desde otros dispositivos está apagado.");
   let pairingCode = stored.pairingCode;
-  while (pairingCode === stored.pairingCode) pairingCode = String(randomInt(0, 1_000_000)).padStart(6, "0");
+  while (pairingCode === stored.pairingCode)
+    pairingCode = String(randomInt(0, 1_000_000)).padStart(6, "0");
   store.set("browserAccess", { enabled: true, pairingCode });
   rotateBrowserPairingCode(pairingCode);
   return browserAccessInfo();
@@ -771,12 +978,22 @@ function yvp(): YouVersionClient {
 }
 
 // Online Bibles (YouVersion Platform). The App Key stays in this process.
-registerIpcHandle("yvp:versions", (_e, force?: boolean) => yvp().listVersions(force === true));
-registerIpcHandle("yvp:search", (_e, query?: string) => yvp().searchVersions(String(query ?? "")));
-registerIpcHandle("yvp:add", (_e, id?: string) => yvp().addVersion(String(id ?? "")));
-registerIpcHandle("yvp:remove", (_e, id?: string) => yvp().removeVersion(String(id ?? "")));
-registerIpcHandle("yvp:chapter", (_e, id: string, book: string, chapter: number) =>
-  yvp().getChapter(String(id), String(book), Number(chapter)),
+registerIpcHandle("yvp:versions", (_e, force?: boolean) =>
+  yvp().listVersions(force === true),
+);
+registerIpcHandle("yvp:search", (_e, query?: string) =>
+  yvp().searchVersions(String(query ?? "")),
+);
+registerIpcHandle("yvp:add", (_e, id?: string) =>
+  yvp().addVersion(String(id ?? "")),
+);
+registerIpcHandle("yvp:remove", (_e, id?: string) =>
+  yvp().removeVersion(String(id ?? "")),
+);
+registerIpcHandle(
+  "yvp:chapter",
+  (_e, id: string, book: string, chapter: number) =>
+    yvp().getChapter(String(id), String(book), Number(chapter)),
 );
 
 // Importing the user's own Bible files (JSON, Zefania, OSIS, USFM, CSV/TSV).
@@ -787,24 +1004,36 @@ registerIpcHandle("bibles:import-pick", async () => {
     title: "Importar Biblia",
     properties: ["openFile", "multiSelections"],
     filters: [
-      { name: "Biblias (JSON, XML, USFM, CSV, TSV)", extensions: ["json", "xml", "usfm", "sfm", "ptx", "csv", "tsv", "txt"] },
+      {
+        name: "Biblias (JSON, XML, USFM, CSV, TSV)",
+        extensions: ["json", "xml", "usfm", "sfm", "ptx", "csv", "tsv", "txt"],
+      },
       { name: "Todos los archivos", extensions: ["*"] },
     ],
   });
-  if (result.canceled || result.filePaths.length === 0) return { ok: false, canceled: true };
+  if (result.canceled || result.filePaths.length === 0)
+    return { ok: false, canceled: true };
   return bibleImports.preview(result.filePaths);
 });
 
-registerIpcHandle("bibles:import-commit", (_e, previewId: string, input: ImportMetaInput) => {
-  const existing = listSelectableVersions(biblesPath(), userBiblesDir());
-  const safe: ImportMetaInput = {
-    name: String(input?.name ?? ""),
-    abbr: String(input?.abbr ?? ""),
-    language: String(input?.language ?? ""),
-    copyright: String(input?.copyright ?? ""),
-  };
-  return bibleImports.commit(String(previewId), safe, userBiblesDir(), existing);
-});
+registerIpcHandle(
+  "bibles:import-commit",
+  (_e, previewId: string, input: ImportMetaInput) => {
+    const existing = listSelectableVersions(biblesPath(), userBiblesDir());
+    const safe: ImportMetaInput = {
+      name: String(input?.name ?? ""),
+      abbr: String(input?.abbr ?? ""),
+      language: String(input?.language ?? ""),
+      copyright: String(input?.copyright ?? ""),
+    };
+    return bibleImports.commit(
+      String(previewId),
+      safe,
+      userBiblesDir(),
+      existing,
+    );
+  },
+);
 
 registerIpcHandle("bibles:import-cancel", () => bibleImports.discard());
 
@@ -838,8 +1067,10 @@ registerIpcHandle("bibles:remove", (_e, id: string) => {
   const safeId = String(id);
   removeModule(userBiblesDir(), bundledIds(biblesPath()), safeId);
   const settings = currentSettings();
-  if (settings.primaryVersionId === safeId) settings.primaryVersionId = "rv1909";
-  if (settings.secondaryVersionId === safeId) settings.secondaryVersionId = null;
+  if (settings.primaryVersionId === safeId)
+    settings.primaryVersionId = "rv1909";
+  if (settings.secondaryVersionId === safeId)
+    settings.secondaryVersionId = null;
   store.set("settings", settings);
   return { settings };
 });
@@ -847,32 +1078,60 @@ registerIpcHandle("bibles:remove", (_e, id: string) => {
 registerIpcHandle("fonts:list", () => store.get("installedFonts"));
 
 registerIpcHandle("fonts:search", async (_e, query?: string) => {
-  const catalog = await loadGoogleFontCatalog({ cacheFile: googleFontsCatalogFile(), fetchImpl: fetch });
+  const catalog = await loadGoogleFontCatalog({
+    cacheFile: googleFontsCatalogFile(),
+    fetchImpl: fetch,
+  });
   return searchGoogleFonts(catalog, String(query ?? ""));
 });
 
 registerIpcHandle("fonts:preview", async (_e, family: string) => {
-  const catalog = await loadGoogleFontCatalog({ cacheFile: googleFontsCatalogFile(), fetchImpl: fetch });
-  return previewGoogleFont({ family: String(family), catalog, fetchImpl: fetch });
+  const catalog = await loadGoogleFontCatalog({
+    cacheFile: googleFontsCatalogFile(),
+    fetchImpl: fetch,
+  });
+  return previewGoogleFont({
+    family: String(family),
+    catalog,
+    fetchImpl: fetch,
+  });
 });
 
 registerIpcHandle("fonts:install", async (_e, family: string) => {
   const safeFamily = String(family);
   const installed = store.get("installedFonts");
-  const existing = installed.find((font) => font.id === installedFontId(safeFamily));
+  const existing = installed.find(
+    (font) => font.id === installedFontId(safeFamily),
+  );
   if (existing) return existing;
-  const catalog: GoogleFontEntry[] = await loadGoogleFontCatalog({ cacheFile: googleFontsCatalogFile(), fetchImpl: fetch });
-  const font = await installGoogleFont({ family: safeFamily, catalog, fontsDir: userFontsDir(), fetchImpl: fetch });
-  store.set("installedFonts", [...installed.filter((item) => item.id !== font.id), font]);
+  const catalog: GoogleFontEntry[] = await loadGoogleFontCatalog({
+    cacheFile: googleFontsCatalogFile(),
+    fetchImpl: fetch,
+  });
+  const font = await installGoogleFont({
+    family: safeFamily,
+    catalog,
+    fontsDir: userFontsDir(),
+    fetchImpl: fetch,
+  });
+  store.set("installedFonts", [
+    ...installed.filter((item) => item.id !== font.id),
+    font,
+  ]);
   broadcastInstalledFonts();
   return font;
 });
 
 registerIpcHandle("fonts:remove", (_e, id: string) => {
-  const font = store.get("installedFonts").find((item) => item.id === String(id));
+  const font = store
+    .get("installedFonts")
+    .find((item) => item.id === String(id));
   if (!font) throw new Error("Esa fuente no está instalada");
   removeInstalledFont(userFontsDir(), font);
-  store.set("installedFonts", store.get("installedFonts").filter((item) => item.id !== font.id));
+  store.set(
+    "installedFonts",
+    store.get("installedFonts").filter((item) => item.id !== font.id),
+  );
   broadcastInstalledFonts();
   return true;
 });
@@ -892,7 +1151,10 @@ registerIpcHandle("history:get", () => store.get("history"));
 
 registerIpcHandle("history:add", (_e, entry: HistoryEntry) => {
   const history = store.get("history");
-  const next = [entry, ...history.filter((h) => h.reference !== entry.reference)].slice(0, 30);
+  const next = [
+    entry,
+    ...history.filter((h) => h.reference !== entry.reference),
+  ].slice(0, 30);
   store.set("history", next);
   return next;
 });
@@ -912,25 +1174,50 @@ registerIpcHandle("favorites:set", (_e, favorites: QueueEntry[]) => {
 });
 
 /** A song's or text's own typeface and weight: kept only when the typeface is valid and a weight came with it. */
-function storedTypeface(item: { fontFamily?: unknown; fontWeight?: unknown }): { fontFamily?: FontFamilyId; fontWeight?: number } {
-  if (!isFontFamilyId(item.fontFamily) || typeof item.fontWeight !== "number" || !Number.isFinite(item.fontWeight)) return {};
-  return { fontFamily: item.fontFamily, fontWeight: Math.min(Math.max(Math.round(item.fontWeight), 100), 900) };
+function storedTypeface(item: { fontFamily?: unknown; fontWeight?: unknown }): {
+  fontFamily?: FontFamilyId;
+  fontWeight?: number;
+} {
+  if (
+    !isFontFamilyId(item.fontFamily) ||
+    typeof item.fontWeight !== "number" ||
+    !Number.isFinite(item.fontWeight)
+  )
+    return {};
+  return {
+    fontFamily: item.fontFamily,
+    fontWeight: Math.min(Math.max(Math.round(item.fontWeight), 100), 900),
+  };
 }
 
 registerIpcHandle("songs:get", () => store.get("songs"));
 
 registerIpcHandle("songs:set", (_e, songs: StoredSong[]) => {
   const next = Array.isArray(songs)
-    ? songs.filter((song) => song && typeof song.id === "string" && typeof song.title === "string" && typeof song.lyrics === "string").map((song) => ({
-        id: song.id,
-        title: song.title,
-        ...(typeof song.author === "string" && song.author.trim() ? { author: song.author.trim() } : {}),
-        lyrics: song.lyrics,
-        ...(typeof song.fadeMs === "number" && Number.isFinite(song.fadeMs) ? { fadeMs: Math.min(Math.max(song.fadeMs, 0), 2000) } : {}),
-        ...storedTypeface(song),
-        updatedAt: Number.isFinite(song.updatedAt) ? song.updatedAt : Date.now(),
-        pinned: Boolean(song.pinned),
-      }))
+    ? songs
+        .filter(
+          (song) =>
+            song &&
+            typeof song.id === "string" &&
+            typeof song.title === "string" &&
+            typeof song.lyrics === "string",
+        )
+        .map((song) => ({
+          id: song.id,
+          title: song.title,
+          ...(typeof song.author === "string" && song.author.trim()
+            ? { author: song.author.trim() }
+            : {}),
+          lyrics: song.lyrics,
+          ...(typeof song.fadeMs === "number" && Number.isFinite(song.fadeMs)
+            ? { fadeMs: Math.min(Math.max(song.fadeMs, 0), 2000) }
+            : {}),
+          ...storedTypeface(song),
+          updatedAt: Number.isFinite(song.updatedAt)
+            ? song.updatedAt
+            : Date.now(),
+          pinned: Boolean(song.pinned),
+        }))
     : [];
   store.set("songs", next);
   return next;
@@ -940,14 +1227,24 @@ registerIpcHandle("texts:get", () => store.get("texts"));
 
 registerIpcHandle("texts:set", (_e, texts: StoredText[]) => {
   const next = Array.isArray(texts)
-    ? texts.filter((text) => text && typeof text.id === "string" && typeof text.title === "string" && typeof text.body === "string").map((text) => ({
-        id: text.id,
-        title: text.title,
-        body: text.body,
-        ...storedTypeface(text),
-        updatedAt: Number.isFinite(text.updatedAt) ? text.updatedAt : Date.now(),
-        pinned: Boolean(text.pinned),
-      }))
+    ? texts
+        .filter(
+          (text) =>
+            text &&
+            typeof text.id === "string" &&
+            typeof text.title === "string" &&
+            typeof text.body === "string",
+        )
+        .map((text) => ({
+          id: text.id,
+          title: text.title,
+          body: text.body,
+          ...storedTypeface(text),
+          updatedAt: Number.isFinite(text.updatedAt)
+            ? text.updatedAt
+            : Date.now(),
+          pinned: Boolean(text.pinned),
+        }))
     : [];
   store.set("texts", next);
   return next;
@@ -957,7 +1254,8 @@ registerIpcHandle("slides:get", () => {
   // Older versions stored slide text (and text-only decks): migrate to images-only.
   const saved = store.get("slideDecks");
   const migrated = sanitizeSlideDecks(saved);
-  if (JSON.stringify(saved) !== JSON.stringify(migrated)) store.set("slideDecks", migrated);
+  if (JSON.stringify(saved) !== JSON.stringify(migrated))
+    store.set("slideDecks", migrated);
   return migrated;
 });
 
@@ -974,10 +1272,22 @@ function newDeckId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-const importError = (error: string): SlideImportResult => ({ kind: "error", error });
+const importError = (error: string): SlideImportResult => ({
+  kind: "error",
+  error,
+});
 
 const VIDEO_EXTENSIONS = ["mp4", "m4v", "webm", "mov", "ogv"];
-const AUDIO_EXTENSIONS = ["mp3", "wav", "m4a", "aac", "ogg", "oga", "opus", "flac"];
+const AUDIO_EXTENSIONS = [
+  "mp3",
+  "wav",
+  "m4a",
+  "aac",
+  "ogg",
+  "oga",
+  "opus",
+  "flac",
+];
 
 /** Copy a video or audio file into app data and describe it as a media item. */
 async function importAvFile(filePath: string): Promise<StoredSlideDeck | null> {
@@ -994,88 +1304,143 @@ async function importAvFile(filePath: string): Promise<StoredSlideDeck | null> {
   };
 }
 
-registerIpcHandle("slides:import", async (): Promise<SlideImportResult | null> => {
-  const result = await dialog.showOpenDialog({
-    properties: ["openFile", "multiSelections"],
-    filters: [
-      { name: "Media", extensions: ["pptx", "ppsx", "pdf", "png", "jpg", "jpeg", "webp", ...VIDEO_EXTENSIONS, ...AUDIO_EXTENSIONS] },
-      { name: "PowerPoint/PDF", extensions: ["pptx", "ppsx", "pdf"] },
-      { name: "Imágenes", extensions: ["png", "jpg", "jpeg", "webp"] },
-      { name: "Video", extensions: VIDEO_EXTENSIONS },
-      { name: "Audio", extensions: AUDIO_EXTENSIONS },
-      // Lets the user pick Keynote/.ppt/.odp to get a clear "export to PDF" hint instead of a greyed-out file.
-      { name: "Todos los archivos", extensions: ["*"] },
-    ],
-  });
-  if (result.canceled || result.filePaths.length === 0) return null;
-  // Multi-image pick (e.g. PowerPoint "Exportar como imágenes"): one deck,
-  // slides ordered naturally (Diapositiva2 antes que Diapositiva10).
-  if (result.filePaths.length > 1 && result.filePaths.every(isSlideImagePath)) {
-    const ordered = sortImagePathsNumerically(result.filePaths);
-    const stored = ordered.map(copyToSlideImages);
-    if (stored.some((entry) => entry === null)) {
-      for (const entry of stored) {
-        if (entry) {
-          try {
-            fs.rmSync(entry, { force: true });
-          } catch {
-            // ignore cleanup failures
+registerIpcHandle(
+  "slides:import",
+  async (): Promise<SlideImportResult | null> => {
+    const result = await dialog.showOpenDialog({
+      properties: ["openFile", "multiSelections"],
+      filters: [
+        {
+          name: "Media",
+          extensions: [
+            "pptx",
+            "ppsx",
+            "pdf",
+            "png",
+            "jpg",
+            "jpeg",
+            "webp",
+            ...VIDEO_EXTENSIONS,
+            ...AUDIO_EXTENSIONS,
+          ],
+        },
+        { name: "PowerPoint/PDF", extensions: ["pptx", "ppsx", "pdf"] },
+        { name: "Imágenes", extensions: ["png", "jpg", "jpeg", "webp"] },
+        { name: "Video", extensions: VIDEO_EXTENSIONS },
+        { name: "Audio", extensions: AUDIO_EXTENSIONS },
+        // Lets the user pick Keynote/.ppt/.odp to get a clear "export to PDF" hint instead of a greyed-out file.
+        { name: "Todos los archivos", extensions: ["*"] },
+      ],
+    });
+    if (result.canceled || result.filePaths.length === 0) return null;
+    // Multi-image pick (e.g. PowerPoint "Exportar como imágenes"): one deck,
+    // slides ordered naturally (Diapositiva2 antes que Diapositiva10).
+    if (
+      result.filePaths.length > 1 &&
+      result.filePaths.every(isSlideImagePath)
+    ) {
+      const ordered = sortImagePathsNumerically(result.filePaths);
+      const stored = ordered.map(copyToSlideImages);
+      if (stored.some((entry) => entry === null)) {
+        for (const entry of stored) {
+          if (entry) {
+            try {
+              fs.rmSync(entry, { force: true });
+            } catch {
+              // ignore cleanup failures
+            }
           }
         }
+        return importError("read-failed");
       }
-      return importError("read-failed");
+      const firstDir = path.basename(path.dirname(ordered[0]!));
+      const title =
+        firstDir && firstDir !== "."
+          ? firstDir
+          : path.basename(ordered[0]!, path.extname(ordered[0]!));
+      return {
+        kind: "ready",
+        deck: {
+          id: newDeckId(),
+          title,
+          images: stored as string[],
+          updatedAt: Date.now(),
+          pinned: false,
+        },
+      };
     }
-    const firstDir = path.basename(path.dirname(ordered[0]!));
-    const title = firstDir && firstDir !== "." ? firstDir : path.basename(ordered[0]!, path.extname(ordered[0]!));
-    return {
-      kind: "ready",
-      deck: { id: newDeckId(), title, images: stored as string[], updatedAt: Date.now(), pinned: false },
-    };
-  }
-  // Video and audio: one item per file, so several can be imported at once.
-  const avFiles = result.filePaths.filter((file) => isVideoPath(file) || isAudioPath(file));
-  if (avFiles.length > 0) {
-    const items: StoredSlideDeck[] = [];
-    for (const file of avFiles) {
-      const item = await importAvFile(file);
-      if (item) items.push(item);
+    // Video and audio: one item per file, so several can be imported at once.
+    const avFiles = result.filePaths.filter(
+      (file) => isVideoPath(file) || isAudioPath(file),
+    );
+    if (avFiles.length > 0) {
+      const items: StoredSlideDeck[] = [];
+      for (const file of avFiles) {
+        const item = await importAvFile(file);
+        if (item) items.push(item);
+      }
+      if (items.length === 0) return importError("read-failed");
+      return { kind: "ready", deck: items[0]!, more: items.slice(1) };
     }
-    if (items.length === 0) return importError("read-failed");
-    return { kind: "ready", deck: items[0]!, more: items.slice(1) };
-  }
-  const filePath = result.filePaths[0]!;
-  const title = path.basename(filePath, path.extname(filePath));
-  if (isSlideImagePath(filePath)) {
-    const storedPath = copyToSlideImages(filePath);
-    if (!storedPath) return importError("read-failed");
-    return { kind: "ready", deck: { id: newDeckId(), title, images: [storedPath], updatedAt: Date.now(), pinned: false } };
-  }
-  if (isPptxPath(filePath)) {
-    // The PNGs are generated by "slides:convertPptx" (pptx-glimpse in a
-    // utilityProcess). Only the slide count is read here (progress); no text
-    // is extracted or stored.
-    let total: number;
-    try {
-      total = await countPptxSlides(fs.readFileSync(filePath));
-    } catch (error) {
-      console.error("[slides] could not read pptx", error);
-      return importError("invalid-pptx");
+    const filePath = result.filePaths[0]!;
+    const title = path.basename(filePath, path.extname(filePath));
+    if (isSlideImagePath(filePath)) {
+      const storedPath = copyToSlideImages(filePath);
+      if (!storedPath) return importError("read-failed");
+      return {
+        kind: "ready",
+        deck: {
+          id: newDeckId(),
+          title,
+          images: [storedPath],
+          updatedAt: Date.now(),
+          pinned: false,
+        },
+      };
     }
-    if (total === 0) return importError("empty-presentation");
-    const deckId = newDeckId();
-    const sourceFile = copyPptxToSlideDecks(deckId, filePath);
-    if (!sourceFile) return importError("read-failed");
-    return { kind: "pending", pending: { id: deckId, title, source: { kind: "pptx", file: sourceFile }, total } };
-  }
-  if (isPdfPath(filePath)) {
-    const deckId = newDeckId();
-    const sourceFile = copyPdfToSlideDecks(deckId, filePath);
-    if (!sourceFile) return importError("read-failed");
-    return { kind: "pending", pending: { id: deckId, title, source: { kind: "pdf", file: sourceFile }, total: 0 } };
-  }
-  // Keynote/.ppt/.odp have no JS renderer, and anything else is not a presentation: don't fake it.
-  return importError("unsupported-format");
-});
+    if (isPptxPath(filePath)) {
+      // The PNGs are generated by "slides:convertPptx" (pptx-glimpse in a
+      // utilityProcess). Only the slide count is read here (progress); no text
+      // is extracted or stored.
+      let total: number;
+      try {
+        total = await countPptxSlides(fs.readFileSync(filePath));
+      } catch (error) {
+        console.error("[slides] could not read pptx", error);
+        return importError("invalid-pptx");
+      }
+      if (total === 0) return importError("empty-presentation");
+      const deckId = newDeckId();
+      const sourceFile = copyPptxToSlideDecks(deckId, filePath);
+      if (!sourceFile) return importError("read-failed");
+      return {
+        kind: "pending",
+        pending: {
+          id: deckId,
+          title,
+          source: { kind: "pptx", file: sourceFile },
+          total,
+        },
+      };
+    }
+    if (isPdfPath(filePath)) {
+      const deckId = newDeckId();
+      const sourceFile = copyPdfToSlideDecks(deckId, filePath);
+      if (!sourceFile) return importError("read-failed");
+      return {
+        kind: "pending",
+        pending: {
+          id: deckId,
+          title,
+          source: { kind: "pdf", file: sourceFile },
+          total: 0,
+        },
+      };
+    }
+    // Keynote/.ppt/.odp have no JS renderer, and anything else is not a presentation: don't fake it.
+    return importError("unsupported-format");
+  },
+);
 
 /** Remove a managed source file once its slides were converted (or the import was abandoned). */
 registerIpcHandle("slides:discardSource", (_e, file: string): boolean => {
@@ -1101,27 +1466,42 @@ function isManagedSlideSource(file: unknown): file is string {
  * Render a managed .pptx to PNGs (one per slide) in a utilityProcess with the
  * system fonts. Returns the stored image paths; progress goes out on "slides:progress".
  */
-registerIpcHandle("slides:convertPptx", async (event, request: { deckId: string; file: string; total: number }) => {
-  if (!isManagedSlideSource(request?.file) || !/\.(pptx|ppsx)$/i.test(request.file)) {
-    return { ok: false as const, error: "Archivo de origen no válido." };
-  }
-  try {
-    const { files, warnings } = await renderPptxInWorker({
-      file: request.file,
-      outDir: slideImagesDir(),
-      prefix: `pptx-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      total: Number.isFinite(request.total) ? request.total : 1,
-      onProgress: (done, total) => {
-        if (!event.sender.isDestroyed()) event.sender.send("slides:progress", { deckId: request.deckId, done, total });
-      },
-    });
-    if (warnings.length) console.warn("[slides] pptx render warnings:", warnings.join(" | "));
-    return { ok: true as const, images: files };
-  } catch (error) {
-    console.error("[slides] pptx conversion failed", error);
-    return { ok: false as const, error: error instanceof Error ? error.message : String(error) };
-  }
-});
+registerIpcHandle(
+  "slides:convertPptx",
+  async (event, request: { deckId: string; file: string; total: number }) => {
+    if (
+      !isManagedSlideSource(request?.file) ||
+      !/\.(pptx|ppsx)$/i.test(request.file)
+    ) {
+      return { ok: false as const, error: "Archivo de origen no válido." };
+    }
+    try {
+      const { files, warnings } = await renderPptxInWorker({
+        file: request.file,
+        outDir: slideImagesDir(),
+        prefix: `pptx-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        total: Number.isFinite(request.total) ? request.total : 1,
+        onProgress: (done, total) => {
+          if (!event.sender.isDestroyed())
+            event.sender.send("slides:progress", {
+              deckId: request.deckId,
+              done,
+              total,
+            });
+        },
+      });
+      if (warnings.length)
+        console.warn("[slides] pptx render warnings:", warnings.join(" | "));
+      return { ok: true as const, images: files };
+    } catch (error) {
+      console.error("[slides] pptx conversion failed", error);
+      return {
+        ok: false as const,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  },
+);
 
 /** Read back a managed PDF so the operator window can rasterize it with pdf.js. */
 registerIpcHandle("slides:readFile", (_e, file: string): string | null => {
@@ -1137,60 +1517,98 @@ registerIpcHandle("slides:readFile", (_e, file: string): string | null => {
 });
 
 /** Copy a media item out of app data: one file for video or audio, numbered PNGs in a folder for slides. */
-registerIpcHandle("media:download", async (_e, item: StoredSlideDeck): Promise<boolean> => {
-  const base = (typeof item?.title === "string" ? item.title : "").replace(/[\\/:*?"<>|]+/g, "_").trim() || "media";
-  try {
-    if (item?.kind === "video" || item?.kind === "audio") {
-      if (!isInDir(item.file, mediaFilesDir())) return false;
-      const result = await dialog.showSaveDialog(operatorWindow!, { defaultPath: `${base}${path.extname(item.file)}` });
-      if (result.canceled || !result.filePath) return false;
-      await fs.promises.copyFile(item.file, result.filePath);
+registerIpcHandle(
+  "media:download",
+  async (_e, item: StoredSlideDeck): Promise<boolean> => {
+    const base =
+      (typeof item?.title === "string" ? item.title : "")
+        .replace(/[\\/:*?"<>|]+/g, "_")
+        .trim() || "media";
+    try {
+      if (item?.kind === "video" || item?.kind === "audio") {
+        if (!isInDir(item.file, mediaFilesDir())) return false;
+        const result = await dialog.showSaveDialog(operatorWindow!, {
+          defaultPath: `${base}${path.extname(item.file)}`,
+        });
+        if (result.canceled || !result.filePath) return false;
+        await fs.promises.copyFile(item.file, result.filePath);
+        return true;
+      }
+      const images = Array.isArray(item?.images) ? item.images : [];
+      if (
+        images.length === 0 ||
+        !images.every((image) => isInDir(image, slideImagesDir()))
+      )
+        return false;
+      const result = await dialog.showOpenDialog(operatorWindow!, {
+        properties: ["openDirectory", "createDirectory"],
+      });
+      if (result.canceled || result.filePaths.length === 0) return false;
+      const dir = path.join(result.filePaths[0], base);
+      fs.mkdirSync(dir, { recursive: true });
+      images.forEach((image, index) =>
+        fs.copyFileSync(
+          image,
+          path.join(dir, `${String(index + 1).padStart(2, "0")}.png`),
+        ),
+      );
       return true;
+    } catch (error) {
+      console.error("[media] could not download item", error);
+      return false;
     }
-    const images = Array.isArray(item?.images) ? item.images : [];
-    if (images.length === 0 || !images.every((image) => isInDir(image, slideImagesDir()))) return false;
-    const result = await dialog.showOpenDialog(operatorWindow!, { properties: ["openDirectory", "createDirectory"] });
-    if (result.canceled || result.filePaths.length === 0) return false;
-    const dir = path.join(result.filePaths[0], base);
-    fs.mkdirSync(dir, { recursive: true });
-    images.forEach((image, index) => fs.copyFileSync(image, path.join(dir, `${String(index + 1).padStart(2, "0")}.png`)));
-    return true;
-  } catch (error) {
-    console.error("[media] could not download item", error);
-    return false;
-  }
-});
+  },
+);
 
 function isInDir(file: unknown, dir: string): file is string {
-  return typeof file === "string" && path.resolve(file).startsWith(`${path.resolve(dir)}${path.sep}`);
+  return (
+    typeof file === "string" &&
+    path.resolve(file).startsWith(`${path.resolve(dir)}${path.sep}`)
+  );
 }
 
 /** Persist rasterized slide PNGs (base64) as managed images. Returns stored paths. */
-registerIpcHandle("slides:savePngs", (_e, images: string[]): string[] | null => {
-  const stored: string[] = [];
-  try {
-    if (!Array.isArray(images) || images.length === 0 || images.length > MAX_SLIDE_PNGS) return null;
-    const dir = slideImagesDir();
-    fs.mkdirSync(dir, { recursive: true });
-    const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-    for (let i = 0; i < images.length; i++) {
-      const entry = images[i];
-      if (typeof entry !== "string" || entry.length === 0) throw new Error("bad image");
-      const data = Buffer.from(entry, "base64");
-      if (data.length === 0 || data.length > MAX_SLIDE_PNG_BYTES) throw new Error("bad image size");
-      // Validate PNG signature before writing.
-      if (data[0] !== 0x89 || data[1] !== 0x50 || data[2] !== 0x4e || data[3] !== 0x47) throw new Error("not png");
-      const filePath = path.join(dir, `${stamp}-${i}.png`);
-      fs.writeFileSync(filePath, data);
-      stored.push(filePath);
+registerIpcHandle(
+  "slides:savePngs",
+  (_e, images: string[]): string[] | null => {
+    const stored: string[] = [];
+    try {
+      if (
+        !Array.isArray(images) ||
+        images.length === 0 ||
+        images.length > MAX_SLIDE_PNGS
+      )
+        return null;
+      const dir = slideImagesDir();
+      fs.mkdirSync(dir, { recursive: true });
+      const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+      for (let i = 0; i < images.length; i++) {
+        const entry = images[i];
+        if (typeof entry !== "string" || entry.length === 0)
+          throw new Error("bad image");
+        const data = Buffer.from(entry, "base64");
+        if (data.length === 0 || data.length > MAX_SLIDE_PNG_BYTES)
+          throw new Error("bad image size");
+        // Validate PNG signature before writing.
+        if (
+          data[0] !== 0x89 ||
+          data[1] !== 0x50 ||
+          data[2] !== 0x4e ||
+          data[3] !== 0x47
+        )
+          throw new Error("not png");
+        const filePath = path.join(dir, `${stamp}-${i}.png`);
+        fs.writeFileSync(filePath, data);
+        stored.push(filePath);
+      }
+      return stored;
+    } catch (error) {
+      console.error("[slides] could not save slide images", error);
+      for (const file of stored) fs.rmSync(file, { force: true });
+      return null;
     }
-    return stored;
-  } catch (error) {
-    console.error("[slides] could not save slide images", error);
-    for (const file of stored) fs.rmSync(file, { force: true });
-    return null;
-  }
-});
+  },
+);
 
 registerIpcHandle("displays:list", () => {
   return screen.getAllDisplays().map((d) => ({
@@ -1215,7 +1633,12 @@ registerIpcHandle("projector:show", (_e, payload: ProjectorPayload) => {
 
 registerIpcHandle("dialog:openImage", async () => {
   const result = await dialog.showOpenDialog(operatorWindow!, {
-    filters: [{ name: "Imágenes y videos", extensions: ["jpg", "jpeg", "png", "webp", "mp4", "webm", "ogg", "mov"] }],
+    filters: [
+      {
+        name: "Imágenes y videos",
+        extensions: ["jpg", "jpeg", "png", "webp", "mp4", "webm", "ogg", "mov"],
+      },
+    ],
     properties: ["openFile"],
   });
   if (result.canceled || !result.filePaths[0]) return null;
@@ -1224,7 +1647,10 @@ registerIpcHandle("dialog:openImage", async () => {
     const imagesDir = path.join(app.getPath("userData"), "background-images");
     fs.mkdirSync(imagesDir, { recursive: true });
     const ext = path.extname(filePath).toLowerCase();
-    const storedPath = path.join(imagesDir, `${Date.now()}-${Math.random().toString(36).slice(2, 9)}${ext}`);
+    const storedPath = path.join(
+      imagesDir,
+      `${Date.now()}-${Math.random().toString(36).slice(2, 9)}${ext}`,
+    );
     fs.copyFileSync(filePath, storedPath);
     // Persist the managed copy path, never the user's original location.
     // The renderer converts this path to a file URL when it needs to display it.
@@ -1248,7 +1674,10 @@ registerIpcHandle("logo:pick", async (): Promise<string | null> => {
     const logosDir = path.join(app.getPath("userData"), "logo-images");
     fs.mkdirSync(logosDir, { recursive: true });
     const ext = path.extname(filePath).toLowerCase();
-    const storedPath = path.join(logosDir, `${Date.now()}-${Math.random().toString(36).slice(2, 9)}${ext}`);
+    const storedPath = path.join(
+      logosDir,
+      `${Date.now()}-${Math.random().toString(36).slice(2, 9)}${ext}`,
+    );
     fs.copyFileSync(filePath, storedPath);
     return storedPath;
   } catch {
@@ -1269,21 +1698,36 @@ registerIpcHandle("background:delete", (_e, filePath: string) => {
   }
 });
 
-registerIpcHandle("background:saveThumbnail", (_e, filePath: string, jpegBase64: string) => {
-  const root = path.resolve(app.getPath("userData"), "background-images");
-  const target = path.resolve(String(filePath));
-  if (!target.startsWith(`${root}${path.sep}`) || !/\.(mp4|webm|ogg|mov)$/i.test(target)) return false;
-  if (typeof jpegBase64 !== "string" || jpegBase64.length > 2_800_000) return false;
-  try {
-    if (!fs.statSync(target).isFile()) return false;
-    const jpeg = Buffer.from(jpegBase64, "base64");
-    if (jpeg.length < 4 || jpeg.length > 2_000_000 || jpeg[0] !== 0xff || jpeg[1] !== 0xd8 || jpeg[2] !== 0xff) return false;
-    fs.writeFileSync(`${target}.thumbnail.jpg`, jpeg);
-    return true;
-  } catch {
-    return false;
-  }
-});
+registerIpcHandle(
+  "background:saveThumbnail",
+  (_e, filePath: string, jpegBase64: string) => {
+    const root = path.resolve(app.getPath("userData"), "background-images");
+    const target = path.resolve(String(filePath));
+    if (
+      !target.startsWith(`${root}${path.sep}`) ||
+      !/\.(mp4|webm|ogg|mov)$/i.test(target)
+    )
+      return false;
+    if (typeof jpegBase64 !== "string" || jpegBase64.length > 2_800_000)
+      return false;
+    try {
+      if (!fs.statSync(target).isFile()) return false;
+      const jpeg = Buffer.from(jpegBase64, "base64");
+      if (
+        jpeg.length < 4 ||
+        jpeg.length > 2_000_000 ||
+        jpeg[0] !== 0xff ||
+        jpeg[1] !== 0xd8 ||
+        jpeg[2] !== 0xff
+      )
+        return false;
+      fs.writeFileSync(`${target}.thumbnail.jpg`, jpeg);
+      return true;
+    } catch {
+      return false;
+    }
+  },
+);
 
 ipcMain.on("operator:navigate", (_e, dir: "prev" | "next") => {
   operatorWindow?.webContents.send("operator:shortcut", { action: dir });

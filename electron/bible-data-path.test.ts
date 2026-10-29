@@ -2,7 +2,10 @@ import { describe, it, expect } from "vitest";
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { buildBibleDataCandidates, resolveBibleDataDir } from "./bible-data-path";
+import {
+  buildBibleDataCandidates,
+  resolveBibleDataDir,
+} from "./bible-data-path";
 
 describe("resolveBibleDataDir", () => {
   it("picks the first directory that contains manifest.json", () => {
@@ -18,7 +21,12 @@ describe("resolveBibleDataDir", () => {
   });
 
   it("builds standard candidate order", () => {
-    const list = buildBibleDataCandidates("/res", "/app", "/app/dist-electron", "/cwd");
+    const list = buildBibleDataCandidates(
+      "/res",
+      "/app",
+      "/app/dist-electron",
+      "/cwd",
+    );
     expect(list[0]).toBe("/res/data/bibles");
     expect(list[1]).toBe("/app/data/bibles");
   });

@@ -1,22 +1,47 @@
 import type { ProyectorApi } from "./vite-env";
 
 const methods: Record<string, string> = {
-  listBibleVersions: "bibles:list", loadBible: "bibles:load", listOnlineBibles: "yvp:versions", searchOnlineBibles: "yvp:search",
-  addOnlineBible: "yvp:add", removeOnlineBible: "yvp:remove",
-  getOnlineChapter: "yvp:chapter", getBibleCatalog: "bibles:catalog", downloadBible: "bibles:download",
-  removeBible: "bibles:remove", getSettings: "settings:get", setSettings: "settings:set",
-  getHistory: "history:get", addHistory: "history:add", getQueue: "queue:get", setQueue: "queue:set",
-  getFavorites: "favorites:get", setFavorites: "favorites:set", getSongs: "songs:get", setSongs: "songs:set",
-  getTexts: "texts:get", setTexts: "texts:set",
-  getSlideDecks: "slides:get", setSlideDecks: "slides:set", readSlideSource: "slides:readFile",
-  saveSlidePngs: "slides:savePngs", convertPptx: "slides:convertPptx", showOnProjector: "projector:show",
+  listBibleVersions: "bibles:list",
+  loadBible: "bibles:load",
+  listOnlineBibles: "yvp:versions",
+  searchOnlineBibles: "yvp:search",
+  addOnlineBible: "yvp:add",
+  removeOnlineBible: "yvp:remove",
+  getOnlineChapter: "yvp:chapter",
+  getBibleCatalog: "bibles:catalog",
+  downloadBible: "bibles:download",
+  removeBible: "bibles:remove",
+  getSettings: "settings:get",
+  setSettings: "settings:set",
+  getHistory: "history:get",
+  addHistory: "history:add",
+  getQueue: "queue:get",
+  setQueue: "queue:set",
+  getFavorites: "favorites:get",
+  setFavorites: "favorites:set",
+  getSongs: "songs:get",
+  setSongs: "songs:set",
+  getTexts: "texts:get",
+  setTexts: "texts:set",
+  getSlideDecks: "slides:get",
+  setSlideDecks: "slides:set",
+  readSlideSource: "slides:readFile",
+  saveSlidePngs: "slides:savePngs",
+  convertPptx: "slides:convertPptx",
+  showOnProjector: "projector:show",
   deleteBackgroundMedia: "background:delete",
-  listInstalledFonts: "fonts:list", searchGoogleFonts: "fonts:search", installGoogleFont: "fonts:install", removeInstalledFont: "fonts:remove",
+  listInstalledFonts: "fonts:list",
+  searchGoogleFonts: "fonts:search",
+  installGoogleFont: "fonts:install",
+  removeInstalledFont: "fonts:remove",
 };
 
 const eventNames: Record<string, string> = {
-  onProjectorUpdate: "projector:update", onSettingsUpdate: "settings:update",
-  onBibleDownloadProgress: "bibles:download-progress", onSlideProgress: "slides:progress", onFontsUpdate: "fonts:update",
+  onProjectorUpdate: "projector:update",
+  onSettingsUpdate: "settings:update",
+  onBibleDownloadProgress: "bibles:download-progress",
+  onSlideProgress: "slides:progress",
+  onFontsUpdate: "fonts:update",
 };
 
 let eventsController: AbortController | null = null;
@@ -31,22 +56,38 @@ async function rpc(channel: string, args: unknown[]): Promise<unknown> {
   const headers: HeadersInit = { "content-type": "application/json" };
   const accessToken = token();
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
-  const response = await fetch("/api/v1/rpc", { method: "POST", headers, body: JSON.stringify({ channel, args }) });
-  const data = await response.json() as { result?: unknown; error?: string };
-  if (!response.ok) throw new Error(data.error === "unauthorized" ? "Acceso denegado. Abre Lumen con el token de acceso proporcionado por el equipo anfitrión." : data.error ?? "Error de conexión con Lumen");
+  const response = await fetch("/api/v1/rpc", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ channel, args }),
+  });
+  const data = (await response.json()) as { result?: unknown; error?: string };
+  if (!response.ok)
+    throw new Error(
+      data.error === "unauthorized"
+        ? "Acceso denegado. Abre Lumen con el token de acceso proporcionado por el equipo anfitrión."
+        : (data.error ?? "Error de conexión con Lumen"),
+    );
   return data.result;
 }
 
 function connectEvents(): void {
-  if (eventsController || ![...callbacks.values()].some((set) => set.size)) return;
+  if (eventsController || ![...callbacks.values()].some((set) => set.size))
+    return;
   const controller = new AbortController();
   eventsController = controller;
   const accessToken = token();
-  const headers: HeadersInit = accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
+  const headers: HeadersInit = accessToken
+    ? { Authorization: `Bearer ${accessToken}` }
+    : {};
   void (async () => {
     try {
-      const response = await fetch("/api/v1/events", { headers, signal: controller.signal });
-      if (!response.ok || !response.body) throw new Error("event_stream_unavailable");
+      const response = await fetch("/api/v1/events", {
+        headers,
+        signal: controller.signal,
+      });
+      if (!response.ok || !response.body)
+        throw new Error("event_stream_unavailable");
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
@@ -57,23 +98,39 @@ function connectEvents(): void {
         const frames = buffer.split("\n\n");
         buffer = frames.pop() ?? "";
         for (const frame of frames) {
-          const data = frame.split("\n").find((line) => line.startsWith("data: "))?.slice(6);
+          const data = frame
+            .split("\n")
+            .find((line) => line.startsWith("data: "))
+            ?.slice(6);
           if (!data) continue;
           try {
-            const { event: name, payload } = JSON.parse(data) as { event: string; payload: unknown };
+            const { event: name, payload } = JSON.parse(data) as {
+              event: string;
+              payload: unknown;
+            };
             callbacks.get(name)?.forEach((callback) => callback(payload));
-          } catch { /* Ignore malformed event frames. */ }
+          } catch {
+            /* Ignore malformed event frames. */
+          }
         }
       }
-    } catch { /* Reconnect after a transient network loss. */ }
+    } catch {
+      /* Reconnect after a transient network loss. */
+    }
     if (eventsController === controller) eventsController = null;
-    if (!controller.signal.aborted && [...callbacks.values()].some((set) => set.size)) {
+    if (
+      !controller.signal.aborted &&
+      [...callbacks.values()].some((set) => set.size)
+    ) {
       reconnectTimer = window.setTimeout(connectEvents, 1500);
     }
   })();
 }
 
-function subscribe(event: string, callback: (payload: unknown) => void): () => void {
+function subscribe(
+  event: string,
+  callback: (payload: unknown) => void,
+): () => void {
   callbacks.set(event, callbacks.get(event) ?? new Set());
   callbacks.get(event)!.add(callback);
   connectEvents();
@@ -89,23 +146,52 @@ function subscribe(event: string, callback: (payload: unknown) => void): () => v
 
 const browserApi = new Proxy({} as ProyectorApi, {
   get(_target, property: string) {
-    if (methods[property]) return (...args: unknown[]) => rpc(methods[property]!, args);
-    if (eventNames[property]) return (callback: (payload: unknown) => void) => subscribe(eventNames[property]!, callback);
+    if (methods[property])
+      return (...args: unknown[]) => rpc(methods[property]!, args);
+    if (eventNames[property])
+      return (callback: (payload: unknown) => void) =>
+        subscribe(eventNames[property]!, callback);
     // A LAN client is the operator/controller only. The projector remains a
     // window owned by the host Electron app and is opened there when needed.
     if (property === "openProjector") return async () => false;
     if (property === "listDisplays") return async () => [];
     if (property === "getProjectorBounds") return async () => null;
-    if (property === "onProjectorBounds" || property === "onOperatorShortcut" || property === "onAppUpdateState") return () => () => undefined;
-    if (property === "pickBibleImport" || property === "pickBackgroundImage" || property === "pickLogoImage" || property === "importSlideDeck" || property === "startAppUpdate" || property === "installAppUpdate" || property === "checkAppUpdate") {
-      return async () => { throw new Error("Esta operación requiere la aplicación de escritorio Lumen."); };
+    if (
+      property === "onProjectorBounds" ||
+      property === "onOperatorShortcut" ||
+      property === "onAppUpdateState"
+    )
+      return () => () => undefined;
+    if (
+      property === "pickBibleImport" ||
+      property === "pickBackgroundImage" ||
+      property === "pickLogoImage" ||
+      property === "importSlideDeck" ||
+      property === "startAppUpdate" ||
+      property === "installAppUpdate" ||
+      property === "checkAppUpdate"
+    ) {
+      return async () => {
+        throw new Error(
+          "Esta operación requiere la aplicación de escritorio Lumen.",
+        );
+      };
     }
-    if (property === "cancelBibleImport" || property === "discardSlideSource") return async () => undefined;
-    if (property === "getAppUpdateState") return async () => ({
-      mode: "disabled", status: "disabled", currentVersion: "Browser", availableVersion: null,
-      downloadedVersion: null, downloadPercent: null, checkedAt: null, message: null,
-      errorContext: null, projectionActive: false,
-    });
+    if (property === "cancelBibleImport" || property === "discardSlideSource")
+      return async () => undefined;
+    if (property === "getAppUpdateState")
+      return async () => ({
+        mode: "disabled",
+        status: "disabled",
+        currentVersion: "Browser",
+        availableVersion: null,
+        downloadedVersion: null,
+        downloadPercent: null,
+        checkedAt: null,
+        message: null,
+        errorContext: null,
+        projectionActive: false,
+      });
     return undefined;
   },
 });

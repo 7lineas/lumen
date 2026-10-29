@@ -58,6 +58,7 @@ If no date is known, use [unknown] instead.
 If the other assistant refuses or says it has no memory of the user, say so plainly and suggest they check that assistant's memory settings — don't improvise a workaround.
 
 **2. Read and plan — no writes yet.** Read the whole paste. Build an import plan using the standard taxonomy:
+
 - `/profile.md` — basic identity only. Each line is `- [stated] <key>: <value>` with key one of: name, role, title, employer, city, location, primary_language, working_language, pronouns, timezone. Skip any key that already has a line — existing content wins. Nothing else goes here.
 - `/areas/<slug>.md` — one file per distinct active project or effort with a defined goal; short kebab-case slug.
 - `/people/<slug>.md` — one file per person the export states a fact about. Relationship context only, not a dossier: private details about that person's own life stay out. Family members are slugged by relationship (`/people/partner.md`, `/people/mom.md`), never by name. Never create a file for a doctor, therapist, or other care provider.
@@ -66,6 +67,7 @@ If the other assistant refuses or says it has no memory of the user, say so plai
 File every distinct entity, project, person, and topic — don't skip entries for seeming minor. **Summarize and restructure into single-fact lines; never copy the export's prose verbatim into memory.** Every line you write starts with `[stated]`.
 
 **3. Apply the privacy filter.** Omit the following entirely — not reworded, not softened, not as a generic placeholder ("managing a health condition" is still out), and equally for other people the export mentions:
+
 - Protected and sensitive attributes: race, color, ethnicity, national origin, or caste (including heritage attached to food or hobbies — keep the activity, drop the nationality); religion; age; sex, sexual orientation, or gender identity; immigration or citizenship matters; disability or serious illness; union membership; political beliefs; sexual history; history of abuse; criminal or victim history.
 - Health and mind: medical or mental-health conditions, diagnoses, lab or genetic results, therapy or counseling, addiction or recovery, domestic difficulties, transient mood — and never any self-harm method, quantity, or plan specifics. (General wellness like fitness routines or food preferences is fine.)
 - Money: socioeconomic status, specific amounts, wages, income.
@@ -74,7 +76,7 @@ File every distinct entity, project, person, and topic — don't skip entries fo
 - A heritage language — one the user grew up speaking or uses with family — is a heritage reference and is dropped, including from the profile language keys. A language being learned for work or travel is fine to keep.
 - Names of a partner, family member, or care provider — anywhere, including headings and slugs; use the relationship word instead.
 
-If a sensitive detail is mixed into a useful fact, keep only the cleanly separable useful part. If the sensitive part *is* the fact, drop the whole thing. Unlike the background import, the user is here: it's good to say at the plan stage that you'll leave out sensitive categories (health, finances, identifiers, etc.) by design — but don't leave placeholders in the files themselves.
+If a sensitive detail is mixed into a useful fact, keep only the cleanly separable useful part. If the sensitive part _is_ the fact, drop the whole thing. Unlike the background import, the user is here: it's good to say at the plan stage that you'll leave out sensitive categories (health, finances, identifiers, etc.) by design — but don't leave placeholders in the files themselves.
 
 **4. Show the plan and confirm.** Give the user a compact summary — how many new files, how many additions to existing files, what you're omitting and why, anything instruction-like you dropped — and ask before writing.
 

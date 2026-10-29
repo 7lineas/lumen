@@ -30,13 +30,25 @@ export interface BibleData {
   /** bookCode -> chapter -> verse -> text */
   verses: Record<string, Record<string, Record<string, string>>>;
   /** precomputed for search: ref key GEN:1:1 -> text */
-  searchIndex: Array<{ key: string; book: string; chapter: number; verse: number; text: string }>;
+  searchIndex: Array<{
+    key: string;
+    book: string;
+    chapter: number;
+    verse: number;
+    text: string;
+  }>;
 }
 
 /** How an image/video fills the projector: crop to fill ("cover") or show it whole ("contain"). */
 export type MediaFit = "cover" | "contain";
 
-export type ProjectorMode = "verse" | "slides" | "video" | "blank" | "logo" | "countdown";
+export type ProjectorMode =
+  | "verse"
+  | "slides"
+  | "video"
+  | "blank"
+  | "logo"
+  | "countdown";
 
 /**
  * Playback of the video on screen. The operator owns the clock: every window

@@ -10,7 +10,10 @@ export function WindowControls() {
 
   useEffect(() => {
     if (!controls) return;
-    void controls.isMaximized().then(setMaximized).catch(() => undefined);
+    void controls
+      .isMaximized()
+      .then(setMaximized)
+      .catch(() => undefined);
     return controls.onMaximizedChange(setMaximized);
   }, [controls]);
 
@@ -18,7 +21,12 @@ export function WindowControls() {
 
   return (
     <div className="window-controls">
-      <button type="button" aria-label="Minimizar" title="Minimizar" onClick={() => void controls.control("minimize")}>
+      <button
+        type="button"
+        aria-label="Minimizar"
+        title="Minimizar"
+        onClick={() => void controls.control("minimize")}
+      >
         <Minus />
       </button>
       <button
@@ -29,7 +37,13 @@ export function WindowControls() {
       >
         {maximized ? <Copy /> : <Square />}
       </button>
-      <button type="button" className="close" aria-label="Cerrar" title="Cerrar" onClick={() => void controls.control("close")}>
+      <button
+        type="button"
+        className="close"
+        aria-label="Cerrar"
+        title="Cerrar"
+        onClick={() => void controls.control("close")}
+      >
         <X />
       </button>
     </div>

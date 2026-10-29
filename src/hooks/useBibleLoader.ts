@@ -1,9 +1,18 @@
 import { useEffect, useState } from "react";
 import type { BibleData, BibleVersionMeta } from "@shared/types";
-import { loadBible, setManifest, getVersions, getBible } from "@shared/bible-service";
+import {
+  loadBible,
+  setManifest,
+  getVersions,
+  getBible,
+} from "@shared/bible-service";
 import { emptyOnlineBible, isOnlineVersionId } from "@shared/youversion";
 
-export function useBibleLoader(versionIds: string[], refreshKey = 0, onlineVersions: BibleVersionMeta[] = []) {
+export function useBibleLoader(
+  versionIds: string[],
+  refreshKey = 0,
+  onlineVersions: BibleVersionMeta[] = [],
+) {
   const [ready, setReady] = useState(false);
   const [versions, setVersions] = useState<BibleVersionMeta[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +54,7 @@ export function useBibleLoader(versionIds: string[], refreshKey = 0, onlineVersi
       cancelled = true;
     };
     // refreshKey reloads the list after a download or removal.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // oxlint-disable-next-line react/exhaustive-deps
   }, [refreshKey, versionIds.join(","), onlineVersions]);
 
   return { ready, versions: versions.length ? versions : getVersions(), error };

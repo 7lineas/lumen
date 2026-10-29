@@ -92,6 +92,7 @@ Text you write in the workbook (sheet names, headers, labels, notes, comments, t
 Use these unless the user or the existing file does something else.
 
 **Text colors:**
+
 - Blue (`#0000FF`): hardcoded inputs, and numbers users will change for scenarios.
 - Black (`#000000`): all formulas and calculations.
 - Green (`#008000`): links to other sheets in the same workbook.
@@ -99,6 +100,7 @@ Use these unless the user or the existing file does something else.
 - Yellow fill (`#FFFF00`): key assumptions that need attention, and cells the user should fill in or update.
 
 **Number formats:**
+
 - Years are text: "2024", not 2,024.
 - Currency is `$#,##0;($#,##0);"-"`, with the unit in the header: "Revenue ($mm)".
 - Negative numbers go in parentheses: (123), not -123.
@@ -107,6 +109,7 @@ Use these unless the user or the existing file does something else.
 - Valuation multiples such as EV/EBITDA and P/E use `0.0"x"`, which shows 12.5x.
 
 **Sensitivity tables:**
+
 - Give the grid an odd number of rows and columns, such as 5×5 or 7×7, so the base case lands in the center cell, and highlight that cell (a yellow fill, for example). A WACC against terminal growth table should put the current WACC in the middle row and the current growth rate in the middle column.
 - Build every cell of the grid as a formula that recalculates the output from its row's and its column's input values. For a DCF, each cell discounts the same cash flows at its row's rate and adds a terminal value at its column's growth rate.
 
@@ -115,7 +118,7 @@ Use these unless the user or the existing file does something else.
 - **Lay chart data out as one block.** Headers in the first row become series names, and categories in the first column become the axis labels:
 
   |       | Q1  | Q2  | Q3  | Q4  |
-  |-------|-----|-----|-----|-----|
+  | ----- | --- | --- | --- | --- |
   | North | 100 | 120 | 110 | 130 |
   | South | 90  | 95  | 100 | 105 |
 
@@ -158,11 +161,11 @@ Every value that comes into the workbook from outside it should be traceable wit
 ## Applying the design rules
 
 - **Colors:** a `sheets_helper.py format` rule takes the hex values from the design rules above in `fg` and `bg`, such as `{"range": "B2:B8", "fg": "#0000FF"}` for inputs.
-- **Number formats:** the helper's `currency` is the `$#,##0;($#,##0);"-"` from the design rules above and its `multiple` is `0.0"x"`. Its `percent` is plain `0.0%`, which shows zero as 0.0%; in a financial model, pass the pattern `0.0%;(0.0%);"-"` instead. *Untested through the connector.*
+- **Number formats:** the helper's `currency` is the `$#,##0;($#,##0);"-"` from the design rules above and its `multiple` is `0.0"x"`. Its `percent` is plain `0.0%`, which shows zero as 0.0%; in a financial model, pass the pattern `0.0%;(0.0%);"-"` instead. _Untested through the connector._
 - **Years as text:** write `'2024` with a leading apostrophe. Without it, both write tools store the number 2024.
-- **Source notes:** an `updateCells` request sets a cell's note: `{"updateCells": {"rows": [{"values": [{"note": "Source: ..."}]}], "fields": "note", "start": {"sheetId": 0, "rowIndex": 3, "columnIndex": 2}}}` puts it on C4. *Untested through the connector.*
-- **Grouping rows or columns:** `{"addDimensionGroup": {"range": {"sheetId": 0, "dimension": "ROWS", "startIndex": 4, "endIndex": 12}}}` groups rows 5 to 12; the indexes are 0-based with an exclusive end, like grid ranges. *Untested through the connector.*
-- **Banding:** `addBanding` with a `bandedRange` whose `rowProperties` set `headerColor`, `firstBandColor` and `secondBandColor`. The banding extends to rows added inside the range, so make the range run past the last row of data. *Untested through the connector.*
+- **Source notes:** an `updateCells` request sets a cell's note: `{"updateCells": {"rows": [{"values": [{"note": "Source: ..."}]}], "fields": "note", "start": {"sheetId": 0, "rowIndex": 3, "columnIndex": 2}}}` puts it on C4. _Untested through the connector._
+- **Grouping rows or columns:** `{"addDimensionGroup": {"range": {"sheetId": 0, "dimension": "ROWS", "startIndex": 4, "endIndex": 12}}}` groups rows 5 to 12; the indexes are 0-based with an exclusive end, like grid ranges. _Untested through the connector._
+- **Banding:** `addBanding` with a `bandedRange` whose `rowProperties` set `headerColor`, `firstBandColor` and `secondBandColor`. The banding extends to rows added inside the range, so make the range run past the last row of data. _Untested through the connector._
 
 ## Create
 
@@ -177,10 +180,10 @@ Every value that comes into the workbook from outside it should be traceable wit
 
 There are two coordinate systems, and each tool uses one of them.
 
-| Tools | Addresses cells by | Example |
-|---|---|---|
-| `get_values`, `update_values`, `update_formulas` | A1 notation with the tab name | `'P&L Model'!B4:D10` |
-| `update_spreadsheet`, `insert_dimension` | Numeric `sheetId` plus 0-based indexes; end indexes are exclusive | B4:D10 on tab 1001 is `{"sheetId": 1001, "startRowIndex": 3, "endRowIndex": 10, "startColumnIndex": 1, "endColumnIndex": 4}` |
+| Tools                                            | Addresses cells by                                                | Example                                                                                                                      |
+| ------------------------------------------------ | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `get_values`, `update_values`, `update_formulas` | A1 notation with the tab name                                     | `'P&L Model'!B4:D10`                                                                                                         |
+| `update_spreadsheet`, `insert_dimension`         | Numeric `sheetId` plus 0-based indexes; end indexes are exclusive | B4:D10 on tab 1001 is `{"sheetId": 1001, "startRowIndex": 3, "endRowIndex": 10, "startColumnIndex": 1, "endColumnIndex": 4}` |
 
 - **Quote tab names** that contain spaces or symbols, and double any apostrophe inside: `'P&L Model'!F5`, `'Owner''s tab'!A1`.
 - **The `sheetId` is not the tab name or its position.** Get it from `get_spreadsheet` (see Read). To choose a new tab's ID yourself, set `sheetId` in `addSheet`; the reply confirms it.
@@ -202,11 +205,19 @@ python <skill>/scripts/sheets_helper.py range "'P&L Model'!B4:D10" --meta meta.j
 - **Formulas, raw values, and errors:** read the grid instead. Use exactly this call, which is small and has everything the helper needs:
 
 ```json
-{"spreadsheetId": "...", "includeGridData": true, "ranges": ["'Model'!A1:H40"],
- "fields": ["sheets.properties.title", "sheets.data.startRow", "sheets.data.startColumn",
-            "sheets.data.rowData.values.userEnteredValue",
-            "sheets.data.rowData.values.formattedValue",
-            "sheets.data.rowData.values.effectiveValue"]}
+{
+  "spreadsheetId": "...",
+  "includeGridData": true,
+  "ranges": ["'Model'!A1:H40"],
+  "fields": [
+    "sheets.properties.title",
+    "sheets.data.startRow",
+    "sheets.data.startColumn",
+    "sheets.data.rowData.values.userEnteredValue",
+    "sheets.data.rowData.values.formattedValue",
+    "sheets.data.rowData.values.effectiveValue"
+  ]
+}
 ```
 
 Then list the cells, with each formula next to its displayed result:
@@ -240,16 +251,25 @@ Add `--errors-only` to list only the error cells. Add `sheets.data.rowData.value
 - **Formatting: use the helper.** Describe the formatting in a short spec and `sheets_helper.py format` builds the requests, with correct ranges, colors, and field masks:
 
 ```json
-{"sheet": "Model",
- "rules": [
-   {"range": "A1:F1", "bold": true, "bg": "#1F3864", "fg": "#FFFFFF", "align": "center"},
-   {"range": "B2:B8", "fg": "#0000FF"},
-   {"range": "C2:F20", "number": "currency"},
-   {"range": "G2:G20", "number": "percent"},
-   {"range": "A1:G20", "borders": "#BFBFBF"}],
- "freeze": {"rows": 1, "columns": 1},
- "col_widths": {"A": 220, "B:G": 110},
- "row_heights": {"1": 30}}
+{
+  "sheet": "Model",
+  "rules": [
+    {
+      "range": "A1:F1",
+      "bold": true,
+      "bg": "#1F3864",
+      "fg": "#FFFFFF",
+      "align": "center"
+    },
+    { "range": "B2:B8", "fg": "#0000FF" },
+    { "range": "C2:F20", "number": "currency" },
+    { "range": "G2:G20", "number": "percent" },
+    { "range": "A1:G20", "borders": "#BFBFBF" }
+  ],
+  "freeze": { "rows": 1, "columns": 1 },
+  "col_widths": { "A": 220, "B:G": 110 },
+  "row_heights": { "1": 30 }
+}
 ```
 
 ```
@@ -264,20 +284,64 @@ For one tab whose `sheetId` you already know, such as `0` on a new sheet, pass `
 - **Charts work.** `addChart` creates a native chart; the reply returns its `chartId`, which Slides can embed. A minimal column chart:
 
 ```json
-{"addChart": {"chart": {
-  "spec": {"title": "Revenue", "basicChart": {"chartType": "COLUMN",
-    "domains": [{"domain": {"sourceRange": {"sources": [
-      {"sheetId": 0, "startRowIndex": 0, "endRowIndex": 6, "startColumnIndex": 0, "endColumnIndex": 1}]}}}],
-    "series": [{"series": {"sourceRange": {"sources": [
-      {"sheetId": 0, "startRowIndex": 0, "endRowIndex": 6, "startColumnIndex": 1, "endColumnIndex": 2}]}},
-      "targetAxis": "LEFT_AXIS"}],
-    "headerCount": 1}},
-  "position": {"overlayPosition": {"anchorCell": {"sheetId": 0, "rowIndex": 8, "columnIndex": 0}}}}}}
+{
+  "addChart": {
+    "chart": {
+      "spec": {
+        "title": "Revenue",
+        "basicChart": {
+          "chartType": "COLUMN",
+          "domains": [
+            {
+              "domain": {
+                "sourceRange": {
+                  "sources": [
+                    {
+                      "sheetId": 0,
+                      "startRowIndex": 0,
+                      "endRowIndex": 6,
+                      "startColumnIndex": 0,
+                      "endColumnIndex": 1
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "series": [
+            {
+              "series": {
+                "sourceRange": {
+                  "sources": [
+                    {
+                      "sheetId": 0,
+                      "startRowIndex": 0,
+                      "endRowIndex": 6,
+                      "startColumnIndex": 1,
+                      "endColumnIndex": 2
+                    }
+                  ]
+                }
+              },
+              "targetAxis": "LEFT_AXIS"
+            }
+          ],
+          "headerCount": 1
+        }
+      },
+      "position": {
+        "overlayPosition": {
+          "anchorCell": { "sheetId": 0, "rowIndex": 8, "columnIndex": 0 }
+        }
+      }
+    }
+  }
+}
 ```
 
 Use `LINE` for trends over time, `BAR` or `COLUMN` for comparisons, and set `headerCount: 1` when the first row is a label.
 
-- **A chart that will be embedded in a Slides deck** follows the deck's existing chart style. When the deck has none: no chart title, since the slide carries the label; no legend; and a value label on every bar. For those, leave `title` out of the `spec`, set `"legendPosition": "NO_LEGEND"` on `basicChart`, and add `"dataLabel": {"type": "DATA"}` to each bar or column series. Leave `dataLabel` off a line series: a line's few point labels and its name go on the slide as text boxes. To color a single bar, use the series' `styleOverrides` (`[{"index": 3, "colorStyle": {"rgbColor": {...}}}]`). *Untested through the connector.*
+- **A chart that will be embedded in a Slides deck** follows the deck's existing chart style. When the deck has none: no chart title, since the slide carries the label; no legend; and a value label on every bar. For those, leave `title` out of the `spec`, set `"legendPosition": "NO_LEGEND"` on `basicChart`, and add `"dataLabel": {"type": "DATA"}` to each bar or column series. Leave `dataLabel` off a line series: a line's few point labels and its name go on the slide as text boxes. To color a single bar, use the series' `styleOverrides` (`[{"index": 3, "colorStyle": {"rgbColor": {...}}}]`). _Untested through the connector._
 
 ## Verify
 
@@ -291,14 +355,14 @@ Sheets supports `XLOOKUP`, `FILTER`, `UNIQUE`, and `SORT`, so the `xlsx` skill's
 
 ## Sheets failures
 
-| Symptom | Cause | Fix |
-|---|---|---|
-| `Invalid field: sheets.properties(sheetId,title)` | The connector rejects parenthesized field masks | Pass one full path per array item: `["sheets.properties"]`. |
-| `Invalid field: user_entered_format(number_format` | Parentheses in a request's `fields` | Use comma-separated full paths. `sheets_helper.py format` does this for you. |
-| An ID lost its leading zeros, or text became a date | Both write tools parse input like the UI | Prefix the value with `'`. |
-| A formula shows up as a value you typed | A computed result was written instead of a formula | Write the formula string starting with `=`. |
-| `get_values` result has no `values` key | The range is empty | Treat it as empty; it is not an error. |
-| Formatting landed on the wrong rows | 1-based rows used as 0-based indexes, or an inclusive end index | Build the range with `sheets_helper.py range`. |
-| Formatting landed on the wrong tab | Tab position or name used as `sheetId` | Read `sheets.properties` and use the numeric `sheetId`. |
-| Formulas point at the wrong rows after an insert | Rows were written using positions from before the insert | Re-read after `insertDimension`; Sheets already shifted existing formulas. |
-| `Unable to parse range: <tab>!A1` | Usually a tab name that doesn't exist, not bad A1 syntax | Read `sheets.properties` and use the exact tab title. |
+| Symptom                                             | Cause                                                           | Fix                                                                          |
+| --------------------------------------------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `Invalid field: sheets.properties(sheetId,title)`   | The connector rejects parenthesized field masks                 | Pass one full path per array item: `["sheets.properties"]`.                  |
+| `Invalid field: user_entered_format(number_format`  | Parentheses in a request's `fields`                             | Use comma-separated full paths. `sheets_helper.py format` does this for you. |
+| An ID lost its leading zeros, or text became a date | Both write tools parse input like the UI                        | Prefix the value with `'`.                                                   |
+| A formula shows up as a value you typed             | A computed result was written instead of a formula              | Write the formula string starting with `=`.                                  |
+| `get_values` result has no `values` key             | The range is empty                                              | Treat it as empty; it is not an error.                                       |
+| Formatting landed on the wrong rows                 | 1-based rows used as 0-based indexes, or an inclusive end index | Build the range with `sheets_helper.py range`.                               |
+| Formatting landed on the wrong tab                  | Tab position or name used as `sheetId`                          | Read `sheets.properties` and use the numeric `sheetId`.                      |
+| Formulas point at the wrong rows after an insert    | Rows were written using positions from before the insert        | Re-read after `insertDimension`; Sheets already shifted existing formulas.   |
+| `Unable to parse range: <tab>!A1`                   | Usually a tab name that doesn't exist, not bad A1 syntax        | Read `sheets.properties` and use the exact tab title.                        |

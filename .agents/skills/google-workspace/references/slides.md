@@ -168,13 +168,13 @@ Cite only sources you actually have, whether the user gave them to you or you re
 
 **Visual hierarchy and size.** The reader's eye should land on the title first, then the main visual or the bold text, then the detail. Size and weight control that order. Slides are read from the back of a room, so sizes that look right on a web page are too small here. On a standard 16:9 slide:
 
-| Element | Size |
-|---|---|
-| Slide title | 32–40pt bold, at least about 1.75× the body |
-| Section header | 24–28pt |
-| Body text | 16–18pt |
-| Captions | 14pt |
-| Footnotes and source lines | 10–12pt, muted |
+| Element                    | Size                                        |
+| -------------------------- | ------------------------------------------- |
+| Slide title                | 32–40pt bold, at least about 1.75× the body |
+| Section header             | 24–28pt                                     |
+| Body text                  | 16–18pt                                     |
+| Captions                   | 14pt                                        |
+| Footnotes and source lines | 10–12pt, muted                              |
 
 Footnotes, source lines, the second line of a chart label, a chart's year row (11pt) and chart callouts (11–12pt) are the only text you add below 14pt, with one exception: a template whose own body text is smaller, which is common in banking and consulting decks. Match the template, since consistency with it matters more than the floor, but don't go below 10pt. Set sizes explicitly instead of leaving them to defaults.
 
@@ -262,10 +262,13 @@ Choose a route based on the deck.
 - **Always pass a field mask.** An unmasked read returns every layout and master: 150 KB for a three-slide deck. This mask returns what editing and the helper need, about 5 KB for the same deck:
 
 ```json
-["revisionId,pageSize,layouts(objectId,layoutProperties.name),slides(objectId,slideProperties.layoutObjectId,pageElements(objectId,size,transform,shape(shapeType,placeholder,text.textElements(textRun(content,style.fontSize,style.bold))),table(rows,columns,tableColumns,tableRows(rowHeight,tableCells(location,text.textElements.textRun.content))),image.contentUrl,sheetsChart(spreadsheetId,chartId),line.lineType,elementGroup.children.objectId))"]
+[
+  "revisionId,pageSize,layouts(objectId,layoutProperties.name),slides(objectId,slideProperties.layoutObjectId,pageElements(objectId,size,transform,shape(shapeType,placeholder,text.textElements(textRun(content,style.fontSize,style.bold))),table(rows,columns,tableColumns,tableRows(rowHeight,tableCells(location,text.textElements.textRun.content))),image.contentUrl,sheetsChart(spreadsheetId,chartId),line.lineType,elementGroup.children.objectId))"
+]
 ```
 
-  Unlike the Sheets connector, Slides accepts parentheses in masks.
+Unlike the Sheets connector, Slides accepts parentheses in masks.
+
 - **One slide:** `read_slide_page` with a `pageId` and a mask starting at `pageElements(...)`.
 - **Text only:** Drive `read_file_content` gives the deck's text compactly when you only need to know what it says.
 - **Outline with real geometry:** save the masked read to a file and run:
@@ -278,26 +281,80 @@ python <skill>/scripts/slides_helper.py outline deck.json
   s4_note    shape  x=0.50 y=4.60 w=4.00 h=0.30  TEXT_BOX 12pt 'This footnote is...'  !! TEXT MAY OVERFLOW (needs ~0.80 in)
 ```
 
-  It flags elements off the page, boxes that overlap, text that probably overflows its box, and empty placeholders. "inherited size" means the font size comes from the layout, so the overflow check is skipped for that box. An overlap flag means the boxes intersect; check the render to see whether the content actually collides.
+It flags elements off the page, boxes that overlap, text that probably overflows its box, and empty placeholders. "inherited size" means the font size comes from the layout, so the overflow check is skipped for that box. An overlap flag means the boxes intersect; check the render to see whether the content actually collides.
 
 ## Build slides
 
 Build new slides and elements from an inch-based spec with `slides_helper.py build`. It converts to EMU, sets unscaled transforms, checks IDs, styles text, fills tables, and warns about text that won't fit.
 
 ```json
-{"slides": [
-  {"id": "s4_slide", "layout": "BLANK", "index": 3,
-   "elements": [
-     {"id": "s4_title", "type": "text", "x": 0.5, "y": 0.35, "w": 9, "h": 0.7,
-      "text": "Revenue grew 42% year over year", "size": 32, "bold": true, "color": "#1F2937"},
-     {"id": "s4_card", "type": "round_rect", "x": 0.5, "y": 1.3, "w": 2.8, "h": 1.6,
-      "fill": "#E8EEF7", "text": "ARR\n$4.2M", "size": 24, "bold": true, "color": "#1F3864", "align": "CENTER"},
-     {"id": "s4_table", "type": "table", "x": 3.7, "y": 1.3, "w": 5.8, "size": 14,
-      "rows": [["Metric", "Q1", "Q2"], ["ARR", "$3.0M", "$4.2M"]],
-      "header": true, "col_align": ["START", "END", "END"]}]},
-  {"id": "s3_slide", "existing": true,
-   "elements": [{"id": "s3_label", "type": "text", "x": 0.5, "y": 2.1, "w": 4, "h": 0.5,
-                 "text": "of pilots converted", "size": 16}]}]}
+{
+  "slides": [
+    {
+      "id": "s4_slide",
+      "layout": "BLANK",
+      "index": 3,
+      "elements": [
+        {
+          "id": "s4_title",
+          "type": "text",
+          "x": 0.5,
+          "y": 0.35,
+          "w": 9,
+          "h": 0.7,
+          "text": "Revenue grew 42% year over year",
+          "size": 32,
+          "bold": true,
+          "color": "#1F2937"
+        },
+        {
+          "id": "s4_card",
+          "type": "round_rect",
+          "x": 0.5,
+          "y": 1.3,
+          "w": 2.8,
+          "h": 1.6,
+          "fill": "#E8EEF7",
+          "text": "ARR\n$4.2M",
+          "size": 24,
+          "bold": true,
+          "color": "#1F3864",
+          "align": "CENTER"
+        },
+        {
+          "id": "s4_table",
+          "type": "table",
+          "x": 3.7,
+          "y": 1.3,
+          "w": 5.8,
+          "size": 14,
+          "rows": [
+            ["Metric", "Q1", "Q2"],
+            ["ARR", "$3.0M", "$4.2M"]
+          ],
+          "header": true,
+          "col_align": ["START", "END", "END"]
+        }
+      ]
+    },
+    {
+      "id": "s3_slide",
+      "existing": true,
+      "elements": [
+        {
+          "id": "s3_label",
+          "type": "text",
+          "x": 0.5,
+          "y": 2.1,
+          "w": 4,
+          "h": 0.5,
+          "text": "of pilots converted",
+          "size": 16
+        }
+      ]
+    }
+  ]
+}
 ```
 
 ```
@@ -317,11 +374,23 @@ Each recipe is part of one `update_presentation` call. Send the call with `write
 **Use a layout's placeholders.** `createSlide` with `slideLayoutReference: {"predefinedLayout": "TITLE_AND_BODY"}` and `placeholderIdMappings` naming the placeholders you'll fill:
 
 ```json
-{"createSlide": {"objectId": "s2_slide", "insertionIndex": 1,
-  "slideLayoutReference": {"predefinedLayout": "TITLE_AND_BODY"},
-  "placeholderIdMappings": [
-    {"layoutPlaceholder": {"type": "TITLE", "index": 0}, "objectId": "s2_title"},
-    {"layoutPlaceholder": {"type": "BODY", "index": 0}, "objectId": "s2_body"}]}}
+{
+  "createSlide": {
+    "objectId": "s2_slide",
+    "insertionIndex": 1,
+    "slideLayoutReference": { "predefinedLayout": "TITLE_AND_BODY" },
+    "placeholderIdMappings": [
+      {
+        "layoutPlaceholder": { "type": "TITLE", "index": 0 },
+        "objectId": "s2_title"
+      },
+      {
+        "layoutPlaceholder": { "type": "BODY", "index": 0 },
+        "objectId": "s2_body"
+      }
+    ]
+  }
+}
 ```
 
 Then `insertText` into `s2_title` and `s2_body`. Placeholder text takes the theme's font and size, which keeps the deck consistent. Predefined layouts include `TITLE`, `TITLE_AND_BODY`, `TITLE_AND_TWO_COLUMNS`, `TITLE_ONLY`, `SECTION_HEADER`, `BIG_NUMBER`, and `BLANK`. A deck with a custom theme may name its layouts differently; the masked read lists them, and `slideLayoutReference: {"layoutId": ...}` picks one by ID. Fill or delete every placeholder you create, because an empty one shows prompt text in the editor.
@@ -351,20 +420,19 @@ Then `insertText` into `s2_title` and `s2_body`. Placeholder text takes the them
 python <skill>/scripts/render_export.py <saved export> render --pages 3-4
 ```
 
-   Open each page image and check for overflow, overlap, clipped text, and low contrast. `read_slide_page_thumbnail` returns an image URL instead; use it only if your surface can open image URLs, since some environments can't.
-3. Fix the problems, then check again. If you can't run code or render, rely on step 1 and tell the user you couldn't check the layout visually.
+Open each page image and check for overflow, overlap, clipped text, and low contrast. `read_slide_page_thumbnail` returns an image URL instead; use it only if your surface can open image URLs, since some environments can't. 3. Fix the problems, then check again. If you can't run code or render, rely on step 1 and tell the user you couldn't check the layout visually.
 
 ## Slides failures
 
-| Symptom | Cause | Fix |
-|---|---|---|
-| A read is 100 KB or more | No field mask, so layouts and masters came back | Use the mask in Read. |
-| Elements land in the wrong place or size | Base `size` used without the transform scale | Use `slides_helper.py outline` for real geometry, and `build` for new elements. |
-| A table is a different size than requested | Table size comes from columns and rows, and rows grow with text | Read `tableColumns` and `tableRows`; set widths with `updateTableColumnProperties`. |
-| Text spills out of its box | Slides doesn't shrink text | Enlarge the box, cut the text, or split the slide (Fitting text above says when a smaller size is allowed). `build` warns before you send. |
-| `The object ID (ab) length should not be less than 5`, or a duplicate ID error | IDs too short, reused, or with invalid characters | Use descriptive IDs such as `s4_title`, unique per deck. |
-| `Unknown dimension unit UNIT_UNSPECIFIED` | A size or transform without `unit: "EMU"`, or a new shape with no size | Give every new element a full `size` and `transform` with units. `build` does this. |
-| Prompt text such as "Click to add title" appears | An empty placeholder | Fill it or delete it. `outline` flags these. |
-| `createImage` fails | The URL isn't publicly fetchable | Use a public URL, or the .pptx upload route. |
-| `deleteText`: `The startIndex 0 must be less than the endIndex 0` | The box has no text to delete | Skip the delete when the read shows no text. |
-| `createSlide`: `The placeholder (…) is not on the page` | `placeholderIdMappings` names a placeholder the layout doesn't have | Map only the placeholders that layout has; `TITLE_ONLY` has no `BODY`. |
+| Symptom                                                                        | Cause                                                                  | Fix                                                                                                                                        |
+| ------------------------------------------------------------------------------ | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| A read is 100 KB or more                                                       | No field mask, so layouts and masters came back                        | Use the mask in Read.                                                                                                                      |
+| Elements land in the wrong place or size                                       | Base `size` used without the transform scale                           | Use `slides_helper.py outline` for real geometry, and `build` for new elements.                                                            |
+| A table is a different size than requested                                     | Table size comes from columns and rows, and rows grow with text        | Read `tableColumns` and `tableRows`; set widths with `updateTableColumnProperties`.                                                        |
+| Text spills out of its box                                                     | Slides doesn't shrink text                                             | Enlarge the box, cut the text, or split the slide (Fitting text above says when a smaller size is allowed). `build` warns before you send. |
+| `The object ID (ab) length should not be less than 5`, or a duplicate ID error | IDs too short, reused, or with invalid characters                      | Use descriptive IDs such as `s4_title`, unique per deck.                                                                                   |
+| `Unknown dimension unit UNIT_UNSPECIFIED`                                      | A size or transform without `unit: "EMU"`, or a new shape with no size | Give every new element a full `size` and `transform` with units. `build` does this.                                                        |
+| Prompt text such as "Click to add title" appears                               | An empty placeholder                                                   | Fill it or delete it. `outline` flags these.                                                                                               |
+| `createImage` fails                                                            | The URL isn't publicly fetchable                                       | Use a public URL, or the .pptx upload route.                                                                                               |
+| `deleteText`: `The startIndex 0 must be less than the endIndex 0`              | The box has no text to delete                                          | Skip the delete when the read shows no text.                                                                                               |
+| `createSlide`: `The placeholder (…) is not on the page`                        | `placeholderIdMappings` names a placeholder the layout doesn't have    | Map only the placeholders that layout has; `TITLE_ONLY` has no `BODY`.                                                                     |

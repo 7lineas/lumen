@@ -15,14 +15,21 @@ Coro`;
 describe("parseSong", () => {
   it("keeps unlabelled blocks as parts in written order (old songs keep working)", () => {
     const parsed = parseSong("Primera estrofa\nlinea dos\n\nSegunda estrofa");
-    expect(parsed.sections.map((s) => s.text)).toEqual(["Primera estrofa\nlinea dos", "Segunda estrofa"]);
+    expect(parsed.sections.map((s) => s.text)).toEqual([
+      "Primera estrofa\nlinea dos",
+      "Segunda estrofa",
+    ]);
     expect(parsed.sections.every((s) => s.label === "")).toBe(true);
     expect(parsed.order).toEqual(parsed.sections.map((s) => s.key));
   });
 
   it("reads Spanish labels on the first line and removes them from the text", () => {
     const parsed = parseSong(LABELLED);
-    expect(parsed.sections.map((s) => s.label)).toEqual(["Verso 1", "Coro", "Verso 2"]);
+    expect(parsed.sections.map((s) => s.label)).toEqual([
+      "Verso 1",
+      "Coro",
+      "Verso 2",
+    ]);
     expect(parsed.sections[0].text).toBe("Sublime gracia del Señor");
   });
 
@@ -51,7 +58,9 @@ describe("parseSong", () => {
   it("treats a lyric line that merely contains a label word as text", () => {
     const parsed = parseSong("Coro de ángeles cantando\nsegunda línea");
     expect(parsed.sections[0].label).toBe("");
-    expect(parsed.sections[0].text).toBe("Coro de ángeles cantando\nsegunda línea");
+    expect(parsed.sections[0].text).toBe(
+      "Coro de ángeles cantando\nsegunda línea",
+    );
   });
 
   it("returns nothing for empty lyrics", () => {
@@ -62,7 +71,12 @@ describe("parseSong", () => {
 describe("songParts", () => {
   it("projects the parts in the written order, repeats included", () => {
     const parts = songParts(LABELLED);
-    expect(parts.map((p) => p.label)).toEqual(["Verso 1", "Coro", "Verso 2", "Coro"]);
+    expect(parts.map((p) => p.label)).toEqual([
+      "Verso 1",
+      "Coro",
+      "Verso 2",
+      "Coro",
+    ]);
   });
 
   it("projects nothing for empty lyrics", () => {

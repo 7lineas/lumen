@@ -11,57 +11,60 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const yvpAppKey = (process.env.YVP_APP_KEY ?? env.YVP_APP_KEY ?? "").trim();
   return {
-  plugins: [
-    react(),
-    tailwindcss(),
-    electron({
-      main: {
-        // pptx-worker runs in a utilityProcess (see electron/pptx-render.ts).
-        entry: { main: "electron/main.ts", "pptx-worker": "electron/pptx-worker.ts" },
-        vite: {
-          define: { __YVP_APP_KEY__: JSON.stringify(yvpAppKey) },
-          build: {
-            outDir: "dist-electron",
-            rollupOptions: {
-              // pptx-glimpse must stay a real node_modules dependency: its Node
-              // entry loads @resvg/resvg-wasm's .wasm and system fonts at
-              // runtime, which breaks (or silently drops text) once bundled
-              // into dist-electron. electron-builder ships it inside the asar.
-              external: ["electron", "pptx-glimpse"],
+    plugins: [
+      react(),
+      tailwindcss(),
+      electron({
+        main: {
+          // pptx-worker runs in a utilityProcess (see electron/pptx-render.ts).
+          entry: {
+            main: "electron/main.ts",
+            "pptx-worker": "electron/pptx-worker.ts",
+          },
+          vite: {
+            define: { __YVP_APP_KEY__: JSON.stringify(yvpAppKey) },
+            build: {
+              outDir: "dist-electron",
+              rollupOptions: {
+                // pptx-glimpse must stay a real node_modules dependency: its Node
+                // entry loads @resvg/resvg-wasm's .wasm and system fonts at
+                // runtime, which breaks (or silently drops text) once bundled
+                // into dist-electron. electron-builder ships it inside the asar.
+                external: ["electron", "pptx-glimpse"],
+              },
             },
           },
         },
-      },
-      preload: {
-        input: "electron/preload.ts",
-        vite: {
-          build: {
-            outDir: "dist-electron",
+        preload: {
+          input: "electron/preload.ts",
+          vite: {
+            build: {
+              outDir: "dist-electron",
+            },
           },
         },
-      },
-    }),
-  ],
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "src"),
-      "@shared": path.resolve(__dirname, "shared"),
-    },
-  },
-  server: {
-    port: Number(process.env.PORT) || 43123,
-    strictPort: true,
-    proxy: {
-      "/api": {
-        target: `http://127.0.0.1:${Number(process.env.LUMEN_BROWSER_PORT) || 43124}`,
-        changeOrigin: true,
-      },
-      "/media": {
-        target: `http://127.0.0.1:${Number(process.env.LUMEN_BROWSER_PORT) || 43124}`,
-        changeOrigin: true,
+      }),
+    ],
+    resolve: {
+      alias: {
+        "@": path.resolve(__dirname, "src"),
+        "@shared": path.resolve(__dirname, "shared"),
       },
     },
-  },
-  base: "./",
-};
+    server: {
+      port: Number(process.env.PORT) || 43123,
+      strictPort: true,
+      proxy: {
+        "/api": {
+          target: `http://127.0.0.1:${Number(process.env.LUMEN_BROWSER_PORT) || 43124}`,
+          changeOrigin: true,
+        },
+        "/media": {
+          target: `http://127.0.0.1:${Number(process.env.LUMEN_BROWSER_PORT) || 43124}`,
+          changeOrigin: true,
+        },
+      },
+    },
+    base: "./",
+  };
 });

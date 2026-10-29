@@ -14,7 +14,13 @@ interface Props {
 }
 
 /** Play, pause, seek and volume for the video that is on the projector. */
-export function VideoTransport({ video, duration, onToggle, onSeek, onVolume }: Props) {
+export function VideoTransport({
+  video,
+  duration,
+  onToggle,
+  onSeek,
+  onVolume,
+}: Props) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     setNow(Date.now());
@@ -28,11 +34,26 @@ export function VideoTransport({ video, duration, onToggle, onSeek, onVolume }: 
   const running = video.playing && !ended;
 
   return (
-    <div className="lx-transport" aria-label="Control del video en pantalla" data-testid="video-transport">
-      <button type="button" className="lx-sq" aria-label={running ? "Pausar video" : "Reproducir video"} onClick={onToggle}>
+    <div
+      className="lx-transport"
+      aria-label="Control del video en pantalla"
+      data-testid="video-transport"
+    >
+      <button
+        type="button"
+        className="lx-sq"
+        aria-label={running ? "Pausar video" : "Reproducir video"}
+        onClick={onToggle}
+      >
         {running ? <Pause /> : <Play />}
       </button>
-      <button type="button" className="lx-sq" aria-label="Volver al inicio del video" title="Volver al inicio" onClick={() => onSeek(0)}>
+      <button
+        type="button"
+        className="lx-sq"
+        aria-label="Volver al inicio del video"
+        title="Volver al inicio"
+        onClick={() => onSeek(0)}
+      >
         <RotateCcw />
       </button>
       <input
@@ -46,10 +67,22 @@ export function VideoTransport({ video, duration, onToggle, onSeek, onVolume }: 
         value={Math.min(position, duration ?? 0)}
         onChange={(event) => onSeek(Number(event.target.value))}
       />
-      <span className="lx-time">{formatClock(position)} / {duration != null ? formatClock(duration) : "--:--"}</span>
+      <span className="lx-time">
+        {formatClock(position)} /{" "}
+        {duration != null ? formatClock(duration) : "--:--"}
+      </span>
       <label className="lx-volume" title="Volumen del proyector">
         <Volume2 aria-hidden />
-        <input type="range" className="lx-range" aria-label="Volumen del video" min={0} max={1} step={0.05} value={video.volume} onChange={(event) => onVolume(Number(event.target.value))} />
+        <input
+          type="range"
+          className="lx-range"
+          aria-label="Volumen del video"
+          min={0}
+          max={1}
+          step={0.05}
+          value={video.volume}
+          onChange={(event) => onVolume(Number(event.target.value))}
+        />
       </label>
     </div>
   );

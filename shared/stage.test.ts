@@ -41,16 +41,32 @@ describe("payloadContentKey", () => {
   };
 
   it("ignores style fields so a restyle is not a new take", () => {
-    expect(payloadContentKey({ ...base, fontSize: 90, brightness: 0.5 })).toBe(payloadContentKey(base));
+    expect(payloadContentKey({ ...base, fontSize: 90, brightness: 0.5 })).toBe(
+      payloadContentKey(base),
+    );
   });
 
   it("changes when the text changes", () => {
-    expect(payloadContentKey({ ...base, blocks: [{ text: "otro" }] })).not.toBe(payloadContentKey(base));
+    expect(payloadContentKey({ ...base, blocks: [{ text: "otro" }] })).not.toBe(
+      payloadContentKey(base),
+    );
   });
 
   it("treats blank as one key and countdowns by their end time", () => {
-    expect(payloadContentKey({ ...base, mode: "blank", blocks: [] })).toBe("blank");
-    const counting = { ...base, mode: "countdown" as const, blocks: [], countdown: { caption: "Comenzamos en", endsAt: 5 } };
-    expect(payloadContentKey(counting)).not.toBe(payloadContentKey({ ...counting, countdown: { caption: "Comenzamos en", endsAt: 6 } }));
+    expect(payloadContentKey({ ...base, mode: "blank", blocks: [] })).toBe(
+      "blank",
+    );
+    const counting = {
+      ...base,
+      mode: "countdown" as const,
+      blocks: [],
+      countdown: { caption: "Comenzamos en", endsAt: 5 },
+    };
+    expect(payloadContentKey(counting)).not.toBe(
+      payloadContentKey({
+        ...counting,
+        countdown: { caption: "Comenzamos en", endsAt: 6 },
+      }),
+    );
   });
 });

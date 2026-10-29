@@ -11,7 +11,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import type { StoredText } from "@shared/types";
 import { textSlides } from "@shared/text-slides";
 import { DEFAULT_FONT_WEIGHT, type FontFamilyId } from "@shared/fonts";
@@ -36,7 +42,14 @@ interface Props {
   onDelete: () => void;
 }
 
-export function TextDialog({ open, text, defaultFontFamily, onOpenChange, onSave, onDelete }: Props) {
+export function TextDialog({
+  open,
+  text,
+  defaultFontFamily,
+  onOpenChange,
+  onSave,
+  onDelete,
+}: Props) {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [ownType, setOwnType] = useState(false);
@@ -60,18 +73,33 @@ export function TextDialog({ open, text, defaultFontFamily, onOpenChange, onSave
       <DialogContent className="lx-dialog" data-testid="text-dialog">
         <DialogHeader>
           <DialogTitle>{text ? "Editar texto" : "Nuevo texto"}</DialogTitle>
-          <DialogDescription>Cada bloque separado por una línea en blanco es una diapositiva.</DialogDescription>
+          <DialogDescription>
+            Cada bloque separado por una línea en blanco es una diapositiva.
+          </DialogDescription>
         </DialogHeader>
         <form
           className="lx-form"
           onSubmit={(event) => {
             event.preventDefault();
-            if (canSave) onSave({ title: title.trim(), body, fontFamily: ownType ? fontFamily : undefined, fontWeight: ownType ? fontWeight : undefined });
+            if (canSave)
+              onSave({
+                title: title.trim(),
+                body,
+                fontFamily: ownType ? fontFamily : undefined,
+                fontWeight: ownType ? fontWeight : undefined,
+              });
           }}
         >
           <label className="lx-field">
             <span>Título</span>
-            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Bienvenida" autoComplete="off" autoFocus data-testid="text-title" />
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Bienvenida"
+              autoComplete="off"
+              autoFocus
+              data-testid="text-title"
+            />
           </label>
           <label className="lx-field">
             <span>Texto</span>
@@ -80,10 +108,16 @@ export function TextDialog({ open, text, defaultFontFamily, onOpenChange, onSave
               onChange={(e) => setBody(e.target.value)}
               rows={13}
               spellCheck
-              placeholder={"Bienvenidos a la casa de Dios.\n\nHoy celebramos juntos…"}
+              placeholder={
+                "Bienvenidos a la casa de Dios.\n\nHoy celebramos juntos…"
+              }
               data-testid="text-body"
             />
-            <small>{slides > 0 ? `Ahora: ${slides} ${slides === 1 ? "diapositiva" : "diapositivas"}.` : "Escribe el texto para proyectarlo."}</small>
+            <small>
+              {slides > 0
+                ? `Ahora: ${slides} ${slides === 1 ? "diapositiva" : "diapositivas"}.`
+                : "Escribe el texto para proyectarlo."}
+            </small>
           </label>
           <OwnTypeface
             own={ownType}
@@ -99,22 +133,52 @@ export function TextDialog({ open, text, defaultFontFamily, onOpenChange, onSave
           <div className="lx-form-actions">
             {text && (
               <AlertDialog>
-                <AlertDialogTrigger render={<Button type="button" variant="destructive" data-testid="btn-delete-text">Eliminar</Button>} />
+                <AlertDialogTrigger
+                  render={
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      data-testid="btn-delete-text"
+                    >
+                      Eliminar
+                    </Button>
+                  }
+                />
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle>Eliminar texto</AlertDialogTitle>
-                    <AlertDialogDescription>¿Eliminar “{text.title}”? Esta acción no se puede deshacer.</AlertDialogDescription>
+                    <AlertDialogDescription>
+                      ¿Eliminar “{text.title}”? Esta acción no se puede
+                      deshacer.
+                    </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction variant="destructive" data-testid="confirm-delete-text" onClick={onDelete}>Eliminar</AlertDialogAction>
+                    <AlertDialogAction
+                      variant="destructive"
+                      data-testid="confirm-delete-text"
+                      onClick={onDelete}
+                    >
+                      Eliminar
+                    </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
             )}
             <span className="lx-spacer" />
-            <Button type="button" data-testid="btn-cancel-edit-text" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button type="submit" className="primary" disabled={!canSave} data-testid="btn-save-text">
+            <Button
+              type="button"
+              data-testid="btn-cancel-edit-text"
+              onClick={() => onOpenChange(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              className="primary"
+              disabled={!canSave}
+              data-testid="btn-save-text"
+            >
               {text ? "Guardar cambios" : "Crear texto"}
             </Button>
           </div>

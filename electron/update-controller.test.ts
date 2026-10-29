@@ -1,24 +1,39 @@
 import { describe, expect, it, vi } from "vitest";
 import type { AppUpdateMode, AppUpdateState } from "../shared/app-update";
-import { UPDATE_CHECK_INTERVAL_MS, UPDATE_RETRY_INTERVAL_MS, UPDATE_STARTUP_DELAY_MS } from "../shared/app-update";
-import { INSTALL_WATCHDOG_MS, createUpdateController, type UpdateBackend } from "./update-controller";
+import {
+  UPDATE_CHECK_INTERVAL_MS,
+  UPDATE_RETRY_INTERVAL_MS,
+  UPDATE_STARTUP_DELAY_MS,
+} from "../shared/app-update";
+import {
+  INSTALL_WATCHDOG_MS,
+  createUpdateController,
+  type UpdateBackend,
+} from "./update-controller";
 
-function setup(options: {
-  mode?: AppUpdateMode;
-  latest?: string | null;
-  online?: boolean;
-  projecting?: boolean;
-  checkError?: Error;
-  downloadError?: Error;
-  installError?: Error;
-} = {}) {
+function setup(
+  options: {
+    mode?: AppUpdateMode;
+    latest?: string | null;
+    online?: boolean;
+    projecting?: boolean;
+    checkError?: Error;
+    downloadError?: Error;
+    installError?: Error;
+  } = {},
+) {
   const states: AppUpdateState[] = [];
   const timers: Array<{ fn: () => void; ms: number; cleared: boolean }> = [];
-  const flags = { online: options.online ?? true, projecting: options.projecting ?? false };
+  const flags = {
+    online: options.online ?? true,
+    projecting: options.projecting ?? false,
+  };
   const backend = {
     check: vi.fn(async () => {
       if (options.checkError) throw options.checkError;
-      return options.latest === null ? null : { version: options.latest ?? "1.0.7" };
+      return options.latest === null
+        ? null
+        : { version: options.latest ?? "1.0.7" };
     }),
     download: vi.fn(async (onProgress: (percent: number) => void) => {
       onProgress(10);
@@ -62,36 +77,58 @@ describe("update controller", () => {
     const { controller, backend, pending, fire } = setup({ latest: "1.0.6" });
     controller.start();
     expect(backend.check).not.toHaveBeenCalled();
-    expect(pending().map((timer) => timer.ms)).toEqual([UPDATE_STARTUP_DELAY_MS]);
+    expect(pending().map((timer) => timer.ms)).toEqual([
+      UPDATE_STARTUP_DELAY_MS,
+    ]);
     fire();
-    await vi.waitFor(() => expect(controller.getState().status).toBe("up-to-date"));
+    await vi.waitFor(() =>
+      expect(controller.getState().status).toBe("up-to-date"),
+    );
     expect(backend.check).toHaveBeenCalledTimes(1);
-    expect(pending().map((timer) => timer.ms)).toEqual([UPDATE_CHECK_INTERVAL_MS]);
+    expect(pending().map((timer) => timer.ms)).toEqual([
+      UPDATE_CHECK_INTERVAL_MS,
+    ]);
   });
 
   it("reports an available version and never auto-downloads it", async () => {
     const { controller, backend } = setup();
     await controller.check();
-    expect(controller.getState()).toMatchObject({ status: "available", availableVersion: "1.0.7" });
+    expect(controller.getState()).toMatchObject({
+      status: "available",
+      availableVersion: "1.0.7",
+    });
     expect(backend.download).not.toHaveBeenCalled();
   });
 
   it("stays silent and retries later without a network", async () => {
-    const { controller, backend, pending, fire, states } = setup({ online: false });
+    const { controller, backend, pending, fire, states } = setup({
+      online: false,
+    });
     controller.start();
     fire();
-    await vi.waitFor(() => expect(pending().some((timer) => timer.ms === UPDATE_RETRY_INTERVAL_MS)).toBe(true));
+    await vi.waitFor(() =>
+      expect(
+        pending().some((timer) => timer.ms === UPDATE_RETRY_INTERVAL_MS),
+      ).toBe(true),
+    );
     expect(backend.check).not.toHaveBeenCalled();
     expect(states.every((state) => state.status === "idle")).toBe(true);
   });
 
   it("keeps check failures out of the way and retries sooner", async () => {
-    const { controller, pending, fire } = setup({ checkError: new Error("net::ERR_INTERNET_DISCONNECTED") });
+    const { controller, pending, fire } = setup({
+      checkError: new Error("net::ERR_INTERNET_DISCONNECTED"),
+    });
     controller.start();
     fire();
     await vi.waitFor(() => expect(controller.getState().status).toBe("error"));
-    expect(controller.getState()).toMatchObject({ errorContext: "check", message: "Sin conexión a internet." });
-    expect(pending().map((timer) => timer.ms)).toEqual([UPDATE_RETRY_INTERVAL_MS]);
+    expect(controller.getState()).toMatchObject({
+      errorContext: "check",
+      message: "Sin conexión a internet.",
+    });
+    expect(pending().map((timer) => timer.ms)).toEqual([
+      UPDATE_RETRY_INTERVAL_MS,
+    ]);
   });
 
   it("does not overlap checks", async () => {
@@ -104,10 +141,15 @@ describe("update controller", () => {
     const { controller, backend, states } = setup();
     await controller.check();
     await controller.startUpdate();
-    const percents = states.filter((state) => state.status === "downloading").map((state) => state.downloadPercent);
+    const percents = states
+      .filter((state) => state.status === "downloading")
+      .map((state) => state.downloadPercent);
     expect(percents).toEqual([0, 10, 55, 100]);
     expect(backend.install).toHaveBeenCalledTimes(1);
-    expect(controller.getState()).toMatchObject({ status: "downloaded", downloadedVersion: "1.0.7" });
+    expect(controller.getState()).toMatchObject({
+      status: "downloaded",
+      downloadedVersion: "1.0.7",
+    });
   });
 
   it("waits for a second confirmation when a projection started during the download", async () => {
@@ -116,16 +158,24 @@ describe("update controller", () => {
     flags.projecting = true;
     await controller.startUpdate();
     expect(backend.install).not.toHaveBeenCalled();
-    expect(controller.getState()).toMatchObject({ status: "downloaded", projectionActive: true });
+    expect(controller.getState()).toMatchObject({
+      status: "downloaded",
+      projectionActive: true,
+    });
     controller.install();
     expect(backend.install).toHaveBeenCalledTimes(1);
   });
 
   it("reports download failures and allows a retry", async () => {
-    const failing = setup({ downloadError: new Error("net::ERR_INTERNET_DISCONNECTED") });
+    const failing = setup({
+      downloadError: new Error("net::ERR_INTERNET_DISCONNECTED"),
+    });
     await failing.controller.check();
     await failing.controller.startUpdate();
-    expect(failing.controller.getState()).toMatchObject({ status: "available", errorContext: "download" });
+    expect(failing.controller.getState()).toMatchObject({
+      status: "available",
+      errorContext: "download",
+    });
     expect(failing.controller.getState().message).toMatch(/sin conexión/);
     expect(failing.backend.install).not.toHaveBeenCalled();
     await failing.controller.startUpdate();
@@ -136,7 +186,10 @@ describe("update controller", () => {
     const { controller } = setup({ installError: new Error("spawn failed") });
     await controller.check();
     await controller.startUpdate();
-    expect(controller.getState()).toMatchObject({ status: "downloaded", errorContext: "install" });
+    expect(controller.getState()).toMatchObject({
+      status: "downloaded",
+      errorContext: "install",
+    });
     expect(controller.getState().message).toMatch(/No se pudo instalar/);
   });
 
@@ -145,10 +198,15 @@ describe("update controller", () => {
     await controller.check();
     await controller.startUpdate();
     expect(backend.install).toHaveBeenCalledTimes(1);
-    const watchdog = pending().find((timer) => timer.ms === INSTALL_WATCHDOG_MS);
+    const watchdog = pending().find(
+      (timer) => timer.ms === INSTALL_WATCHDOG_MS,
+    );
     expect(watchdog).toBeDefined();
     watchdog!.fn();
-    expect(controller.getState()).toMatchObject({ status: "downloaded", errorContext: "install" });
+    expect(controller.getState()).toMatchObject({
+      status: "downloaded",
+      errorContext: "install",
+    });
     controller.install();
     expect(backend.install).toHaveBeenCalledTimes(2);
   });

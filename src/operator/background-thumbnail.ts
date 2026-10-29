@@ -7,9 +7,15 @@ let thumbnailQueue = Promise.resolve();
 const pendingThumbnails = new Map<string, Promise<boolean>>();
 const completedThumbnails = new Map<string, boolean>();
 
-function waitForMediaEvent(video: HTMLVideoElement, eventName: "loadedmetadata" | "loadeddata" | "seeked"): Promise<void> {
+function waitForMediaEvent(
+  video: HTMLVideoElement,
+  eventName: "loadedmetadata" | "loadeddata" | "seeked",
+): Promise<void> {
   return new Promise((resolve, reject) => {
-    const timeout = window.setTimeout(() => finish(new Error("Video thumbnail decode timed out")), DECODE_TIMEOUT_MS);
+    const timeout = window.setTimeout(
+      () => finish(new Error("Video thumbnail decode timed out")),
+      DECODE_TIMEOUT_MS,
+    );
     const cleanup = () => {
       window.clearTimeout(timeout);
       video.removeEventListener(eventName, onReady);
@@ -30,7 +36,8 @@ function waitForMediaEvent(video: HTMLVideoElement, eventName: "loadedmetadata" 
 function toBase64(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onerror = () => reject(new Error("Could not encode video thumbnail"));
+    reader.onerror = () =>
+      reject(new Error("Could not encode video thumbnail"));
     reader.onload = () => {
       const dataUrl = typeof reader.result === "string" ? reader.result : "";
       const comma = dataUrl.indexOf(",");
@@ -69,16 +76,25 @@ async function decodeAndSaveThumbnail(filePath: string): Promise<boolean> {
     const width = video.videoWidth;
     const height = video.videoHeight;
     if (!width || !height) return false;
-    const scale = Math.min(1, THUMBNAIL_MAX_WIDTH / width, THUMBNAIL_MAX_HEIGHT / height);
+    const scale = Math.min(
+      1,
+      THUMBNAIL_MAX_WIDTH / width,
+      THUMBNAIL_MAX_HEIGHT / height,
+    );
     const canvas = document.createElement("canvas");
     canvas.width = Math.max(1, Math.round(width * scale));
     canvas.height = Math.max(1, Math.round(height * scale));
     const context = canvas.getContext("2d");
     if (!context) return false;
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.82));
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", 0.82),
+    );
     if (!blob) return false;
-    return await window.proyector.saveBackgroundThumbnail(filePath, await toBase64(blob));
+    return await window.proyector.saveBackgroundThumbnail(
+      filePath,
+      await toBase64(blob),
+    );
   } catch {
     // Unsupported codecs or malformed media still remain usable as backgrounds;
     // their library card displays a static video placeholder instead.
@@ -91,17 +107,28 @@ async function decodeAndSaveThumbnail(filePath: string): Promise<boolean> {
 }
 
 /** Serialize thumbnail work: older libraries can be backfilled without loading many videos at once. */
-export function createBackgroundVideoThumbnail(filePath: string): Promise<boolean> {
+export function createBackgroundVideoThumbnail(
+  filePath: string,
+): Promise<boolean> {
   const existing = pendingThumbnails.get(filePath);
   if (existing) return existing;
   const completed = completedThumbnails.get(filePath);
   if (completed !== undefined) return Promise.resolve(completed);
   const job = thumbnailQueue.then(() => decodeAndSaveThumbnail(filePath));
-  thumbnailQueue = job.then(() => undefined, () => undefined);
+  thumbnailQueue = job.then(
+    () => undefined,
+    () => undefined,
+  );
   pendingThumbnails.set(filePath, job);
   void job.then(
-    (result) => { completedThumbnails.set(filePath, result); pendingThumbnails.delete(filePath); },
-    () => { completedThumbnails.set(filePath, false); pendingThumbnails.delete(filePath); },
+    (result) => {
+      completedThumbnails.set(filePath, result);
+      pendingThumbnails.delete(filePath);
+    },
+    () => {
+      completedThumbnails.set(filePath, false);
+      pendingThumbnails.delete(filePath);
+    },
   );
   return job;
 }

@@ -57,11 +57,19 @@ export async function resolveCatalog(
   fetchImpl: FetchLike,
   timeoutMs = 5000,
 ): Promise<{ catalog: BibleCatalog; source: "remote" | "bundled" }> {
-  const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs));
+  const timeout = new Promise<null>((resolve) =>
+    setTimeout(() => resolve(null), timeoutMs),
+  );
   try {
-    const response = await Promise.race([fetchImpl(BIBLES_CATALOG_URL), timeout]);
-    if (!response || !response.ok) return { catalog: bundled, source: "bundled" };
-    const text = new TextDecoder().decode(new Uint8Array(await response.arrayBuffer()));
+    const response = await Promise.race([
+      fetchImpl(BIBLES_CATALOG_URL),
+      timeout,
+    ]);
+    if (!response || !response.ok)
+      return { catalog: bundled, source: "bundled" };
+    const text = new TextDecoder().decode(
+      new Uint8Array(await response.arrayBuffer()),
+    );
     const parsed = parseCatalog(JSON.parse(text), bundled.extensionNote);
     if (!parsed) return { catalog: bundled, source: "bundled" };
     return { catalog: parsed, source: "remote" };
@@ -105,16 +113,24 @@ export function installedModuleIds(userDir: string): Set<string> {
   return new Set(ids);
 }
 
-export function listSelectableVersions(bibleDir: string, userDir: string): BibleVersionMeta[] {
+export function listSelectableVersions(
+  bibleDir: string,
+  userDir: string,
+): BibleVersionMeta[] {
   const manifest = JSON.parse(
     fs.readFileSync(path.join(bibleDir, "manifest.json"), "utf8"),
   ) as BibleVersionMeta[];
-  const versions: BibleVersionMeta[] = manifest.map((meta) => ({ ...meta, bundled: true }));
+  const versions: BibleVersionMeta[] = manifest.map((meta) => ({
+    ...meta,
+    bundled: true,
+  }));
   const seen = new Set(manifest.map((meta) => meta.id));
   for (const id of installedModuleIds(userDir)) {
     if (seen.has(id)) continue;
     try {
-      const raw = JSON.parse(fs.readFileSync(path.join(userDir, `${id}.json`), "utf8")) as {
+      const raw = JSON.parse(
+        fs.readFileSync(path.join(userDir, `${id}.json`), "utf8"),
+      ) as {
         meta?: BibleVersionMeta;
       };
       if (raw.meta?.id !== id) continue;
@@ -127,7 +143,11 @@ export function listSelectableVersions(bibleDir: string, userDir: string): Bible
   return versions;
 }
 
-export function resolveModulePath(bibleDir: string, userDir: string, id: string): string {
+export function resolveModulePath(
+  bibleDir: string,
+  userDir: string,
+  id: string,
+): string {
   const safe = assertBibleId(id);
   const bundled = path.join(bibleDir, `${safe}.json`);
   if (fs.existsSync(bundled)) return bundled;
@@ -141,10 +161,14 @@ const CATALOG_TTL_MS = 60 * 60 * 1000;
 let remoteCatalog: { catalog: BibleCatalog; at: number } | null = null;
 let remoteRefresh: Promise<void> | null = null;
 
-function refreshRemoteCatalog(bundled: BibleCatalog, fetchImpl: FetchLike): Promise<void> {
+function refreshRemoteCatalog(
+  bundled: BibleCatalog,
+  fetchImpl: FetchLike,
+): Promise<void> {
   remoteRefresh ??= resolveCatalog(bundled, fetchImpl)
     .then((resolved) => {
-      if (resolved.source === "remote") remoteCatalog = { catalog: resolved.catalog, at: Date.now() };
+      if (resolved.source === "remote")
+        remoteCatalog = { catalog: resolved.catalog, at: Date.now() };
     })
     .finally(() => {
       remoteRefresh = null;
@@ -162,13 +186,16 @@ export async function resolveCatalogCached(
   fetchImpl: FetchLike,
 ): Promise<{ catalog: BibleCatalog; source: "remote" | "bundled" }> {
   if (remoteCatalog) {
-    if (Date.now() - remoteCatalog.at > CATALOG_TTL_MS) void refreshRemoteCatalog(bundled, fetchImpl);
+    if (Date.now() - remoteCatalog.at > CATALOG_TTL_MS)
+      void refreshRemoteCatalog(bundled, fetchImpl);
     return { catalog: remoteCatalog.catalog, source: "remote" };
   }
   await refreshRemoteCatalog(bundled, fetchImpl);
   // TS cannot see the assignment made inside the refresh, so read it again.
   const fetched = remoteCatalog as { catalog: BibleCatalog; at: number } | null;
-  return fetched ? { catalog: fetched.catalog, source: "remote" } : { catalog: bundled, source: "bundled" };
+  return fetched
+    ? { catalog: fetched.catalog, source: "remote" }
+    : { catalog: bundled, source: "bundled" };
 }
 
 export async function buildLibraryView(
@@ -214,7 +241,9 @@ export async function downloadModule(options: {
       write: (bytes) => {
         let parsed: { meta?: { id?: string } };
         try {
-          parsed = JSON.parse(new TextDecoder().decode(bytes)) as { meta?: { id?: string } };
+          parsed = JSON.parse(new TextDecoder().decode(bytes)) as {
+            meta?: { id?: string };
+          };
         } catch {
           throw new Error("El archivo no es un módulo de Biblia válido");
         }
@@ -230,7 +259,11 @@ export async function downloadModule(options: {
   }
 }
 
-export function removeModule(userDir: string, bundledIds: ReadonlySet<string>, id: string): void {
+export function removeModule(
+  userDir: string,
+  bundledIds: ReadonlySet<string>,
+  id: string,
+): void {
   const safe = assertBibleId(id);
   if (bundledIds.has(safe)) {
     throw new Error("Esta versión viene con el programa y no se puede quitar");

@@ -1,6 +1,14 @@
 import { app, BrowserWindow, ipcMain, net, shell } from "electron";
-import { UPDATE_FEED_URL, type AppUpdateMode, type AppUpdateState } from "../shared/app-update";
-import { createUpdateController, type UpdateBackend, type UpdateController } from "./update-controller";
+import {
+  UPDATE_FEED_URL,
+  type AppUpdateMode,
+  type AppUpdateState,
+} from "../shared/app-update";
+import {
+  createUpdateController,
+  type UpdateBackend,
+  type UpdateController,
+} from "./update-controller";
 
 export function isPortableExe(exePath = app.getPath("exe")): boolean {
   if (process.env.PORTABLE_EXECUTABLE_DIR) return true;
@@ -34,7 +42,8 @@ function devFeedUrl(): string | null {
 export function safeDownloadUrl(value: string): string | null {
   const trimmed = value.trim();
   if (!trimmed.startsWith(`${UPDATE_FEED_URL}/`)) return null;
-  if (trimmed.includes("..") || trimmed.includes(" ") || trimmed.includes("\\")) return null;
+  if (trimmed.includes("..") || trimmed.includes(" ") || trimmed.includes("\\"))
+    return null;
   try {
     const url = new URL(trimmed);
     return url.protocol === "https:" ? url.href : null;
@@ -48,11 +57,16 @@ interface ReleasesManifest {
   files?: Array<{ id?: unknown; filename?: unknown }>;
 }
 
-export function pickManualDownload(manifest: ReleasesManifest, portable: boolean): { version: string; url: string } | null {
+export function pickManualDownload(
+  manifest: ReleasesManifest,
+  portable: boolean,
+): { version: string; url: string } | null {
   const version = typeof manifest.version === "string" ? manifest.version : "";
   if (!version) return null;
   const wanted = portable ? "portable" : "setup";
-  const file = manifest.files?.find((entry) => entry.id === wanted && typeof entry.filename === "string");
+  const file = manifest.files?.find(
+    (entry) => entry.id === wanted && typeof entry.filename === "string",
+  );
   if (!file) return null;
   const url = safeDownloadUrl(`${UPDATE_FEED_URL}/${String(file.filename)}`);
   return url ? { version, url } : null;
@@ -66,8 +80,12 @@ function createManualBackend(portable: boolean): UpdateBackend {
         cache: "no-store",
         signal: AbortSignal.timeout(15_000),
       });
-      if (!response.ok) throw new Error(`releases.json respondió ${response.status}`);
-      target = pickManualDownload((await response.json()) as ReleasesManifest, portable);
+      if (!response.ok)
+        throw new Error(`releases.json respondió ${response.status}`);
+      target = pickManualDownload(
+        (await response.json()) as ReleasesManifest,
+        portable,
+      );
       return target ? { version: target.version } : null;
     },
     async download() {
@@ -80,7 +98,10 @@ function createManualBackend(portable: boolean): UpdateBackend {
   };
 }
 
-async function createAutoBackend(feedUrl: string, forceDev: boolean): Promise<UpdateBackend> {
+async function createAutoBackend(
+  feedUrl: string,
+  forceDev: boolean,
+): Promise<UpdateBackend> {
   // Carga perezosa: las pruebas y el modo desarrollo no la necesitan.
   const { autoUpdater } = await import("electron-updater");
   autoUpdater.autoDownload = false;
@@ -92,15 +113,20 @@ async function createAutoBackend(feedUrl: string, forceDev: boolean): Promise<Up
   // Sin oyente, un "error" asíncrono del actualizador sería una excepción no capturada;
   // los fallos ya llegan al controlador por las promesas y el vigilante de instalación.
   autoUpdater.on("error", (error: unknown) => {
-    log(`[updater] evento de error: ${error instanceof Error ? error.message : String(error)}`);
+    log(
+      `[updater] evento de error: ${error instanceof Error ? error.message : String(error)}`,
+    );
   });
   return {
     async check() {
       const result = await autoUpdater.checkForUpdates();
-      return result?.updateInfo?.version ? { version: String(result.updateInfo.version) } : null;
+      return result?.updateInfo?.version
+        ? { version: String(result.updateInfo.version) }
+        : null;
     },
     async download(onProgress) {
-      const listener = (progress: { percent?: number }) => onProgress(progress?.percent ?? 0);
+      const listener = (progress: { percent?: number }) =>
+        onProgress(progress?.percent ?? 0);
       autoUpdater.on("download-progress", listener);
       try {
         await autoUpdater.downloadUpdate();
@@ -130,7 +156,12 @@ export function setupUpdater(setup: UpdaterSetup): void {
   if (controller) return;
   const devFeed = devFeedUrl();
   const portable = app.isPackaged ? isPortableExe() : false;
-  const mode = resolveUpdateMode({ platform: process.platform, packaged: app.isPackaged, portable, devFeed });
+  const mode = resolveUpdateMode({
+    platform: process.platform,
+    packaged: app.isPackaged,
+    portable,
+    devFeed,
+  });
 
   const lazyBackend: UpdateBackend = (() => {
     let backend: Promise<UpdateBackend> | null = null;
@@ -142,9 +173,11 @@ export function setupUpdater(setup: UpdaterSetup): void {
       return backend;
     };
     let resolved: UpdateBackend | null = null;
-    void get().then((value) => {
-      resolved = value;
-    }).catch(() => undefined);
+    void get()
+      .then((value) => {
+        resolved = value;
+      })
+      .catch(() => undefined);
     return {
       check: async () => (await get()).check(),
       download: async (onProgress) => (await get()).download(onProgress),
@@ -164,13 +197,16 @@ export function setupUpdater(setup: UpdaterSetup): void {
     log,
     onState: (state: AppUpdateState) => {
       const win = setup.getOperatorWindow();
-      if (win && !win.isDestroyed()) win.webContents.send("updater:state", state);
+      if (win && !win.isDestroyed())
+        win.webContents.send("updater:state", state);
     },
   });
 
   const fromOperator = (event: Electron.IpcMainInvokeEvent): boolean => {
     const win = setup.getOperatorWindow();
-    return Boolean(win && !win.isDestroyed() && event.sender === win.webContents);
+    return Boolean(
+      win && !win.isDestroyed() && event.sender === win.webContents,
+    );
   };
 
   ipcMain.handle("updater:get-state", () => controller?.getState());
@@ -179,8 +215,12 @@ export function setupUpdater(setup: UpdaterSetup): void {
     await controller.check();
     return controller.getState();
   });
-  ipcMain.handle("updater:start", (event) => (fromOperator(event) ? controller?.startUpdate() : controller?.getState()));
-  ipcMain.handle("updater:install", (event) => (fromOperator(event) ? controller?.install() : controller?.getState()));
+  ipcMain.handle("updater:start", (event) =>
+    fromOperator(event) ? controller?.startUpdate() : controller?.getState(),
+  );
+  ipcMain.handle("updater:install", (event) =>
+    fromOperator(event) ? controller?.install() : controller?.getState(),
+  );
 
   controller.start();
 }

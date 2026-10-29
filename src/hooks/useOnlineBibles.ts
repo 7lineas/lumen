@@ -25,7 +25,11 @@ export interface ChapterRef {
  * chapters over IPC and merges them into the in-memory Bible cache.
  */
 export function useOnlineBibles() {
-  const [online, setOnline] = useState<OnlineVersionsResult>({ configured: false, versions: [], stale: false });
+  const [online, setOnline] = useState<OnlineVersionsResult>({
+    configured: false,
+    versions: [],
+    stale: false,
+  });
   /** Bumps every time a chapter is merged so memoized readers recompute. */
   const [chapterTick, setChapterTick] = useState(0);
   /** True once the first version-list request has answered (even with an error). */
@@ -52,13 +56,16 @@ export function useOnlineBibles() {
     void refreshVersions();
   }, [refreshVersions]);
 
-  const searchVersions = useCallback(async (query: string): Promise<OnlineSearchResult> => {
-    const api = window.proyector;
-    if (!api?.searchOnlineBibles) {
-      return { configured: false, query, hits: [], stale: false };
-    }
-    return api.searchOnlineBibles(query);
-  }, []);
+  const searchVersions = useCallback(
+    async (query: string): Promise<OnlineSearchResult> => {
+      const api = window.proyector;
+      if (!api?.searchOnlineBibles) {
+        return { configured: false, query, hits: [], stale: false };
+      }
+      return api.searchOnlineBibles(query);
+    },
+    [],
+  );
 
   const addVersion = useCallback(async (id: string) => {
     const api = window.proyector;
@@ -72,56 +79,71 @@ export function useOnlineBibles() {
     setOnline(await api.removeOnlineBible(id));
   }, []);
 
-  const keyOf = (ref: ChapterRef) => `${ref.versionId}/${ref.book}.${ref.chapter}`;
+  const keyOf = (ref: ChapterRef) =>
+    `${ref.versionId}/${ref.book}.${ref.chapter}`;
 
-  const ensureChapter = useCallback(async (ref: ChapterRef): Promise<ChapterResult | null> => {
-    const api = window.proyector;
-    if (!api?.getOnlineChapter || !isOnlineVersionId(ref.versionId)) return null;
-    const key = keyOf(ref);
-    if (hasChapter(getBible(ref.versionId), ref.book, ref.chapter)) return null;
-    if (requested.current.has(key)) return null;
-    requested.current.add(key);
-    setLoading((prev) => ({ ...prev, [key]: true }));
-    let result: ChapterResult;
-    try {
-      result = await api.getOnlineChapter(ref.versionId, ref.book, ref.chapter);
-    } catch (error) {
-      result = { ok: false, reason: "error", message: error instanceof Error ? error.message : "Error de YouVersion" };
-    }
-    setLoading((prev) => {
-      const rest = { ...prev };
-      delete rest[key];
-      return rest;
-    });
-    if (result.ok) {
-      let bible = getBible(ref.versionId);
-      if (!bible) {
-        const meta = versionsRef.current.find((v) => v.id === ref.versionId);
-        if (!meta) {
-          requested.current.delete(key);
-          return result;
-        }
-        bible = emptyOnlineBible(meta);
-        loadBible(bible);
+  const ensureChapter = useCallback(
+    async (ref: ChapterRef): Promise<ChapterResult | null> => {
+      const api = window.proyector;
+      if (!api?.getOnlineChapter || !isOnlineVersionId(ref.versionId))
+        return null;
+      const key = keyOf(ref);
+      if (hasChapter(getBible(ref.versionId), ref.book, ref.chapter))
+        return null;
+      if (requested.current.has(key)) return null;
+      requested.current.add(key);
+      setLoading((prev) => ({ ...prev, [key]: true }));
+      let result: ChapterResult;
+      try {
+        result = await api.getOnlineChapter(
+          ref.versionId,
+          ref.book,
+          ref.chapter,
+        );
+      } catch (error) {
+        result = {
+          ok: false,
+          reason: "error",
+          message:
+            error instanceof Error ? error.message : "Error de YouVersion",
+        };
       }
-      // The publisher's attribution travels with every chapter and is what the
-      // projector footer prints for this Bible.
-      if (result.copyright) bible.meta.copyright = result.copyright;
-      mergeChapter(bible, ref.book, ref.chapter, result.verses);
-      setFailures((prev) => {
-        if (!(key in prev)) return prev;
+      setLoading((prev) => {
         const rest = { ...prev };
         delete rest[key];
         return rest;
       });
-      setChapterTick((tick) => tick + 1);
-    } else {
-      // Stay "requested" so effects do not retry in a loop; an explicit
-      // retry (resetFailures) clears it.
-      setFailures((prev) => ({ ...prev, [key]: result }));
-    }
-    return result;
-  }, []);
+      if (result.ok) {
+        let bible = getBible(ref.versionId);
+        if (!bible) {
+          const meta = versionsRef.current.find((v) => v.id === ref.versionId);
+          if (!meta) {
+            requested.current.delete(key);
+            return result;
+          }
+          bible = emptyOnlineBible(meta);
+          loadBible(bible);
+        }
+        // The publisher's attribution travels with every chapter and is what the
+        // projector footer prints for this Bible.
+        if (result.copyright) bible.meta.copyright = result.copyright;
+        mergeChapter(bible, ref.book, ref.chapter, result.verses);
+        setFailures((prev) => {
+          if (!(key in prev)) return prev;
+          const rest = { ...prev };
+          delete rest[key];
+          return rest;
+        });
+        setChapterTick((tick) => tick + 1);
+      } else {
+        // Stay "requested" so effects do not retry in a loop; an explicit
+        // retry (resetFailures) clears it.
+        setFailures((prev) => ({ ...prev, [key]: result }));
+      }
+      return result;
+    },
+    [],
+  );
 
   /** Forget past failures so the next prefetch tries the network again. */
   const resetFailures = useCallback(() => {

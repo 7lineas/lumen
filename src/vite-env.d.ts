@@ -1,11 +1,31 @@
 /// <reference types="vite/client" />
 
-import type { BibleImportPickResult, BibleImportCommitResult } from "../shared/bible-import/types";
+import type {
+  BibleImportPickResult,
+  BibleImportCommitResult,
+} from "../shared/bible-import/types";
 import type { ImportMetaInput } from "../shared/bible-import/build";
-import type { ChapterResult, OnlineSearchResult, OnlineVersionsResult } from "../shared/youversion";
+import type {
+  ChapterResult,
+  OnlineSearchResult,
+  OnlineVersionsResult,
+} from "../shared/youversion";
 import type { AppUpdateState } from "../shared/app-update";
-import type { GoogleFontPreviewFace, GoogleFontSearchResult, InstalledFont } from "../shared/fonts";
-import type { AppSettings, HistoryEntry, ProjectorPayload, QueueEntry, StoredSong, StoredText, StoredSlideDeck, SlideImportResult } from "../shared/types";
+import type {
+  GoogleFontPreviewFace,
+  GoogleFontSearchResult,
+  InstalledFont,
+} from "../shared/fonts";
+import type {
+  AppSettings,
+  HistoryEntry,
+  ProjectorPayload,
+  QueueEntry,
+  StoredSong,
+  StoredText,
+  StoredSlideDeck,
+  SlideImportResult,
+} from "../shared/types";
 
 export interface DisplayInfo {
   id: number;
@@ -51,18 +71,27 @@ export interface ProyectorApi {
   getBrowserAccess: () => Promise<BrowserAccessInfo>;
   setBrowserAccess: (enabled: boolean) => Promise<BrowserAccessInfo>;
   rotateBrowserAccessCode: () => Promise<BrowserAccessInfo>;
-  listBibleVersions: () => Promise<Array<{ id: string; name: string; abbr: string; language: string }>>;
+  listBibleVersions: () => Promise<
+    Array<{ id: string; name: string; abbr: string; language: string }>
+  >;
   loadBible: (id: string) => Promise<unknown>;
   listOnlineBibles: (force?: boolean) => Promise<OnlineVersionsResult>;
   searchOnlineBibles: (query: string) => Promise<OnlineSearchResult>;
   addOnlineBible: (id: string) => Promise<OnlineVersionsResult>;
   removeOnlineBible: (id: string) => Promise<OnlineVersionsResult>;
-  getOnlineChapter: (id: string, book: string, chapter: number) => Promise<ChapterResult>;
+  getOnlineChapter: (
+    id: string,
+    book: string,
+    chapter: number,
+  ) => Promise<ChapterResult>;
   getBibleCatalog: () => Promise<BibleLibraryView>;
   downloadBible: (id: string) => Promise<{ id: string }>;
   removeBible: (id: string) => Promise<{ settings: AppSettings }>;
   pickBibleImport: () => Promise<BibleImportPickResult>;
-  commitBibleImport: (previewId: string, input: ImportMetaInput) => Promise<BibleImportCommitResult>;
+  commitBibleImport: (
+    previewId: string,
+    input: ImportMetaInput,
+  ) => Promise<BibleImportCommitResult>;
   cancelBibleImport: () => Promise<void>;
   listInstalledFonts: () => Promise<InstalledFont[]>;
   searchGoogleFonts: (query: string) => Promise<GoogleFontSearchResult[]>;
@@ -90,16 +119,31 @@ export interface ProyectorApi {
   readSlideSource: (file: string) => Promise<string | null>;
   saveSlidePngs: (images: string[]) => Promise<string[] | null>;
   downloadMediaItem: (item: StoredSlideDeck) => Promise<boolean>;
-  convertPptx: (request: { deckId: string; file: string; total: number }) => Promise<{ ok: true; images: string[] } | { ok: false; error: string }>;
-  onSlideProgress: (callback: (progress: { deckId: string; done: number; total: number }) => void) => () => void;
+  convertPptx: (request: {
+    deckId: string;
+    file: string;
+    total: number;
+  }) => Promise<{ ok: true; images: string[] } | { ok: false; error: string }>;
+  onSlideProgress: (
+    callback: (progress: {
+      deckId: string;
+      done: number;
+      total: number;
+    }) => void,
+  ) => () => void;
   listDisplays: () => Promise<DisplayInfo[]>;
   openProjector: () => Promise<boolean>;
   getProjectorBounds: () => Promise<{ width: number; height: number } | null>;
-  onProjectorBounds: (cb: (bounds: { width: number; height: number }) => void) => () => void;
+  onProjectorBounds: (
+    cb: (bounds: { width: number; height: number }) => void,
+  ) => () => void;
   showOnProjector: (p: ProjectorPayload) => Promise<boolean>;
   pickBackgroundImage: () => Promise<string | null>;
   pickLogoImage: () => Promise<string | null>;
-  saveBackgroundThumbnail: (videoPath: string, jpegBase64: string) => Promise<boolean>;
+  saveBackgroundThumbnail: (
+    videoPath: string,
+    jpegBase64: string,
+  ) => Promise<boolean>;
   deleteBackgroundMedia: (path: string) => Promise<boolean>;
   getAppUpdateState: () => Promise<AppUpdateState>;
   checkAppUpdate: () => Promise<AppUpdateState>;
@@ -107,10 +151,14 @@ export interface ProyectorApi {
   installAppUpdate: () => Promise<AppUpdateState>;
   onAppUpdateState: (cb: (state: AppUpdateState) => void) => () => void;
   onProjectorUpdate: (cb: (p: ProjectorPayload) => void) => () => void;
-  onBibleDownloadProgress: (cb: (progress: BibleDownloadProgress) => void) => () => void;
+  onBibleDownloadProgress: (
+    cb: (progress: BibleDownloadProgress) => void,
+  ) => () => void;
   onOperatorShortcut: (cb: (data: { action: string }) => void) => () => void;
   windowControls: {
-    control: (action: "minimize" | "toggle-maximize" | "close") => Promise<void>;
+    control: (
+      action: "minimize" | "toggle-maximize" | "close",
+    ) => Promise<void>;
     isMaximized: () => Promise<boolean>;
     onMaximizedChange: (cb: (maximized: boolean) => void) => () => void;
   };

@@ -1,6 +1,6 @@
 ---
 name: google-workspace
-description: "Read this before the first Google Drive, Docs, Sheets or Slides connector call whenever the task creates or changes a Google file. Use this skill whenever the user wants to create or change a Google Doc, Sheet or Slides file in their Google Drive. Triggers include: a request that names Google Docs, Sheets, Slides or Drive and asks to make, edit, format, copy or rename a file; a docs.google.com link with a request to change that file, even a one-line fix or suggested edits; and any follow-up change to a Google file from earlier in the chat, even \"change it\" or \"add a tab\". Includes helper scripts for document positions, cell ranges and slide layout. However, if the user asks for a doc, deck or spreadsheet without naming Google, or gives a Google file only as source material for something new, use Claude's own output type instead. Do NOT use for read-only questions about a Google file, or for Word, Excel, PowerPoint or PDF files."
+description: 'Read this before the first Google Drive, Docs, Sheets or Slides connector call whenever the task creates or changes a Google file. Use this skill whenever the user wants to create or change a Google Doc, Sheet or Slides file in their Google Drive. Triggers include: a request that names Google Docs, Sheets, Slides or Drive and asks to make, edit, format, copy or rename a file; a docs.google.com link with a request to change that file, even a one-line fix or suggested edits; and any follow-up change to a Google file from earlier in the chat, even "change it" or "add a tab". Includes helper scripts for document positions, cell ranges and slide layout. However, if the user asks for a doc, deck or spreadsheet without naming Google, or gives a Google file only as source material for something new, use Claude''s own output type instead. Do NOT use for read-only questions about a Google file, or for Word, Excel, PowerPoint or PDF files.'
 ---
 
 # Google Docs, Sheets, and Slides
@@ -9,22 +9,22 @@ The Google connectors are thin wrappers over Google's raw APIs, with almost no g
 
 ## Read the reference before you touch the file
 
-| Working on | Read first | Why it matters |
-|---|---|---|
-| A Google Doc | `references/docs.md` | Docs edits address UTF-16 positions that shift after every insert and go stale after every write. Tabs and pending suggestions change the positions too. |
-| A Google Sheet | `references/sheets.md` | Both write tools parse input like the Sheets UI, so text can silently become numbers or dates. Formatting needs numeric sheet IDs, 0-based ranges, and field masks without parentheses. |
-| A Google Slides deck | `references/slides.md` | Positions are in EMU, an element's real size is its size times its scale, and an unmasked read can exceed 150 KB for three slides. Slides never shrinks text to fit. |
+| Working on           | Read first             | Why it matters                                                                                                                                                                          |
+| -------------------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A Google Doc         | `references/docs.md`   | Docs edits address UTF-16 positions that shift after every insert and go stale after every write. Tabs and pending suggestions change the positions too.                                |
+| A Google Sheet       | `references/sheets.md` | Both write tools parse input like the Sheets UI, so text can silently become numbers or dates. Formatting needs numeric sheet IDs, 0-based ranges, and field masks without parentheses. |
+| A Google Slides deck | `references/slides.md` | Positions are in EMU, an element's real size is its size times its scale, and an unmasked read can exceed 150 KB for three slides. Slides never shrinks text to fit.                    |
 
 Read the reference for every app the task touches before the first edit. Embedding a Sheets chart in a deck means reading both. The references are short, and skipping one is how edits land in the wrong place.
 
 ## 1. Check the connectors before you start
 
-| Connector | What it can do |
-|---|---|
-| Google Drive | Create files, upload and convert content, rename, read a file as text, export (PDF and other formats), search, trash |
-| Google Docs | Read a doc's full structure and edit it in place, directly or as suggestions |
-| Google Sheets | Read values and structure, write values and formulas, format, add tabs and charts |
-| Google Slides | Read a deck, add and edit slides, shapes, text, tables, and linked charts |
+| Connector     | What it can do                                                                                                       |
+| ------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Google Drive  | Create files, upload and convert content, rename, read a file as text, export (PDF and other formats), search, trash |
+| Google Docs   | Read a doc's full structure and edit it in place, directly or as suggestions                                         |
+| Google Sheets | Read values and structure, write values and formulas, format, add tabs and charts                                    |
+| Google Slides | Read a deck, add and edit slides, shapes, text, tables, and linked charts                                            |
 
 Drive can create all three file types. It can't edit a file after that. Without the matching editor connector, every change means a new file and a new link, and the user loses the link they already have.
 
@@ -58,12 +58,12 @@ Example: "I can create the sheet now. If you want changes later, turn on the Goo
 
 The `scripts/` folder next to this file holds tested helpers. They turn the APIs' raw JSON into short readable summaries, and turn simple specs into correct request batches, so the error-prone arithmetic never happens by hand. Use them wherever you can run Python. Run them by their full path inside this skill's folder; the references write that folder as `<skill>`.
 
-| Script | Commands | Used for |
-|---|---|---|
-| `docs_index.py` | `outline`, `find`, `new-table`, `fill-table` | Docs positions, text search with bold and suggestion state, adding a filled table in one call, filling an existing table |
-| `sheets_helper.py` | `range`, `format`, `cells` | A1 ranges to grid ranges, formatting batches from a short spec, reading formulas and error cells |
-| `slides_helper.py` | `outline`, `build` | Real slide geometry with overflow and overlap warnings, building slides from an inch-based spec |
-| `render_export.py` | one command | Decoding a PDF export into page images to look at |
+| Script             | Commands                                     | Used for                                                                                                                 |
+| ------------------ | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `docs_index.py`    | `outline`, `find`, `new-table`, `fill-table` | Docs positions, text search with bold and suggestion state, adding a filled table in one call, filling an existing table |
+| `sheets_helper.py` | `range`, `format`, `cells`                   | A1 ranges to grid ranges, formatting batches from a short spec, reading formulas and error cells                         |
+| `slides_helper.py` | `outline`, `build`                           | Real slide geometry with overflow and overlap warnings, building slides from an inch-based spec                          |
+| `render_export.py` | one command                                  | Decoding a PDF export into page images to look at                                                                        |
 
 **Getting JSON to a script.** Large tool results are often saved to a file by the app, and the result tells you the path. Point the script at that path; the scripts read the file as the app saved it. When a result comes back in context and is small (a few KB, such as a masked read or sheet metadata), write it to a file and run the script on it. Don't re-type a large result into a file: that doubles the cost and invites copying errors. If a large result was cut off and not saved, read a smaller slice instead (a field mask, a range, or one tab) rather than guessing.
 
@@ -71,27 +71,27 @@ Every script prints `--help` with its full usage. Each reference shows the comma
 
 ## 5. Common failures across apps
 
-| Symptom | Cause | Fix |
-|---|---|---|
-| "No such tool available" | The tool is deferred, or the name is different on this surface | Search for and load the tool. Use the exact name your surface lists. |
-| Permission denied on a file you created | The file is in the trash | Ask the user to restore it from Drive's trash. You can't restore it with the connectors. |
+| Symptom                                  | Cause                                                                              | Fix                                                                                                                                    |
+| ---------------------------------------- | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| "No such tool available"                 | The tool is deferred, or the name is different on this surface                     | Search for and load the tool. Use the exact name your surface lists.                                                                   |
+| Permission denied on a file you created  | The file is in the trash                                                           | Ask the user to restore it from Drive's trash. You can't restore it with the connectors.                                               |
 | 400: required revision ID does not match | The file changed after your read: your own previous write, or someone else editing | Read again, rebuild the requests from the new read, and send them with the new revision. For Sheets, send them without `writeControl`. |
-| A whole batch failed on one bad request | Batches are atomic | Fix the named request and resend the full batch. Nothing from the failed call was applied. |
-| A read is too large or cut off | Unmasked editor reads include everything | Use Drive `read_file_content`, a field mask, a range, or a single tab. Run the helper on a saved result. |
-| Two files where the user expected one | An edit was done by creating a new file | Make changes in place with the editor connector. Tell the user about the extra file; don't trash it without asking. |
+| A whole batch failed on one bad request  | Batches are atomic                                                                 | Fix the named request and resend the full batch. Nothing from the failed call was applied.                                             |
+| A read is too large or cut off           | Unmasked editor reads include everything                                           | Use Drive `read_file_content`, a field mask, a range, or a single tab. Run the helper on a saved result.                               |
+| Two files where the user expected one    | An edit was done by creating a new file                                            | Make changes in place with the editor connector. Tell the user about the extra file; don't trash it without asking.                    |
 
 Each reference ends with the failures specific to that app.
 
 ## 6. What the connectors can't do
 
-When a request runs into one of these, say so plainly and do the alternative. *Reported*: seen through the connectors or in their tool schemas. *Untested*: not yet checked.
+When a request runs into one of these, say so plainly and do the alternative. _Reported_: seen through the connectors or in their tool schemas. _Untested_: not yet checked.
 
-- **Claude can't see the user's screen.** No connector shows what the user has selected, or which file, tab or slide they have open. If "this" or "here" isn't clear from the chat, ask which file, heading, slide number or cell range they mean. *Reported.*
-- **Comments:** `read_doc` has returned no comments even with `commentsIncluded: true`. To read comments, use Drive `read_file_content` with `includeComments: true`, or ask the user to paste them. `update_doc` has accepted `insertComment` in one report, although its description is cut before listing it; if that request fails, say you can't add comments and offer to list your notes in the reply. *Reported.*
-- **Suggestion mode can be refused** with "Unsupported WriteControl mode". Never make direct edits in its place: offer to list the proposed changes or to edit directly (see `references/docs.md`). *Reported.*
-- **Request lists are cut short.** The `update_doc`, `update_spreadsheet` and `update_presentation` descriptions stop partway through their request lists. Requests missing from the description, such as `addDocumentTab` and `addChart`, have still worked, so try one before deciding it isn't supported. *Reported.*
-- **Uploads travel inside the call.** `create_file` takes the whole file as text or base64, so an .xlsx or .pptx upload is slow and often fails. Build in the file with the editor connectors where you can, and keep uploads small. *Reported.*
-- **Images need a public URL.** Slides `createImage` and Docs `insertInlineImage` fetch the image from a URL Google can reach; a file from the chat can't be inserted this way. For a deck, offer the .pptx route; otherwise ask the user to insert the image. *Untested.*
-- **A Slides chart must already exist in a Sheet.** Create it there with `addChart`, then embed it with `createSheetsChart`. *Reported.*
-- **Drive search uses `title`, not `name`.** `name contains '…'` fails with "Unsupported query field: name"; write `title contains '…'`, and put the file type in a `mimeType` clause. *Reported.*
-- **Slides edits may not show in an open deck right away.** If the user doesn't see a change, ask them to reload the deck before you change anything again. *Reported; may be fixed.*
+- **Claude can't see the user's screen.** No connector shows what the user has selected, or which file, tab or slide they have open. If "this" or "here" isn't clear from the chat, ask which file, heading, slide number or cell range they mean. _Reported._
+- **Comments:** `read_doc` has returned no comments even with `commentsIncluded: true`. To read comments, use Drive `read_file_content` with `includeComments: true`, or ask the user to paste them. `update_doc` has accepted `insertComment` in one report, although its description is cut before listing it; if that request fails, say you can't add comments and offer to list your notes in the reply. _Reported._
+- **Suggestion mode can be refused** with "Unsupported WriteControl mode". Never make direct edits in its place: offer to list the proposed changes or to edit directly (see `references/docs.md`). _Reported._
+- **Request lists are cut short.** The `update_doc`, `update_spreadsheet` and `update_presentation` descriptions stop partway through their request lists. Requests missing from the description, such as `addDocumentTab` and `addChart`, have still worked, so try one before deciding it isn't supported. _Reported._
+- **Uploads travel inside the call.** `create_file` takes the whole file as text or base64, so an .xlsx or .pptx upload is slow and often fails. Build in the file with the editor connectors where you can, and keep uploads small. _Reported._
+- **Images need a public URL.** Slides `createImage` and Docs `insertInlineImage` fetch the image from a URL Google can reach; a file from the chat can't be inserted this way. For a deck, offer the .pptx route; otherwise ask the user to insert the image. _Untested._
+- **A Slides chart must already exist in a Sheet.** Create it there with `addChart`, then embed it with `createSheetsChart`. _Reported._
+- **Drive search uses `title`, not `name`.** `name contains '…'` fails with "Unsupported query field: name"; write `title contains '…'`, and put the file type in a `mimeType` clause. _Reported._
+- **Slides edits may not show in an open deck right away.** If the user doesn't see a change, ask them to reload the deck before you change anything again. _Reported; may be fixed._

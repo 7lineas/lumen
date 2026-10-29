@@ -1,6 +1,10 @@
 import os from "node:os";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { rotateBrowserPairingCode, startBrowserService, stopBrowserService } from "./browser-service";
+import {
+  rotateBrowserPairingCode,
+  startBrowserService,
+  stopBrowserService,
+} from "./browser-service";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -10,7 +14,12 @@ function baseUrl(port: number): string {
 
 async function startService(port: number, pairingCode: string): Promise<void> {
   process.env.LUMEN_BROWSER_PORT = String(port);
-  startBrowserService({ root: os.tmpdir(), userData: os.tmpdir(), host: "0.0.0.0", pairingCode });
+  startBrowserService({
+    root: os.tmpdir(),
+    userData: os.tmpdir(),
+    host: "0.0.0.0",
+    pairingCode,
+  });
   for (let attempt = 0; attempt < 100; attempt += 1) {
     try {
       await fetch(`${baseUrl(port)}/api/v1/session`);
@@ -31,7 +40,9 @@ function pair(port: number, code: string): Promise<Response> {
 }
 
 function checkSession(port: number, token: string): Promise<Response> {
-  return fetch(`${baseUrl(port)}/api/v1/session`, { headers: { authorization: `Bearer ${token}` } });
+  return fetch(`${baseUrl(port)}/api/v1/session`, {
+    headers: { authorization: `Bearer ${token}` },
+  });
 }
 
 async function tokenFrom(response: Response): Promise<string> {

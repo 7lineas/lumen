@@ -39,14 +39,27 @@ class Collector {
   private duplicates = 0;
   private empty = 0;
 
-  add(bookToken: string | null | undefined, chapter: number, verse: number, text: string, resolved?: string | null): void {
+  add(
+    bookToken: string | null | undefined,
+    chapter: number,
+    verse: number,
+    text: string,
+    resolved?: string | null,
+  ): void {
     const code = resolved !== undefined ? resolved : resolveBook(bookToken);
     if (!code) {
       const key = (bookToken ?? "?").trim() || "?";
       this.unknownBooks.set(key, (this.unknownBooks.get(key) ?? 0) + 1);
       return;
     }
-    if (!Number.isInteger(chapter) || !Number.isInteger(verse) || chapter < 1 || verse < 1 || chapter > MAX_CHAPTER || verse > MAX_VERSE) {
+    if (
+      !Number.isInteger(chapter) ||
+      !Number.isInteger(verse) ||
+      chapter < 1 ||
+      verse < 1 ||
+      chapter > MAX_CHAPTER ||
+      verse > MAX_VERSE
+    ) {
       this.invalid += 1;
       return;
     }
@@ -58,7 +71,8 @@ class Collector {
     const chapters = (this.verses[code] ??= {});
     const verseMap = (chapters[String(chapter)] ??= {});
     if (verseMap[String(verse)] !== undefined) this.duplicates += 1;
-    verseMap[String(verse)] = clean.length > MAX_VERSE_CHARS ? clean.slice(0, MAX_VERSE_CHARS) : clean;
+    verseMap[String(verse)] =
+      clean.length > MAX_VERSE_CHARS ? clean.slice(0, MAX_VERSE_CHARS) : clean;
   }
 
   warnings(): string[] {
@@ -66,19 +80,47 @@ class Collector {
     if (this.unknownBooks.size > 0) {
       const names = [...this.unknownBooks.keys()];
       const shown = names.slice(0, MAX_WARNING_DETAILS).join(", ");
-      const more = names.length > MAX_WARNING_DETAILS ? ` y ${names.length - MAX_WARNING_DETAILS} más` : "";
-      out.push(`Libros no reconocidos (omitidos): ${shown}${more}. Solo se importan los 66 libros del canon protestante.`);
+      const more =
+        names.length > MAX_WARNING_DETAILS
+          ? ` y ${names.length - MAX_WARNING_DETAILS} más`
+          : "";
+      out.push(
+        `Libros no reconocidos (omitidos): ${shown}${more}. Solo se importan los 66 libros del canon protestante.`,
+      );
     }
-    if (this.invalid > 0) out.push(`${this.invalid} versículo(s) con capítulo o número fuera de rango se omitieron.`);
-    if (this.empty > 0) out.push(`${this.empty} versículo(s) vacío(s) se omitieron.`);
-    if (this.duplicates > 0) out.push(`${this.duplicates} versículo(s) repetido(s): se conservó el último.`);
+    if (this.invalid > 0)
+      out.push(
+        `${this.invalid} versículo(s) con capítulo o número fuera de rango se omitieron.`,
+      );
+    if (this.empty > 0)
+      out.push(`${this.empty} versículo(s) vacío(s) se omitieron.`);
+    if (this.duplicates > 0)
+      out.push(
+        `${this.duplicates} versículo(s) repetido(s): se conservó el último.`,
+      );
     return out;
   }
 }
 
 const LANGUAGE_CODES: Record<string, string> = {
-  spa: "es", esp: "es", spanish: "es", español: "es", eng: "en", english: "en", por: "pt", portuguese: "pt",
-  fra: "fr", fre: "fr", french: "fr", deu: "de", ger: "de", german: "de", ita: "it", italian: "it", lat: "la", latin: "la",
+  spa: "es",
+  esp: "es",
+  spanish: "es",
+  español: "es",
+  eng: "en",
+  english: "en",
+  por: "pt",
+  portuguese: "pt",
+  fra: "fr",
+  fre: "fr",
+  french: "fr",
+  deu: "de",
+  ger: "de",
+  german: "de",
+  ita: "it",
+  italian: "it",
+  lat: "la",
+  latin: "la",
 };
 
 /** ISO 639-1 where we can tell; otherwise the lower-cased start of the value. */
@@ -88,7 +130,9 @@ export function normalizeLanguage(raw: string): string {
 }
 
 function toInt(value: unknown): number {
-  return typeof value === "number" ? value : Number.parseInt(String(value ?? "").trim(), 10);
+  return typeof value === "number"
+    ? value
+    : Number.parseInt(String(value ?? "").trim(), 10);
 }
 
 // ---------------------------------------------------------------- JSON
@@ -102,8 +146,12 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> =>
  * Returns those book objects (ignoring loose values such as "lang" and the "meta" block),
  * or null when no root key looks like a book.
  */
-function rootBooks(root: Record<string, unknown>): Record<string, unknown> | null {
-  const entries = Object.entries(root).filter(([key, value]) => key !== "meta" && isPlainObject(value));
+function rootBooks(
+  root: Record<string, unknown>,
+): Record<string, unknown> | null {
+  const entries = Object.entries(root).filter(
+    ([key, value]) => key !== "meta" && isPlainObject(value),
+  );
   if (!entries.some(([key]) => resolveBookName(key))) return null;
   return Object.fromEntries(entries);
 }
@@ -113,38 +161,69 @@ function parseJson(text: string): ParsedBible {
   try {
     data = JSON.parse(text);
   } catch (error) {
-    throw new ImportError(`El archivo JSON no es válido: ${error instanceof Error ? error.message : "error de sintaxis"}`);
+    throw new ImportError(
+      `El archivo JSON no es válido: ${error instanceof Error ? error.message : "error de sintaxis"}`,
+    );
   }
   const collector = new Collector();
   const hint: ImportMetaHint = {};
   if (Array.isArray(data)) {
     for (const row of data as Array<Record<string, unknown>>) {
-      collector.add(String(row.book ?? row.libro ?? ""), toInt(row.chapter ?? row.capitulo), toInt(row.verse ?? row.versiculo), String(row.text ?? row.texto ?? ""));
+      collector.add(
+        String(row.book ?? row.libro ?? ""),
+        toInt(row.chapter ?? row.capitulo),
+        toInt(row.verse ?? row.versiculo),
+        String(row.text ?? row.texto ?? ""),
+      );
     }
   } else if (data && typeof data === "object") {
     const root = data as Record<string, unknown>;
-    const meta = (root.meta && typeof root.meta === "object" ? root.meta : root) as Record<string, unknown>;
+    const meta = (
+      root.meta && typeof root.meta === "object" ? root.meta : root
+    ) as Record<string, unknown>;
     for (const key of ["name", "abbr", "language", "copyright"] as const) {
-      if (typeof meta[key] === "string" && meta[key]) hint[key] = meta[key] as string;
+      if (typeof meta[key] === "string" && meta[key])
+        hint[key] = meta[key] as string;
     }
     const books = root.verses === undefined ? rootBooks(root) : root.verses;
     if (!books || typeof books !== "object" || Array.isArray(books)) {
-      throw new ImportError('El JSON debe tener un objeto "verses": { "GEN": { "1": { "1": "texto" } } }. Vea docs/IMPORTAR-BIBLIAS.md.');
+      throw new ImportError(
+        'El JSON debe tener un objeto "verses": { "GEN": { "1": { "1": "texto" } } }. Vea docs/IMPORTAR-BIBLIAS.md.',
+      );
     }
-    for (const [bookKey, chapters] of Object.entries(books as Record<string, unknown>)) {
+    for (const [bookKey, chapters] of Object.entries(
+      books as Record<string, unknown>,
+    )) {
       if (!chapters || typeof chapters !== "object") continue;
       const code = resolveBook(bookKey);
-      for (const [chapterKey, verses] of Object.entries(chapters as Record<string, unknown>)) {
+      for (const [chapterKey, verses] of Object.entries(
+        chapters as Record<string, unknown>,
+      )) {
         if (!verses || typeof verses !== "object") continue;
-        for (const [verseKey, verseText] of Object.entries(verses as Record<string, unknown>)) {
-          collector.add(bookKey, toInt(chapterKey), toInt(verseKey), typeof verseText === "string" ? verseText : "", code);
+        for (const [verseKey, verseText] of Object.entries(
+          verses as Record<string, unknown>,
+        )) {
+          collector.add(
+            bookKey,
+            toInt(chapterKey),
+            toInt(verseKey),
+            typeof verseText === "string" ? verseText : "",
+            code,
+          );
         }
       }
     }
   } else {
-    throw new ImportError("El JSON debe ser un objeto con \"verses\" o una lista de { book, chapter, verse, text }.");
+    throw new ImportError(
+      'El JSON debe ser un objeto con "verses" o una lista de { book, chapter, verse, text }.',
+    );
   }
-  return { format: "json", verses: collector.verses, hint, warnings: collector.warnings() };
+  return {
+    format: "json",
+    verses: collector.verses,
+    hint,
+    warnings: collector.warnings(),
+  };
 }
 
 // ---------------------------------------------------------------- Zefania
@@ -174,14 +253,19 @@ function parseZefania(xml: string): ParsedBible {
         infoText = "";
       } else if (tag === "biblebook") {
         bookLabel = attrs.bsname || attrs.bname || attrs.bnumber || "?";
-        book = resolveBook(attrs.bnumber) ?? resolveBookName(attrs.bsname) ?? resolveBookName(attrs.bname);
+        book =
+          resolveBook(attrs.bnumber) ??
+          resolveBookName(attrs.bsname) ??
+          resolveBookName(attrs.bname);
         if (!book) collector.add(bookLabel, 1, 1, "x", null);
       } else if (tag === "chapter") chapter = toInt(attrs.cnumber);
       else if (tag === "vers" && !selfClosing) {
         verse = toInt(attrs.vnumber);
         buffer = "";
-      } else if (buffer !== null && skipTags.has(tag) && !selfClosing) skip += 1;
-      else if (buffer !== null && (tag === "br" || tag === "caption")) buffer += " ";
+      } else if (buffer !== null && skipTags.has(tag) && !selfClosing)
+        skip += 1;
+      else if (buffer !== null && (tag === "br" || tag === "caption"))
+        buffer += " ";
     },
     close(tag) {
       if (tag === "information") info = false;
@@ -201,10 +285,17 @@ function parseZefania(xml: string): ParsedBible {
   });
 
   if (infoValues.title) hint.name = infoValues.title;
-  if (infoValues.identifier && infoValues.identifier.length <= 12) hint.abbr = infoValues.identifier;
-  if (infoValues.language) hint.language = normalizeLanguage(infoValues.language);
+  if (infoValues.identifier && infoValues.identifier.length <= 12)
+    hint.abbr = infoValues.identifier;
+  if (infoValues.language)
+    hint.language = normalizeLanguage(infoValues.language);
   if (infoValues.rights) hint.copyright = infoValues.rights;
-  return { format: "zefania", verses: collector.verses, hint, warnings: collector.warnings() };
+  return {
+    format: "zefania",
+    verses: collector.verses,
+    hint,
+    warnings: collector.warnings(),
+  };
 }
 
 // ---------------------------------------------------------------- OSIS
@@ -212,16 +303,35 @@ function parseZefania(xml: string): ParsedBible {
 function parseOsis(xml: string): ParsedBible {
   const collector = new Collector();
   const hint: ImportMetaHint = {};
-  let current: { book: string; chapter: number; verse: number; label: string } | null = null;
+  let current: {
+    book: string;
+    chapter: number;
+    verse: number;
+    label: string;
+  } | null = null;
   let buffer = "";
   let skip = 0;
   let header = false;
   let headerTag: string | null = null;
   let headerText = "";
   const headerValues: Record<string, string> = {};
-  const skipTags = new Set(["note", "title", "rdg", "index", "catchword", "reference-note"]);
+  const skipTags = new Set([
+    "note",
+    "title",
+    "rdg",
+    "index",
+    "catchword",
+    "reference-note",
+  ]);
   const flush = () => {
-    if (current) collector.add(current.label, current.chapter, current.verse, buffer, current.book);
+    if (current)
+      collector.add(
+        current.label,
+        current.chapter,
+        current.verse,
+        buffer,
+        current.book,
+      );
     current = null;
     buffer = "";
   };
@@ -235,21 +345,30 @@ function parseOsis(xml: string): ParsedBible {
       collector.add(bookPart || "?", 1, 1, "x", null);
       return;
     }
-    current = { book: code, chapter: toInt(chapterPart), verse, label: bookPart };
+    current = {
+      book: code,
+      chapter: toInt(chapterPart),
+      verse,
+      label: bookPart,
+    };
   };
 
   walkXml(xml, {
     open(tag, attrs, selfClosing) {
-      if (tag === "osistext" && attrs.osisidwork) hint.abbr = attrs.osisidwork.length <= 12 ? attrs.osisidwork : undefined;
+      if (tag === "osistext" && attrs.osisidwork)
+        hint.abbr =
+          attrs.osisidwork.length <= 12 ? attrs.osisidwork : undefined;
       if (tag === "header") header = true;
       else if (header && !selfClosing) {
         headerTag = tag;
         headerText = "";
       } else if (tag === "verse") {
         if (attrs.eid) flush();
-        else if (attrs.sid || (attrs.osisid && !selfClosing)) start(attrs.sid ?? attrs.osisid);
+        else if (attrs.sid || (attrs.osisid && !selfClosing))
+          start(attrs.sid ?? attrs.osisid);
       } else if (current && !selfClosing && skipTags.has(tag)) skip += 1;
-      else if (current && (tag === "lb" || tag === "l" || tag === "p")) buffer += " ";
+      else if (current && (tag === "lb" || tag === "l" || tag === "p"))
+        buffer += " ";
     },
     close(tag) {
       if (tag === "header") header = false;
@@ -271,16 +390,64 @@ function parseOsis(xml: string): ParsedBible {
 
   if (headerValues.title) hint.name = headerValues.title;
   if (headerValues.rights) hint.copyright = headerValues.rights;
-  if (headerValues.language) hint.language = normalizeLanguage(headerValues.language);
-  return { format: "osis", verses: collector.verses, hint, warnings: collector.warnings() };
+  if (headerValues.language)
+    hint.language = normalizeLanguage(headerValues.language);
+  return {
+    format: "osis",
+    verses: collector.verses,
+    hint,
+    warnings: collector.warnings(),
+  };
 }
 
 // ---------------------------------------------------------------- USFM
 
 const USFM_SKIP_MARKERS = new Set([
-  "h", "toc1", "toc2", "toc3", "mt", "mt1", "mt2", "mt3", "ms", "ms1", "ms2", "mr", "s", "s1", "s2", "s3", "sr", "r", "d", "sp",
-  "cl", "cp", "ca", "cd", "rem", "ide", "usfm", "sts", "is", "is1", "ip", "imt", "imt1", "im", "ib", "iot", "io", "io1", "io2", "ie", "id",
-  "b", "periph", "restore", "lit",
+  "h",
+  "toc1",
+  "toc2",
+  "toc3",
+  "mt",
+  "mt1",
+  "mt2",
+  "mt3",
+  "ms",
+  "ms1",
+  "ms2",
+  "mr",
+  "s",
+  "s1",
+  "s2",
+  "s3",
+  "sr",
+  "r",
+  "d",
+  "sp",
+  "cl",
+  "cp",
+  "ca",
+  "cd",
+  "rem",
+  "ide",
+  "usfm",
+  "sts",
+  "is",
+  "is1",
+  "ip",
+  "imt",
+  "imt1",
+  "im",
+  "ib",
+  "iot",
+  "io",
+  "io1",
+  "io2",
+  "ie",
+  "id",
+  "b",
+  "periph",
+  "restore",
+  "lit",
 ]);
 
 function parseUsfm(text: string): ParsedBible {
@@ -302,7 +469,8 @@ function parseUsfm(text: string): ParsedBible {
     open = false;
     buffer = "";
   };
-  const inline = (value: string) => value.replace(/\\\+?[a-z]+\d*\*?/gi, "").replace(/~/g, " ");
+  const inline = (value: string) =>
+    value.replace(/\\\+?[a-z]+\d*\*?/gi, "").replace(/~/g, " ");
 
   for (const raw of cleaned.split(/\r?\n/)) {
     const line = raw.trim();
@@ -338,7 +506,12 @@ function parseUsfm(text: string): ParsedBible {
     }
   }
   flush();
-  return { format: "usfm", verses: collector.verses, hint, warnings: collector.warnings() };
+  return {
+    format: "usfm",
+    verses: collector.verses,
+    hint,
+    warnings: collector.warnings(),
+  };
 }
 
 // ---------------------------------------------------------------- CSV / TSV
@@ -382,8 +555,13 @@ const HEADER_ALIASES: Record<string, string[]> = {
 };
 
 function headerRole(cell: string): string | null {
-  const key = cell.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z]/g, "");
-  for (const [role, names] of Object.entries(HEADER_ALIASES)) if (names.includes(key)) return role;
+  const key = cell
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z]/g, "");
+  for (const [role, names] of Object.entries(HEADER_ALIASES))
+    if (names.includes(key)) return role;
   return null;
 }
 
@@ -394,34 +572,68 @@ function parseCsv(text: string, fileName: string): ParsedBible {
   if (/\.tsv$/i.test(fileName) || count("\t") > count(",")) delimiter = "\t";
   else if (count(";") > count(",")) delimiter = ";";
   const rows = parseDelimited(text, delimiter);
-  if (rows.length === 0) throw new ImportError("El archivo CSV/TSV está vacío.");
+  if (rows.length === 0)
+    throw new ImportError("El archivo CSV/TSV está vacío.");
 
   // Optional header row: book,chapter,verse,text (or Spanish names), or ref,text.
   const roles = rows[0].map(headerRole);
   const hasHeader = roles.includes("text");
   const columns = { book: 0, chapter: 1, verse: 2, text: 3, ref: -1 };
   if (hasHeader) {
-    for (const key of Object.keys(columns) as Array<keyof typeof columns>) columns[key] = roles.indexOf(key);
+    for (const key of Object.keys(columns) as Array<keyof typeof columns>)
+      columns[key] = roles.indexOf(key);
   } else if (rows[0].length === 2) {
-    Object.assign(columns, { book: -1, chapter: -1, verse: -1, text: 1, ref: 0 });
+    Object.assign(columns, {
+      book: -1,
+      chapter: -1,
+      verse: -1,
+      text: 1,
+      ref: 0,
+    });
   } else if (rows[0].length < 4) {
-    throw new ImportError("El CSV/TSV necesita 4 columnas: libro, capítulo, versículo, texto (o 2: referencia, texto).");
+    throw new ImportError(
+      "El CSV/TSV necesita 4 columnas: libro, capítulo, versículo, texto (o 2: referencia, texto).",
+    );
   }
-  if (columns.text < 0 || (columns.ref < 0 && (columns.book < 0 || columns.chapter < 0 || columns.verse < 0))) {
-    throw new ImportError("No se encontraron las columnas libro, capítulo, versículo y texto en la fila de encabezado.");
+  if (
+    columns.text < 0 ||
+    (columns.ref < 0 &&
+      (columns.book < 0 || columns.chapter < 0 || columns.verse < 0))
+  ) {
+    throw new ImportError(
+      "No se encontraron las columnas libro, capítulo, versículo y texto en la fila de encabezado.",
+    );
   }
 
   const collector = new Collector();
   for (const row of hasHeader ? rows.slice(1) : rows) {
     if (columns.ref >= 0) {
-      const m = /^(.+?)\s+(\d+)\s*[:.]\s*(\d+)/.exec((row[columns.ref] ?? "").trim());
-      if (m) collector.add(m[1], Number(m[2]), Number(m[3]), row[columns.text] ?? "");
+      const m = /^(.+?)\s+(\d+)\s*[:.]\s*(\d+)/.exec(
+        (row[columns.ref] ?? "").trim(),
+      );
+      if (m)
+        collector.add(
+          m[1],
+          Number(m[2]),
+          Number(m[3]),
+          row[columns.text] ?? "",
+        );
       else collector.add(row[columns.ref] ?? "?", 0, 0, "x", null);
     } else {
-      collector.add(row[columns.book], toInt(row[columns.chapter]), toInt(row[columns.verse]), row[columns.text] ?? "");
+      collector.add(
+        row[columns.book],
+        toInt(row[columns.chapter]),
+        toInt(row[columns.verse]),
+        row[columns.text] ?? "",
+      );
     }
   }
-  return { format: "csv", verses: collector.verses, hint: {}, warnings: collector.warnings() };
+  return {
+    format: "csv",
+    verses: collector.verses,
+    hint: {},
+    warnings: collector.warnings(),
+  };
 }
 
 // ---------------------------------------------------------------- entry points
@@ -430,14 +642,23 @@ export function detectFormat(fileName: string, text: string): ImportFormat {
   const head = text.slice(0, 4000);
   const lower = fileName.toLowerCase();
   if (/\.(json)$/.test(lower) || /^\s*[[{]/.test(head)) return "json";
-  if (/\.(usfm|sfm|ptx)$/.test(lower) || /^\s*\\(id|usfm)\s/m.test(head)) return "usfm";
-  if (/<xmlbible[\s>]/i.test(head) || /<biblebook[\s>]/i.test(text.slice(0, 20000))) return "zefania";
+  if (/\.(usfm|sfm|ptx)$/.test(lower) || /^\s*\\(id|usfm)\s/m.test(head))
+    return "usfm";
+  if (
+    /<xmlbible[\s>]/i.test(head) ||
+    /<biblebook[\s>]/i.test(text.slice(0, 20000))
+  )
+    return "zefania";
   if (/<osistext[\s>]/i.test(head) || /<osis[\s>]/i.test(head)) return "osis";
   if (/\.(csv|tsv|txt)$/.test(lower)) return "csv";
   if (/<\?xml|<[a-z]/i.test(head)) {
-    throw new ImportError("XML no reconocido: solo se admiten Zefania (XMLBIBLE) y OSIS (osisText). USX no está soportado; use USFM.");
+    throw new ImportError(
+      "XML no reconocido: solo se admiten Zefania (XMLBIBLE) y OSIS (osisText). USX no está soportado; use USFM.",
+    );
   }
-  throw new ImportError("Formato no reconocido. Use JSON de Lumen, Zefania XML, OSIS XML, USFM, CSV o TSV.");
+  throw new ImportError(
+    "Formato no reconocido. Use JSON de Lumen, Zefania XML, OSIS XML, USFM, CSV o TSV.",
+  );
 }
 
 export function parseBibleText(fileName: string, rawText: string): ParsedBible {
@@ -445,20 +666,32 @@ export function parseBibleText(fileName: string, rawText: string): ParsedBible {
   if (!text.trim()) throw new ImportError("El archivo está vacío.");
   const format = detectFormat(fileName, text);
   const parsed =
-    format === "json" ? parseJson(text)
-    : format === "zefania" ? parseZefania(text)
-    : format === "osis" ? parseOsis(text)
-    : format === "usfm" ? parseUsfm(text)
-    : parseCsv(text, fileName);
+    format === "json"
+      ? parseJson(text)
+      : format === "zefania"
+        ? parseZefania(text)
+        : format === "osis"
+          ? parseOsis(text)
+          : format === "usfm"
+            ? parseUsfm(text)
+            : parseCsv(text, fileName);
   if (countVerses(parsed.verses) === 0) {
     const detail = parsed.warnings.length > 0 ? ` ${parsed.warnings[0]}` : "";
-    throw new ImportError(`No se encontró ningún versículo en el archivo (${formatLabel(format)}).${detail}`);
+    throw new ImportError(
+      `No se encontró ningún versículo en el archivo (${formatLabel(format)}).${detail}`,
+    );
   }
   return parsed;
 }
 
 export function formatLabel(format: ImportFormat): string {
-  return { json: "JSON de Lumen", zefania: "Zefania XML", osis: "OSIS XML", usfm: "USFM", csv: "CSV/TSV" }[format];
+  return {
+    json: "JSON de Lumen",
+    zefania: "Zefania XML",
+    osis: "OSIS XML",
+    usfm: "USFM",
+    csv: "CSV/TSV",
+  }[format];
 }
 
 /** Merges several parsed files (e.g. one USFM file per book). */
@@ -483,7 +716,8 @@ export function mergeParsed(list: ParsedBible[]): ParsedBible {
 
 export function countVerses(verses: VerseMap): number {
   let n = 0;
-  for (const chapters of Object.values(verses)) for (const map of Object.values(chapters)) n += Object.keys(map).length;
+  for (const chapters of Object.values(verses))
+    for (const map of Object.values(chapters)) n += Object.keys(map).length;
   return n;
 }
 
@@ -493,7 +727,12 @@ export interface ImportSummary {
   bookCount: number;
   chapterCount: number;
   verseCount: number;
-  books: Array<{ code: string; name: string; chapters: number; verses: number }>;
+  books: Array<{
+    code: string;
+    name: string;
+    chapters: number;
+    verses: number;
+  }>;
   hasOldTestament: boolean;
   hasNewTestament: boolean;
   warnings: string[];
@@ -510,11 +749,24 @@ export function summarize(parsed: ParsedBible): ImportSummary {
     };
   });
   const warnings = [...parsed.warnings];
-  const hasOldTestament = BOOKS.some((book) => book.testament === "OT" && parsed.verses[book.code]);
-  const hasNewTestament = BOOKS.some((book) => book.testament === "NT" && parsed.verses[book.code]);
+  const hasOldTestament = BOOKS.some(
+    (book) => book.testament === "OT" && parsed.verses[book.code],
+  );
+  const hasNewTestament = BOOKS.some(
+    (book) => book.testament === "NT" && parsed.verses[book.code],
+  );
   if (books.length < 66) {
-    const missing = hasOldTestament && hasNewTestament ? "Faltan algunos libros" : hasNewTestament ? "Solo trae el Nuevo Testamento" : hasOldTestament ? "Solo trae el Antiguo Testamento" : "Es una Biblia parcial";
-    warnings.push(`${missing}: ${books.length} de 66 libros. Los capítulos que falten aparecerán vacíos.`);
+    const missing =
+      hasOldTestament && hasNewTestament
+        ? "Faltan algunos libros"
+        : hasNewTestament
+          ? "Solo trae el Nuevo Testamento"
+          : hasOldTestament
+            ? "Solo trae el Antiguo Testamento"
+            : "Es una Biblia parcial";
+    warnings.push(
+      `${missing}: ${books.length} de 66 libros. Los capítulos que falten aparecerán vacíos.`,
+    );
   }
   return {
     format: parsed.format,

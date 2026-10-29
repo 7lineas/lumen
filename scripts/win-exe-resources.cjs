@@ -12,7 +12,11 @@ const CODEPAGE_UNICODE = 1200;
 
 /** Sizes and bit depths of the icon group embedded in an .ico file. */
 function readIcoSizes(icoBuffer) {
-  if (icoBuffer.length < 6 || icoBuffer.readUInt16LE(0) !== 0 || icoBuffer.readUInt16LE(2) !== 1) {
+  if (
+    icoBuffer.length < 6 ||
+    icoBuffer.readUInt16LE(0) !== 0 ||
+    icoBuffer.readUInt16LE(2) !== 1
+  ) {
     throw new Error("El archivo no es un .ico válido");
   }
   const count = icoBuffer.readUInt16LE(4);
@@ -27,13 +31,16 @@ function readIcoSizes(icoBuffer) {
 function inspectExe(exeBuffer) {
   const exe = ResEdit.NtExecutable.from(exeBuffer);
   const resources = ResEdit.NtExecutableResource.from(exe);
-  const groups = ResEdit.Resource.IconGroupEntry.fromEntries(resources.entries).map((group) => ({
+  const groups = ResEdit.Resource.IconGroupEntry.fromEntries(
+    resources.entries,
+  ).map((group) => ({
     id: group.id,
     sizes: group.icons.map((icon) => icon.width || 256),
   }));
   const info = ResEdit.Resource.VersionInfo.fromEntries(resources.entries)[0];
   const languages = info ? info.getAllLanguagesForStringValues() : [];
-  const strings = info && languages[0] ? info.getStringValues(languages[0]) : {};
+  const strings =
+    info && languages[0] ? info.getStringValues(languages[0]) : {};
   return { groups, strings };
 }
 
@@ -42,14 +49,25 @@ function inspectExe(exeBuffer) {
  * Electron binary used) and the version strings. Returns the new exe bytes.
  */
 function applyWindowsResources(exeBuffer, options) {
-  const { icoBuffer, productName, version, companyName, description, copyright, originalFilename } = options;
+  const {
+    icoBuffer,
+    productName,
+    version,
+    companyName,
+    description,
+    copyright,
+    originalFilename,
+  } = options;
   readIcoSizes(icoBuffer);
   const exe = ResEdit.NtExecutable.from(exeBuffer);
   const resources = ResEdit.NtExecutableResource.from(exe);
 
   const icon = ResEdit.Data.IconFile.from(icoBuffer);
   const groups = ResEdit.Resource.IconGroupEntry.fromEntries(resources.entries);
-  const groupIds = groups.length > 0 ? groups.map((group) => ({ id: group.id, lang: group.lang })) : [{ id: 1, lang: LANG_EN_US }];
+  const groupIds =
+    groups.length > 0
+      ? groups.map((group) => ({ id: group.id, lang: group.lang }))
+      : [{ id: 1, lang: LANG_EN_US }];
   for (const { id, lang } of groupIds) {
     ResEdit.Resource.IconGroupEntry.replaceIconsForResource(
       resources.entries,
@@ -62,10 +80,13 @@ function applyWindowsResources(exeBuffer, options) {
   // Drop the original version info (Electron's) and write ours from scratch,
   // so no leftover language block can win over it.
   for (let i = resources.entries.length - 1; i >= 0; i -= 1) {
-    if (resources.entries[i].type === RT_VERSION) resources.entries.splice(i, 1);
+    if (resources.entries[i].type === RT_VERSION)
+      resources.entries.splice(i, 1);
   }
   const info = ResEdit.Resource.VersionInfo.createEmpty();
-  const [major = 0, minor = 0, patch = 0] = String(version).split(/[.-]/).map((part) => Number.parseInt(part, 10) || 0);
+  const [major = 0, minor = 0, patch = 0] = String(version)
+    .split(/[.-]/)
+    .map((part) => Number.parseInt(part, 10) || 0);
   info.setFileVersion(major, minor, patch, 0, LANG_EN_US);
   info.setProductVersion(major, minor, patch, 0, LANG_EN_US);
   info.setStringValues(
@@ -91,4 +112,9 @@ function applyToFile(exePath, options) {
   fs.writeFileSync(exePath, output);
 }
 
-module.exports = { readIcoSizes, inspectExe, applyWindowsResources, applyToFile };
+module.exports = {
+  readIcoSizes,
+  inspectExe,
+  applyWindowsResources,
+  applyToFile,
+};

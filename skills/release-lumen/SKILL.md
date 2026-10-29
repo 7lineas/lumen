@@ -20,7 +20,7 @@ Use this skill for an explicit release request such as â€œrelease a new versionâ
 
 1. Inspect `git status --short --branch`, `git log`, the current package version, and the latest `landing/releases.json`. Confirm `main` tracks `origin/main`, then fast-forward it with `git pull --ff-only`.
 2. Select the next version using the release contract. Update `package.json` with `pnpm version <version> --no-git-tag-version`. Do not invent a second version source.
-3. Run the relevant checks before packaging. At minimum run `pnpm exec eslint .` and `pnpm exec vite build`. The normal build uses the tracked local `data/bibles` JSON; `pnpm convert:bibles` is an explicit data refresh and must not be required for a release.
+3. Run the relevant checks before packaging. At minimum run `pnpm exec oxlint .` and `pnpm exec vite build`. The normal build uses the tracked local `data/bibles` JSON; `pnpm convert:bibles` is an explicit data refresh and must not be required for a release.
 4. Record a build start time, then build both Windows deliverables with `pnpm pack:win` (run it in the foreground or wait for it; a tool call that returns while it is still running in the background can kill it, so confirm the log ends with the `.exe` and `latest.yml` written). Electron Builder configuration must validate before artifacts are accepted. Because `release/` may contain older ignored files, stage the two newly built `.exe` files plus the matching setup `.blockmap` and `latest.yml` in a fresh temporary directory, set that directory as `$release_dir`, and publish from it. Verify both executables are newer than the build start, have the expected setup/portable roles, and that `latest.yml` names the current builder artifact; never let stale files from `release/` win artifact discovery.
 5. Preview the release manifest without uploading:
 
@@ -46,6 +46,7 @@ Use this skill for an explicit release request such as â€œrelease a new versionâ
    ```
 
    It checks that `${DOWNLOAD_BASE_URL}/releases.json` and `latest.yml` name the new version, that `releases.json` has the same sizes and SHA-256 values as the local manifest, and that both versioned executables, the builder `.exe` named by `latest.yml` and its `.blockmap` answer 200 with the expected size. Do not commit or report completion while any check fails or while the public `latest.yml` still names the previous version (installed apps update from it).
+
 8. Only after step 7 passes, in this order: commit the version and generated manifest/config changes with `Release v<version>`, create an annotated tag `v<version>` (`git tag -a v<version> -m "Release v<version>"`), then `git push origin main` and `git push origin v<version>`. Do not commit `release/`; it is ignored. If publishing succeeded but verification or push fails, report the exact completed step and do not claim the release is complete.
 9. Finish with the version, public download URLs, commit/tag, validation results, and any known limitation. State clearly whether users can download the new release.
 

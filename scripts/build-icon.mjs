@@ -10,7 +10,13 @@ export const ICO_SIZES = [16, 20, 24, 32, 40, 48, 64, 128, 256];
 export async function buildIco(sourcePng, sizes = ICO_SIZES) {
   const images = await Promise.all(
     sizes.map((size) =>
-      sharp(sourcePng).resize(size, size, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } }).png({ compressionLevel: 9 }).toBuffer(),
+      sharp(sourcePng)
+        .resize(size, size, {
+          fit: "contain",
+          background: { r: 0, g: 0, b: 0, alpha: 0 },
+        })
+        .png({ compressionLevel: 9 })
+        .toBuffer(),
     ),
   );
   const header = Buffer.alloc(6);

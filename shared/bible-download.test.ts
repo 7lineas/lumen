@@ -19,7 +19,10 @@ function okResponse(): Awaited<ReturnType<FetchLike>> {
     status: 200,
     headers: { get: () => String(payload.byteLength) },
     arrayBuffer: async () =>
-      payload.buffer.slice(payload.byteOffset, payload.byteOffset + payload.byteLength),
+      payload.buffer.slice(
+        payload.byteOffset,
+        payload.byteOffset + payload.byteLength,
+      ),
   };
 }
 
@@ -163,10 +166,12 @@ describe("describeLibrary", () => {
       catalogSource: "bundled",
     });
     expect(view.offline).toBe(true);
-    expect(view.entries.map((entry) => [entry.id, entry.availability])).toEqual([
-      ["rv1909", "included"],
-      ["bes", "installed"],
-    ]);
+    expect(view.entries.map((entry) => [entry.id, entry.availability])).toEqual(
+      [
+        ["rv1909", "included"],
+        ["bes", "installed"],
+      ],
+    );
   });
 
   it("lists a catalog edition as available when it is not on disk", () => {
