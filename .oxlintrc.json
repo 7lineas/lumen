@@ -12,7 +12,8 @@
     "dist-electron/**",
     "release/**",
     "data/**",
-    "landing-dist/**"
+    "landing-dist/**",
+    ".agents/**"
   ],
   "rules": {
     "constructor-super": "error",
