@@ -15,6 +15,7 @@ import {
   Check,
   Church,
   Copy,
+  Download,
   MonitorPlay,
   Palette,
   RefreshCw,
@@ -39,7 +40,7 @@ async function makeQrCodes(
 ): Promise<Record<string, string>> {
   if (!info.enabled || !info.pairingCode) return {};
   const entries = await Promise.all(
-    info.addresses.map(async (address) => {
+    [...info.addresses, ...info.tailnetAddresses].map(async (address) => {
       const connectUrl = `http://${address}:${info.port}/?pair=${info.pairingCode}`;
       return [
         address,
@@ -106,6 +107,40 @@ function SettingRow({
       </div>
       <div className="ajustes-row-control">{children}</div>
     </div>
+  );
+}
+
+function AccessAddressList({
+  addresses,
+  port,
+  qrCodes,
+}: {
+  addresses: string[];
+  port: number;
+  qrCodes: Record<string, string>;
+}) {
+  return (
+    <ul className="ajustes-access-qrs">
+      {addresses.map((address) => (
+        <li key={address}>
+          <div className="ajustes-access-qr-slot">
+            {qrCodes[address] && (
+              <img
+                src={qrCodes[address]}
+                alt={`Código QR para conectar a ${address}`}
+              />
+            )}
+          </div>
+          <a
+            href={`http://${address}:${port}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            {address}:{port}
+          </a>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -201,7 +236,9 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
     : browserAccessBusy
       ? "Aplicando…"
       : browserAccess.enabled
-        ? "Activo en la red local"
+        ? browserAccess.tailnetAddresses.length
+          ? "Activo en la red local y en Tailscale"
+          : "Activo en la red local"
         : "Apagado";
 
   const rotateCode = async () => {
@@ -231,6 +268,16 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
       );
     } finally {
       setBrowserAccessBusy(false);
+    }
+  };
+
+  const openTailscale = async () => {
+    try {
+      await window.proyector?.openTailscaleDownload();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "No se pudo abrir el enlace",
+      );
     }
   };
 
@@ -264,27 +311,11 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
               <div className="ajustes-access-body">
                 <div className="ajustes-access-split">
                   {browserAccess.addresses.length ? (
-                    <ul className="ajustes-access-qrs">
-                      {browserAccess.addresses.map((address) => (
-                        <li key={address}>
-                          <div className="ajustes-access-qr-slot">
-                            {browserQrCodes[address] && (
-                              <img
-                                src={browserQrCodes[address]}
-                                alt={`Código QR para conectar a ${address}`}
-                              />
-                            )}
-                          </div>
-                          <a
-                            href={`http://${address}:${browserAccess.port}`}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            {address}:{browserAccess.port}
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
+                    <AccessAddressList
+                      addresses={browserAccess.addresses}
+                      port={browserAccess.port}
+                      qrCodes={browserQrCodes}
+                    />
                   ) : (
                     <p className="ajustes-note">
                       No se detectó una dirección de red activa.
@@ -329,6 +360,44 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
                       </div>
                     </div>
                   </div>
+                </div>
+                <div className="ajustes-access-remote">
+                  <h4>Desde fuera de la iglesia</h4>
+                  {browserAccess.tailnetAddresses.length ? (
+                    <>
+                      <AccessAddressList
+                        addresses={browserAccess.tailnetAddresses}
+                        port={browserAccess.port}
+                        qrCodes={browserQrCodes}
+                      />
+                      <p className="ajustes-note">
+                        Funciona con datos móviles u otra red, mientras
+                        Tailscale esté activo en el teléfono.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <ol className="ajustes-access-steps">
+                        <li>
+                          Instale Tailscale en este equipo y en el teléfono.
+                        </li>
+                        <li>Inicie sesión con la misma cuenta en ambos.</li>
+                        <li>
+                          Active Tailscale en el teléfono y vuelva a abrir
+                          Ajustes.
+                        </li>
+                      </ol>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => void openTailscale()}
+                      >
+                        <Download size={14} aria-hidden />
+                        Descargar Tailscale
+                      </Button>
+                    </>
+                  )}
                 </div>
                 <p className="ajustes-access-warn">
                   Compártalo solo con operadores de confianza.

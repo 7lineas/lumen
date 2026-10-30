@@ -9,6 +9,7 @@ import {
   net,
   nativeImage,
   protocol,
+  shell,
 } from "electron";
 import path from "path";
 import { pathToFileURL } from "url";
@@ -17,6 +18,7 @@ import { Readable } from "node:stream";
 import os from "node:os";
 import { randomInt } from "node:crypto";
 import Store from "electron-store";
+import { classifyBrowserAddresses } from "./browser-access-addresses";
 import { isPdfPath } from "../shared/slide-deck";
 import { renderPptxInWorker } from "./pptx-render";
 import {
@@ -886,41 +888,25 @@ registerIpcHandle("bibles:list", () =>
   listSelectableVersions(biblesPath(), userBiblesDir()),
 );
 
+const TAILSCALE_DOWNLOAD_URL = "https://tailscale.com/download";
+
 function browserAccessInfo() {
   const config = store.get("browserAccess");
-  const isPrivateIpv4 = (address: string) => {
-    const octets = address.split(".").map(Number);
-    if (
-      octets.length !== 4 ||
-      octets.some((part) => !Number.isInteger(part) || part < 0 || part > 255)
-    )
-      return false;
-    const [first, second] = octets;
-    return (
-      first === 10 ||
-      (first === 172 && second! >= 16 && second! <= 31) ||
-      (first === 192 && second === 168) ||
-      (first === 169 && second === 254)
-    );
-  };
-  const addresses = Object.values(os.networkInterfaces()).flatMap((entries) =>
-    (entries ?? [])
-      .filter(
-        (entry) =>
-          (String(entry.family) === "IPv4" || String(entry.family) === "4") &&
-          !entry.internal &&
-          isPrivateIpv4(entry.address),
-      )
-      .map((entry) => entry.address),
-  );
+  const { lan, tailnet } = classifyBrowserAddresses(os.networkInterfaces());
   const port = Number(process.env.LUMEN_BROWSER_PORT ?? 43124);
   return {
     enabled: config.enabled,
     pairingCode: config.pairingCode,
     port,
-    addresses,
+    addresses: lan,
+    tailnetAddresses: tailnet,
   };
 }
+
+// Kept off the LAN browser RPC on purpose: only the desktop window may open links.
+ipcMain.handle("browser:open-tailscale", () =>
+  shell.openExternal(TAILSCALE_DOWNLOAD_URL),
+);
 
 registerIpcHandle("browser:status", () => browserAccessInfo());
 registerIpcHandle("browser:configure", (_event, enabled: boolean) => {

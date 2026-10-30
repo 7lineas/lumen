@@ -9,6 +9,12 @@ Lumen's desktop process remains the owner of its local database, Bible files, an
 3. Scan the QR code from a device on the same private network to connect automatically. Or open the displayed address and enter the access code manually.
 4. Disable access in Lumen when finished.
 
+### Outside the church network (Tailscale)
+
+The LAN address only works on the same Wi-Fi or cable network. To connect from mobile data or another network, install [Tailscale](https://tailscale.com/download) on the host and on the phone, signed in to the same account. Ajustes then shows a **Desde fuera de la iglesia** section with a QR code for the host's Tailscale address (a `100.64.0.0/10` address). If Tailscale is not detected, that section lists the setup steps and offers a download button. Tailscale encrypts the traffic between devices, so the port does not need to be forwarded on the router.
+
+Detection is address-based: any interface with an address in `100.64.0.0/10` counts as Tailscale. Mobile carriers can also use that range, so the QR may appear on a host that is not on Tailscale. Scanning it then fails to connect, and the host should be checked for Tailscale.
+
 The host computer and Lumen must remain running. Scanning the QR opens the operator/controller app with the short pairing code in a query parameter. The browser immediately exchanges it for a high-entropy session token and removes the query parameter from the address bar. Manually opened addresses use the same six-digit code in the access screen. Browser sessions are kept in the browser's local storage and do not expire by time, so a device stays connected across tab and browser restarts. **Cambiar código** in Ajustes replaces the six-digit code at once; the old code stops working, but devices that are already paired stay connected. Disabling access closes the LAN listener and invalidates all paired sessions and the code. Restarting Lumen on the host also ends all sessions, because they are held in memory.
 
 ## Browser features
