@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   backgroundImageUrl,
+  backgroundThumbnailUrl,
   isBackgroundVideo,
 } from "@shared/background-image";
 import type { MediaFit } from "@shared/types";
@@ -24,6 +25,12 @@ interface FadingBackgroundMediaProps {
   /** How the media fills the screen (default: cover). */
   fit?: MediaFit;
   className?: string;
+  /**
+   * Show a video background as its still thumbnail instead of playing it. The
+   * operator monitors use it: each playing copy is one more full decode of the
+   * video, and only the projector needs to play it.
+   */
+  still?: boolean;
 }
 
 /**
@@ -117,8 +124,14 @@ export function FadingBackgroundMedia({
   fadeMs,
   fit = "cover",
   className,
+  still = false,
 }: FadingBackgroundMediaProps) {
-  const url = backgroundImageUrl(path);
+  const videoPath = isBackgroundVideo(path);
+  // In still mode a video is its thumbnail image: nothing is decoded or played.
+  const url =
+    still && videoPath
+      ? backgroundThumbnailUrl(path)
+      : backgroundImageUrl(path);
   const duration = Math.max(0, fadeMs);
 
   const [layers, setLayers] = useState<Layer[]>(() =>
@@ -126,7 +139,7 @@ export function FadingBackgroundMedia({
       ? [
           {
             src: url,
-            video: isBackgroundVideo(path),
+            video: videoPath && !still,
             leaving: false,
             fresh: false,
           },
@@ -149,7 +162,7 @@ export function FadingBackgroundMedia({
       );
       return;
     }
-    const video = isBackgroundVideo(path);
+    const video = isBackgroundVideo(path) && !still;
     setLayers((prev) => {
       const top = prev[prev.length - 1];
       // Re-selecting the fading-out media just brings it back.
@@ -163,7 +176,7 @@ export function FadingBackgroundMedia({
       ];
     });
     setReadySrc(null);
-  }, [url, path]);
+  }, [url, path, still]);
 
   // Drop covered/faded layers once the crossfade completes.
   useEffect(() => {
@@ -183,7 +196,8 @@ export function FadingBackgroundMedia({
     return () => window.clearTimeout(timer);
   }, [layers, duration]);
 
-  const filter = `brightness(${brightness})`;
+  // brightness(1) is an identity filter that still costs a compositing layer per video.
+  const filter = brightness === 1 ? undefined : `brightness(${brightness})`;
 
   return (
     <>

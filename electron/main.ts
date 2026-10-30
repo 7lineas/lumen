@@ -222,10 +222,12 @@ function pruneOrphanSlideImages(
   try {
     const dir = path.resolve(slideImagesDir());
     if (!fs.existsSync(dir)) return;
+    // Each slide's thumbnail sidecar lives and dies with the slide itself.
     const referenced = new Set(
       next
         .flatMap((deck) => deck.images)
-        .filter((entry): entry is string => typeof entry === "string"),
+        .filter((entry): entry is string => typeof entry === "string")
+        .flatMap((image) => [image, `${image}.thumbnail.jpg`]),
     );
     for (const name of fs.readdirSync(dir)) {
       const full = path.join(dir, name);
@@ -1694,35 +1696,55 @@ registerIpcHandle("background:delete", (_e, filePath: string) => {
   }
 });
 
-registerIpcHandle(
-  "background:saveThumbnail",
-  (_e, filePath: string, jpegBase64: string) => {
-    const root = path.resolve(app.getPath("userData"), "background-images");
-    const target = path.resolve(String(filePath));
+/**
+ * Store a JPEG thumbnail beside a managed media file as `${file}.thumbnail.jpg`.
+ * Only files under `folder` whose name matches `kind` are accepted.
+ */
+function saveThumbnailSidecar(
+  folder: string,
+  kind: RegExp,
+  filePath: string,
+  jpegBase64: string,
+): boolean {
+  const root = path.resolve(app.getPath("userData"), folder);
+  const target = path.resolve(String(filePath));
+  if (!target.startsWith(`${root}${path.sep}`) || !kind.test(target))
+    return false;
+  if (typeof jpegBase64 !== "string" || jpegBase64.length > 2_800_000)
+    return false;
+  try {
+    if (!fs.statSync(target).isFile()) return false;
+    const jpeg = Buffer.from(jpegBase64, "base64");
     if (
-      !target.startsWith(`${root}${path.sep}`) ||
-      !/\.(mp4|webm|ogg|mov)$/i.test(target)
+      jpeg.length < 4 ||
+      jpeg.length > 2_000_000 ||
+      jpeg[0] !== 0xff ||
+      jpeg[1] !== 0xd8 ||
+      jpeg[2] !== 0xff
     )
       return false;
-    if (typeof jpegBase64 !== "string" || jpegBase64.length > 2_800_000)
-      return false;
-    try {
-      if (!fs.statSync(target).isFile()) return false;
-      const jpeg = Buffer.from(jpegBase64, "base64");
-      if (
-        jpeg.length < 4 ||
-        jpeg.length > 2_000_000 ||
-        jpeg[0] !== 0xff ||
-        jpeg[1] !== 0xd8 ||
-        jpeg[2] !== 0xff
-      )
-        return false;
-      fs.writeFileSync(`${target}.thumbnail.jpg`, jpeg);
-      return true;
-    } catch {
-      return false;
-    }
-  },
+    fs.writeFileSync(`${target}.thumbnail.jpg`, jpeg);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+registerIpcHandle(
+  "background:saveThumbnail",
+  (_e, filePath: string, jpegBase64: string) =>
+    saveThumbnailSidecar(
+      "background-images",
+      /\.(mp4|webm|ogg|mov)$/i,
+      filePath,
+      jpegBase64,
+    ),
+);
+
+registerIpcHandle(
+  "slides:saveThumbnail",
+  (_e, filePath: string, jpegBase64: string) =>
+    saveThumbnailSidecar("slide-images", /\.png$/i, filePath, jpegBase64),
 );
 
 ipcMain.on("operator:navigate", (_e, dir: "prev" | "next") => {

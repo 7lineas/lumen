@@ -20,6 +20,14 @@ export function backgroundThumbnailUrl(
   return backgroundImageUrl(`${value}.thumbnail.jpg`);
 }
 
+/** Small JPEG copy of a slide image, shown in the Media grid instead of the full-size PNG. */
+export function slideThumbnailUrl(
+  value: string | null | undefined,
+): string | undefined {
+  if (!value) return undefined;
+  return backgroundImageUrl(`${value}.thumbnail.jpg`);
+}
+
 export function isBackgroundVideo(value: string | null | undefined): boolean {
   return !!value && /\.(mp4|webm|ogg|mov)$/i.test(value);
 }

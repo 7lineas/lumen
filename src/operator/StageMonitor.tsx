@@ -379,6 +379,8 @@ export function StageMonitor({
             fadeMs={backgroundFadeMs}
             fit={isLogo ? "cover" : backgroundFit}
             className="monitor-background-media"
+            // Only the projector plays a background video (see FadingBackgroundMedia's `still`).
+            still
           />
           <div
             className={`monitor-screen-fade ${!isLive || visible ? "show" : ""}`}
