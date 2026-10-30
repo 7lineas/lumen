@@ -9,7 +9,9 @@ export function ThemeProvider({ children }: PropsWithChildren) {
   const dark = colorScheme === "dark";
 
   return (
-    <View className={dark ? "dark flex-1 bg-background" : "flex-1 bg-background"}>
+    <View
+      className={dark ? "dark flex-1 bg-background" : "flex-1 bg-background"}
+    >
       <StatusBar style={dark ? "light" : "dark"} />
       {children}
     </View>

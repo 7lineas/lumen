@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import type { AppSettings, BibleData, BibleVersionMeta } from "@shared/types";
+import { fetchRangeTexts, getBible, loadBible } from "@shared/bible-service";
 import {
-  fetchRangeTexts,
-  getBible,
-  loadBible,
-} from "@shared/bible-service";
-import { formatRange, parseReference, type VerseRange } from "@shared/reference";
+  formatRange,
+  parseReference,
+  type VerseRange,
+} from "@shared/reference";
 import type { LumenClient } from "@/lib/lumen-client";
 import { describeLumenError } from "@/lib/lumen-errors";
 import { stepInBible } from "./step-verse";
@@ -70,7 +70,9 @@ export function useBibleStage(client: LumenClient | null) {
   const textsFor = useCallback(
     async (id: string, range: VerseRange): Promise<StagedVerse | null> => {
       if (!settings) return null;
-      const secondaryId = settings.dualView ? settings.secondaryVersionId : null;
+      const secondaryId = settings.dualView
+        ? settings.secondaryVersionId
+        : null;
       await ensureLoaded(id);
       if (secondaryId) await ensureLoaded(secondaryId);
       const texts = fetchRangeTexts(id, secondaryId, range);

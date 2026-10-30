@@ -1,7 +1,8 @@
 import { LumenApiError } from "./lumen-client";
 
 const MESSAGES: Record<string, string> = {
-  invalid_pairing_code: "El código no coincide. Revise los seis dígitos en Lumen.",
+  invalid_pairing_code:
+    "El código no coincide. Revise los seis dígitos en Lumen.",
   too_many_attempts:
     "Demasiados intentos fallidos. Espere 15 minutos o cambie el código en Lumen.",
   too_many_sessions: "Hay demasiados dispositivos conectados a Lumen.",
@@ -13,8 +14,7 @@ const MESSAGES: Record<string, string> = {
 export function describeLumenError(error: unknown): string {
   if (error instanceof LumenApiError) {
     return (
-      MESSAGES[error.code] ??
-      `Lumen respondió con un error (${error.code}).`
+      MESSAGES[error.code] ?? `Lumen respondió con un error (${error.code}).`
     );
   }
   return "No hay respuesta de Lumen. Revise la dirección y que ambos equipos estén en la misma red.";

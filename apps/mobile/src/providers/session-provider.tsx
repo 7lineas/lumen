@@ -66,8 +66,7 @@ export function SessionProvider({ children }: PropsWithChildren) {
   }, []);
 
   const client = useMemo(
-    () =>
-      session ? createLumenClient(session, () => void forget()) : null,
+    () => (session ? createLumenClient(session, () => void forget()) : null),
     [session, forget],
   );
 

@@ -40,7 +40,9 @@ export function ConnectScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View className="gap-2">
-          <Text className="text-3xl font-bold text-foreground">Conectar con Lumen</Text>
+          <Text className="text-3xl font-bold text-foreground">
+            Conectar con Lumen
+          </Text>
           <Text className="text-base leading-6 text-muted-foreground">
             En el equipo de proyección abra Lumen, vaya a Ajustes → Acceso desde
             otros dispositivos y escriba aquí la dirección y el código de seis
@@ -61,7 +63,9 @@ export function ConnectScreen() {
           <Field
             label="Código de acceso"
             value={code}
-            onChangeText={(next) => setCode(next.replace(/\D/g, "").slice(0, 6))}
+            onChangeText={(next) =>
+              setCode(next.replace(/\D/g, "").slice(0, 6))
+            }
             placeholder="000000"
             keyboardType="number-pad"
             maxLength={6}

@@ -15,7 +15,9 @@ describe("normalizeHostAddress", () => {
   });
 
   it("accepts a local hostname", () => {
-    expect(normalizeHostAddress("lumen.local")).toBe("http://lumen.local:43124");
+    expect(normalizeHostAddress("lumen.local")).toBe(
+      "http://lumen.local:43124",
+    );
   });
 
   it("rejects https, empty input and out-of-range ports", () => {

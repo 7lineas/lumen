@@ -33,7 +33,10 @@ function chrome(settings: ProjectorSettings) {
 
 export function buildVersePayload(
   settings: ProjectorSettings,
-  content: { referenceLabel: string; blocks: Array<{ label?: string; text: string }> },
+  content: {
+    referenceLabel: string;
+    blocks: Array<{ label?: string; text: string }>;
+  },
 ): ProjectorPayload {
   return {
     mode: "verse",
@@ -44,7 +47,9 @@ export function buildVersePayload(
 }
 
 /** Black screen on the projector, keeping the operator's styling for the next verse. */
-export function buildBlankPayload(settings: ProjectorSettings): ProjectorPayload {
+export function buildBlankPayload(
+  settings: ProjectorSettings,
+): ProjectorPayload {
   return {
     mode: "blank",
     referenceLabel: "",

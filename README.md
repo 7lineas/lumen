@@ -32,6 +32,10 @@ La versión de navegador comparte las Biblias instaladas, ajustes, historial, co
 
 Detalles de red, contrato del servicio y configuración para desarrollo: [`docs/BROWSER-ACCESS.md`](docs/BROWSER-ACCESS.md).
 
+## Aplicación móvil (en desarrollo)
+
+La carpeta `apps/mobile/` contiene una app Expo para operar Lumen desde un teléfono en la misma red. Usa el mismo servicio `/api/v1` que el acceso desde navegador. Ver [`apps/mobile/README.md`](apps/mobile/README.md).
+
 ## Uso rápido
 
 1. Elija libro, capítulo y versículo en la columna izquierda, o escriba `Juan 3:16`.

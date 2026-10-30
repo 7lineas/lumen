@@ -71,10 +71,7 @@ export function Button({
   );
 }
 
-export function Field({
-  label,
-  ...input
-}: TextInputProps & { label: string }) {
+export function Field({ label, ...input }: TextInputProps & { label: string }) {
   return (
     <View className="gap-2">
       <Text className="text-sm font-medium text-muted-foreground">{label}</Text>
