@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import * as SecureStore from "expo-secure-store";
 import {
-  clearLumenSession,
-  loadLumenSession,
-  saveLumenSession,
+  clearLumenSessions,
+  loadLumenSessions,
+  saveLumenSessions,
 } from "./session-storage";
 
 vi.mock("expo-secure-store", () => {
@@ -19,36 +19,42 @@ vi.mock("expo-secure-store", () => {
   };
 });
 
-const SESSION = { origin: "http://192.168.1.20:43124", token: "tok-123" };
+const LAN = { origin: "http://192.168.1.20:43124", token: "tok-lan" };
+const TAILNET = { origin: "http://100.101.102.103:43124", token: "tok-ts" };
 
 describe("session storage", () => {
   beforeEach(async () => {
-    await clearLumenSession();
+    await clearLumenSessions();
   });
 
-  it("round-trips a saved session and clears it", async () => {
-    await saveLumenSession(SESSION);
-    await expect(loadLumenSession()).resolves.toEqual(SESSION);
+  it("keeps the order of paired addresses and clears them", async () => {
+    await saveLumenSessions([TAILNET, LAN]);
+    await expect(loadLumenSessions()).resolves.toEqual([TAILNET, LAN]);
 
-    await clearLumenSession();
-    await expect(loadLumenSession()).resolves.toBeNull();
+    await clearLumenSessions();
+    await expect(loadLumenSessions()).resolves.toEqual([]);
   });
 
-  it("returns null when the stored value is not valid JSON", async () => {
+  it("returns nothing when the stored value is not valid JSON", async () => {
     vi.mocked(SecureStore.getItemAsync).mockResolvedValueOnce("{not json");
 
-    await expect(loadLumenSession()).resolves.toBeNull();
+    await expect(loadLumenSessions()).resolves.toEqual([]);
   });
 
-  it("returns null when origin or token is missing", async () => {
+  it("drops entries missing origin or token", async () => {
     vi.mocked(SecureStore.getItemAsync).mockResolvedValueOnce(
-      JSON.stringify({ origin: SESSION.origin }),
+      JSON.stringify([{ origin: LAN.origin }, LAN, { token: "x" }]),
     );
-    await expect(loadLumenSession()).resolves.toBeNull();
 
-    vi.mocked(SecureStore.getItemAsync).mockResolvedValueOnce(
-      JSON.stringify({ token: SESSION.token }),
-    );
-    await expect(loadLumenSession()).resolves.toBeNull();
+    await expect(loadLumenSessions()).resolves.toEqual([LAN]);
+  });
+
+  it("migrates the single session saved by the first build", async () => {
+    // First read is the current key (empty), second is the legacy key.
+    vi.mocked(SecureStore.getItemAsync)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(JSON.stringify(LAN));
+
+    await expect(loadLumenSessions()).resolves.toEqual([LAN]);
   });
 });

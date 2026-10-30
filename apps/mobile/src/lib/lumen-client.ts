@@ -72,6 +72,22 @@ export async function createLumenSession(
 }
 
 /**
+ * Asks one address whether it still knows this session. Resolves when it does;
+ * throws `unauthorized` (401) when the host restarted or access was turned off,
+ * and a network error when the address cannot be reached from here.
+ */
+export async function checkLumenSession(
+  session: LumenSession,
+  timeoutMs = 4_000,
+): Promise<void> {
+  await requestJson(
+    `${session.origin}/api/v1/session`,
+    { method: "GET", headers: { authorization: `Bearer ${session.token}` } },
+    timeoutMs,
+  );
+}
+
+/**
  * RPC client bound to one session. A 401 means the host restarted or turned
  * access off, so the session is dead: `onUnauthorized` lets the app forget it.
  */

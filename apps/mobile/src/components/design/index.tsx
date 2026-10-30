@@ -21,10 +21,10 @@ export function Screen({ children }: PropsWithChildren) {
   );
 }
 
-/** Bordered surface for a group of controls. */
+/** Surface for a group of related controls. */
 export function Card({ children }: PropsWithChildren) {
   return (
-    <View className="gap-3 rounded-xl border border-border bg-card p-4">
+    <View className="gap-4 rounded-lg border border-border bg-card p-4">
       {children}
     </View>
   );
@@ -62,9 +62,9 @@ export function Button({
       accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}
-      className={`min-h-12 flex-1 items-center justify-center rounded-lg px-4 ${BUTTON_SURFACE[variant]} ${disabled ? "opacity-50" : ""}`}
+      className={`min-h-12 flex-1 items-center justify-center rounded-md px-4 active:opacity-80 ${BUTTON_SURFACE[variant]} ${disabled ? "opacity-40" : ""}`}
     >
-      <Text className={`text-base font-semibold ${BUTTON_LABEL[variant]}`}>
+      <Text className={`font-sans-semibold text-base ${BUTTON_LABEL[variant]}`}>
         {label}
       </Text>
     </Pressable>
@@ -74,10 +74,13 @@ export function Button({
 export function Field({ label, ...input }: TextInputProps & { label: string }) {
   return (
     <View className="gap-2">
-      <Text className="text-sm font-medium text-muted-foreground">{label}</Text>
+      <Text className="font-sans-medium text-sm text-muted-foreground">
+        {label}
+      </Text>
       <TextInput
+        accessibilityLabel={label}
         placeholderTextColor={colors.placeholder}
-        className="rounded-lg border border-input bg-card px-4 py-3 text-base text-foreground"
+        className="rounded-md border border-input bg-background px-4 py-3 font-sans text-lg text-foreground"
         {...input}
       />
     </View>
@@ -86,5 +89,12 @@ export function Field({ label, ...input }: TextInputProps & { label: string }) {
 
 /** Inline error line, shown under the control that failed. */
 export function ErrorText({ children }: PropsWithChildren) {
-  return <Text className="text-sm text-destructive">{children}</Text>;
+  return (
+    <Text
+      accessibilityLiveRegion="polite"
+      className="font-sans-medium text-sm text-destructive"
+    >
+      {children}
+    </Text>
+  );
 }

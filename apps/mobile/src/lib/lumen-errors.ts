@@ -17,5 +17,5 @@ export function describeLumenError(error: unknown): string {
       MESSAGES[error.code] ?? `Lumen respondió con un error (${error.code}).`
     );
   }
-  return "No hay respuesta de Lumen. Revise la dirección y que ambos equipos estén en la misma red.";
+  return "No hay respuesta de Lumen. Revise que Lumen esté abierto y que el teléfono esté en la misma red Wi-Fi, o con Tailscale encendido en ambos equipos.";
 }

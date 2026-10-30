@@ -6,10 +6,10 @@
     "orientation": "default",
     "icon": "./assets/app-icon.png",
     "scheme": "lumen",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "dark",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.7lineas.lumen",
+      "bundleIdentifier": "com.svlineas.lumen",
       "infoPlist": {
         "NSLocalNetworkUsageDescription": "Lumen se conecta al equipo de proyección en tu red local.",
         "NSAppTransportSecurity": {
@@ -19,12 +19,16 @@
     },
     "android": {
       "versionCode": 1,
-      "package": "com.7lineas.lumen",
+      "package": "com.svlineas.lumen",
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/android-adaptive-foreground.png",
-        "backgroundColor": "#0f1419"
-      }
+        "backgroundColor": "#17130e"
+      },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "plugins": [
       "expo-dev-client",
@@ -36,7 +40,7 @@
           "image": "./assets/logo.png",
           "imageWidth": 80,
           "resizeMode": "contain",
-          "backgroundColor": "#0f1419"
+          "backgroundColor": "#17130e"
         }
       ],
       [
@@ -47,13 +51,24 @@
             "enableMinifyInReleaseBuilds": true
           }
         }
+      ],
+      "expo-font",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Lumen usa la cámara para leer el código QR que muestra el equipo de proyección."
+        }
       ]
     ],
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
-      "router": {}
-    }
+      "router": {},
+      "eas": {
+        "projectId": "15afaaee-be3d-461b-8d2e-5ce9b25bfac1"
+      }
+    },
+    "owner": "svlineas"
   }
 }
