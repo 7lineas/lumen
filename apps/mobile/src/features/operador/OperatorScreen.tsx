@@ -1,52 +1,59 @@
 import { useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import type { ProjectorPayload } from "@shared/types";
 import { Button, Card, ErrorText, Field, Screen } from "@/components/design";
 import { useLumenSession } from "@/providers/session-provider";
 import { useBibleStage, type StagedVerse } from "./use-bible-stage";
 import { useLiveProjector } from "./use-live-projector";
 
+/** What the projector shows: a short title, plus scripture text when there is some. */
 function describeLive(
   payload: ProjectorPayload | null,
   connected: boolean,
-): string {
+): { title: string; body?: string } {
   if (!payload) {
-    return connected ? "Nada proyectado todavía." : "Conectando con Lumen…";
+    return {
+      title: connected ? "Nada proyectado todavía." : "Conectando con Lumen…",
+    };
   }
   switch (payload.mode) {
     case "blank":
-      return "Pantalla negra";
+      return { title: "Pantalla negra" };
     case "verse":
-      return [
-        payload.referenceLabel,
-        payload.blocks.map((block) => block.text).join(" "),
-      ]
-        .filter(Boolean)
-        .join("\n");
+      return {
+        title: payload.referenceLabel,
+        body: payload.blocks.map((block) => block.text).join(" "),
+      };
     case "logo":
-      return "Logo de la iglesia";
+      return { title: "Logo de la iglesia" };
     case "slides":
-      return "Diapositiva";
+      return { title: "Diapositiva" };
     case "video":
-      return "Video";
+      return { title: "Video" };
     case "countdown":
-      return "Cuenta regresiva";
+      return { title: "Cuenta regresiva" };
     default:
-      return payload.mode;
+      return { title: payload.mode };
   }
 }
 
 function StagedPreview({ staged }: { staged: StagedVerse }) {
   return (
-    <View className="gap-2 rounded-lg bg-background p-3">
-      <Text className="text-sm font-semibold text-primary">
+    <View className="gap-4 border-t border-border pt-4">
+      <Text className="font-serif-medium text-2xl text-foreground">
         {staged.referenceLabel}
       </Text>
       {staged.blocks.map((block, index) => (
-        <Text key={index} className="text-base leading-6 text-foreground">
-          {block.label ? `${block.label} · ` : ""}
-          {block.text}
-        </Text>
+        <View key={index} className="gap-1">
+          {block.label ? (
+            <Text className="font-sans-medium text-sm text-muted-foreground">
+              {block.label}
+            </Text>
+          ) : null}
+          <Text className="font-serif text-xl leading-8 text-foreground">
+            {block.text}
+          </Text>
+        </View>
       ))}
     </View>
   );
@@ -62,48 +69,103 @@ export function OperatorScreen() {
 
   const { staged } = stage;
   const canSearch = reference.trim().length > 0 && !stage.busy;
+  const liveView = describeLive(live.payload, live.connected);
+
+  const confirmDisconnect = () =>
+    Alert.alert(
+      "Desconectar de Lumen",
+      "Para volver a conectar necesitará el código de seis dígitos.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Desconectar",
+          style: "destructive",
+          onPress: () => void forget(),
+        },
+      ],
+    );
 
   return (
     <Screen>
-      <View className="flex-row items-center justify-between px-5 pb-3 pt-2">
+      <View className="flex-row items-end justify-between px-5 pb-3 pt-2">
         <View className="flex-1 gap-0.5">
-          <Text className="text-2xl font-bold text-foreground">Lumen</Text>
-          <Text className="text-xs text-muted-foreground">
+          <Text className="font-serif-medium text-3xl text-foreground">
+            Lumen
+          </Text>
+          <Text className="font-sans text-sm text-muted-foreground">
             {session.origin.replace("http://", "")}
           </Text>
         </View>
-        <View className="w-32">
+        <View className="w-36">
           <Button
             label="Desconectar"
             variant="ghost"
-            onPress={() => void forget()}
+            onPress={confirmDisconnect}
           />
         </View>
       </View>
 
       <ScrollView
-        contentContainerClassName="gap-4 px-5 pb-10"
+        contentContainerClassName="gap-4 px-5 pb-4 pt-2"
         keyboardShouldPersistTaps="handled"
       >
         <Card>
           <View className="flex-row items-center justify-between">
-            <Text className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <Text className="font-sans-semibold text-lg text-foreground">
               En el proyector
             </Text>
-            <Text
-              className={`text-xs font-semibold ${live.connected ? "text-primary" : "text-destructive"}`}
-            >
-              {live.connected ? "En vivo" : "Sin conexión"}
-            </Text>
+            <View className="flex-row items-center gap-2">
+              <View
+                className={`h-2 w-2 rounded-full ${live.connected ? "bg-primary" : "bg-destructive"}`}
+              />
+              <Text
+                className={`font-sans-medium text-sm ${live.connected ? "text-primary" : "text-destructive"}`}
+              >
+                {live.connected ? "En vivo" : "Sin conexión"}
+              </Text>
+            </View>
           </View>
-          <Text className="text-base leading-6 text-foreground">
-            {describeLive(live.payload, live.connected)}
-          </Text>
+
+          <View className="gap-2">
+            {liveView.title ? (
+              <Text
+                accessibilityLiveRegion="polite"
+                className={
+                  liveView.body
+                    ? "font-sans-medium text-sm text-muted-foreground"
+                    : "font-serif text-xl text-foreground"
+                }
+              >
+                {liveView.title}
+              </Text>
+            ) : null}
+            {liveView.body ? (
+              <Text
+                accessibilityLiveRegion="polite"
+                className="font-serif text-xl leading-8 text-foreground"
+              >
+                {liveView.body}
+              </Text>
+            ) : null}
+          </View>
+
+          {live.connected ? null : (
+            <Text className="font-sans text-sm text-muted-foreground">
+              Buscando Lumen en sus direcciones guardadas. Si cambió de red, use
+              Tailscale o escanee el QR de nuevo.
+            </Text>
+          )}
+
+          <Button
+            label="Pantalla negra"
+            disabled={stage.busy}
+            onPress={() => void stage.blankProjector()}
+          />
         </Card>
 
         <Card>
-          <Text className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Versículo
+          <Text className="font-sans-semibold text-lg text-foreground">
+            Buscar pasaje
           </Text>
 
           {stage.versions.length > 1 ? (
@@ -115,12 +177,13 @@ export function OperatorScreen() {
                     <Pressable
                       key={version.id}
                       accessibilityRole="button"
+                      accessibilityLabel={version.name}
                       accessibilityState={{ selected }}
                       onPress={() => stage.selectVersion(version.id)}
-                      className={`rounded-full border px-3 py-1.5 ${selected ? "border-primary bg-primary" : "border-border bg-secondary"}`}
+                      className={`min-h-11 items-center justify-center rounded-full border px-5 ${selected ? "border-primary bg-primary" : "border-border bg-secondary"}`}
                     >
                       <Text
-                        className={`text-sm font-semibold ${selected ? "text-primary-foreground" : "text-foreground"}`}
+                        className={`font-sans-semibold text-base ${selected ? "text-primary-foreground" : "text-foreground"}`}
                       >
                         {version.abbr}
                       </Text>
@@ -144,7 +207,7 @@ export function OperatorScreen() {
             }}
           />
           <Button
-            label="Buscar"
+            label={stage.busy ? "Buscando…" : "Buscar"}
             disabled={!canSearch || !stage.ready}
             onPress={() => void stage.stageReference(reference)}
           />
@@ -152,33 +215,28 @@ export function OperatorScreen() {
           {staged ? <StagedPreview staged={staged} /> : null}
           {stage.error ? <ErrorText>{stage.error}</ErrorText> : null}
         </Card>
-
-        <Card>
-          <View className="flex-row gap-3">
-            <Button
-              label="Anterior"
-              disabled={!staged || stage.busy}
-              onPress={() => void stage.stepBy(-1)}
-            />
-            <Button
-              label="Siguiente"
-              disabled={!staged || stage.busy}
-              onPress={() => void stage.stepBy(1)}
-            />
-          </View>
-          <Button
-            label="Proyectar"
-            variant="primary"
-            disabled={!staged || stage.busy}
-            onPress={() => void stage.projectStaged()}
-          />
-          <Button
-            label="Pantalla negra"
-            disabled={stage.busy}
-            onPress={() => void stage.blankProjector()}
-          />
-        </Card>
       </ScrollView>
+
+      <View className="gap-3 border-t border-border bg-background px-5 pb-3 pt-3">
+        <View className="flex-row gap-3">
+          <Button
+            label="Anterior"
+            disabled={!staged || stage.busy}
+            onPress={() => void stage.stepBy(-1)}
+          />
+          <Button
+            label="Siguiente"
+            disabled={!staged || stage.busy}
+            onPress={() => void stage.stepBy(1)}
+          />
+        </View>
+        <Button
+          label={staged ? `Proyectar ${staged.referenceLabel}` : "Proyectar"}
+          variant="primary"
+          disabled={!staged || stage.busy}
+          onPress={() => void stage.projectStaged()}
+        />
+      </View>
     </Screen>
   );
 }

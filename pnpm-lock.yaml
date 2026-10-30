@@ -144,18 +144,30 @@ importers:
 
   apps/mobile:
     dependencies:
+      '@expo-google-fonts/instrument-sans':
+        specifier: ^0.4.2
+        version: 0.4.2
+      '@expo-google-fonts/newsreader':
+        specifier: ^0.4.1
+        version: 0.4.1
       expo:
         specifier: ~55.0.25
         version: 55.0.32(@babel/core@7.29.7(supports-color@7.2.0))(@expo/dom-webview@55.0.6)(@expo/metro-runtime@55.0.12)(expo-router@55.0.18)(react-dom@19.3.0(react@19.3.0))(react-native-worklets@0.7.4(@babel/core@7.29.7(supports-color@7.2.0))(react-native@0.83.6(@babel/core@7.29.7(supports-color@7.2.0))(@types/react@19.3.0)(react@19.3.0)(supports-color@7.2.0))(react@19.3.0)(supports-color@7.2.0))(react-native@0.83.6(@babel/core@7.29.7(supports-color@7.2.0))(@types/react@19.3.0)(react@19.3.0)(supports-color@7.2.0))(react@19.3.0)(supports-color@7.2.0)(typescript@5.9.3)
       expo-build-properties:
         specifier: ~55.0.3
         version: 55.0.18(expo@55.0.32)
+      expo-camera:
+        specifier: ~55.0.23
+        version: 55.0.23(@types/emscripten@1.41.6)(expo@55.0.32)(react-native@0.83.6(@babel/core@7.29.7(supports-color@7.2.0))(@types/react@19.3.0)(react@19.3.0)(supports-color@7.2.0))(react@19.3.0)
       expo-constants:
         specifier: ~55.0.16
         version: 55.0.17(expo@55.0.32)(react-native@0.83.6(@babel/core@7.29.7(supports-color@7.2.0))(@types/react@19.3.0)(react@19.3.0)(supports-color@7.2.0))(supports-color@7.2.0)
       expo-dev-client:
         specifier: ~55.0.35
         version: 55.0.41(expo@55.0.32)
+      expo-font:
+        specifier: ~55.0.8
+        version: 55.0.8(expo@55.0.32)(react-native@0.83.6(@babel/core@7.29.7(supports-color@7.2.0))(@types/react@19.3.0)(react@19.3.0)(supports-color@7.2.0))(react@19.3.0)
       expo-linking:
         specifier: ~55.0.15
         version: 55.0.17(expo@55.0.32)(react-native@0.83.6(@babel/core@7.29.7(supports-color@7.2.0))(@types/react@19.3.0)(react@19.3.0)(supports-color@7.2.0))(react@19.3.0)(supports-color@7.2.0)
@@ -1009,8 +1021,14 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@expo-google-fonts/instrument-sans@0.4.2':
+    resolution: {integrity: sha512-YR0jemCJ/eUlknOfxxxiLnJWpFDaT0KgLiB1q333jIDPlRAERfuMpOislkWA1A7HGX85N9LCsjWLlB3QOZo1wg==}
+
   '@expo-google-fonts/material-symbols@0.4.52':
     resolution: {integrity: sha512-iC9GRpj7WV0GENbHTYPtJqGjyy/7yI3soG9SrKTY1ta19cbMZm2HA0nUdIK8d6OD9uv1BZHAh3Zn/UWV57IeWg==}
+
+  '@expo-google-fonts/newsreader@0.4.1':
+    resolution: {integrity: sha512-j96W112+mj/VYP06DCq00w+twyw42w0MY7eHB/XXioNK80BcG0cIk/zogjOENZSY7qejzIFbHE/PZYqlh/6VKQ==}
 
   '@expo/cli@55.0.37':
     resolution: {integrity: sha512-ennGX6iY1Ba/88cKWomD7xCIPEY0FDU14zAHyFpQTQV+9vg32i45sCRzOWUqkDXuZq4QzzznNqq87eFnlKfh/A==}
@@ -2583,6 +2601,9 @@ packages:
   '@types/deep-eql@4.0.2':
     resolution: {integrity: sha512-c9h9dVVMigMPc4bwTvC5dxqtqJZwQPePsWjPlpSOnojbor6pGqdk541lfA7AqFQr5pB1BRdq0juY9db81BwyFw==}
 
+  '@types/emscripten@1.41.6':
+    resolution: {integrity: sha512-uN+9i8bFT5CUcZfyIEYDrSueACEyKGbUs5kC/72DGlZZoinh84sJfVV0i8UOJD1asdzkvLPBRrKs41kZ8MdEXg==}
+
   '@types/estree@1.0.9':
     resolution: {integrity: sha512-GhdPgy1el4/ImP05X05Uw4cw2/M93BCUmnEvWZNStlCzEKME4Fkk+YpoA5OiHNQmoS7Cafb8Xa3Pya8m1Qrzeg==}
 
@@ -2979,6 +3000,9 @@ packages:
   balanced-match@4.0.4:
     resolution: {integrity: sha512-BLrgEcRTwX2o6gGxGOCNyMvGSp35YofuYzw9h1IMTRmKqttAZZVU67bdb9Pr2vUHA8+j3i2tJfjO6C6+4myGTA==}
     engines: {node: 18 || 20 || >=22}
+
+  barcode-detector@3.2.3:
+    resolution: {integrity: sha512-PLinpWGiOQoQH4X+YObWZ6iXeffXKDM3d4vnOD86481SvukIfvkf7jEE/tud9oI4HTDxtDdlHaFilA5Kn7Xa7A==}
 
   base64-js@1.5.1:
     resolution: {integrity: sha512-AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA==}
@@ -3852,6 +3876,17 @@ packages:
     resolution: {integrity: sha512-LLTuab2S4Gv9dYjolBF/noRAUosa9Fu1o374yoQ7WD+NLWP8rn3fUd5ciKlx7f702JqO7tDJB2+BUjTwtgciCg==}
     peerDependencies:
       expo: '*'
+
+  expo-camera@55.0.23:
+    resolution: {integrity: sha512-Qra5QIZv0BOXLLXNfQlOW8NLUx3gLiWKCfpLeguiOwXY6XPj9xIE3AfbrxGa27/KohgrtHy1sgsnLeJB76OGjA==}
+    peerDependencies:
+      expo: '*'
+      react: '*'
+      react-native: '*'
+      react-native-web: '*'
+    peerDependenciesMeta:
+      react-native-web:
+        optional: true
 
   expo-constants@55.0.17:
     resolution: {integrity: sha512-t0SNWmXTjXPCHzjNsv1Okjaj8SpXQcUjDPtYDqvofDS+BhAsvlKNmwaaWXvduBjjmmmJWNH8q1/x9IWQ+upg8g==}
@@ -6393,6 +6428,10 @@ packages:
     os: [darwin, linux, win32, freebsd, openbsd, netbsd, sunos, android]
     hasBin: true
 
+  tagged-tag@1.0.0:
+    resolution: {integrity: sha512-yEFYrVhod+hdNyx7g5Bnkkb0G6si8HJurOoOEgC8B/O0uXLHlaey/65KRv6cuWBNhBgHKAROVpc7QyYqE5gFng==}
+    engines: {node: '>=20'}
+
   tailwindcss-animate@1.0.7:
     resolution: {integrity: sha512-bl6mpH3T7I3UFxuvDEXLxy/VuFxBk5bbzplh7tXI68mwMokNYd1t9qPBHlnyTwfa4JGC4zP516I1hYYtQ/vspA==}
     peerDependencies:
@@ -6539,6 +6578,10 @@ packages:
   type-fest@4.41.0:
     resolution: {integrity: sha512-TeTSQ6H5YHvpqVwBRcnLDCBnDOHWYu7IvGbHT6N8AOymcr9PJGjc1GTtiWZTYg0NCgYwvnYWEkVChQAr9bjfwA==}
     engines: {node: '>=16'}
+
+  type-fest@5.10.0:
+    resolution: {integrity: sha512-NoSdpq/WEiAg5sjmBkmV/hfxv6HJH4NqPNrqjtSO5CwRmpsDfaf4begxW34KdJykH/l1yHtwBWQkCRdoXO8mPA==}
+    engines: {node: '>=20'}
 
   type-is@2.1.0:
     resolution: {integrity: sha512-faYHw0anBbc/kWF3zFTEnxSFOAGUX9GFbOBthvDdLsIlEoWOFOtS0zgCiQYwIskL9iGXZL3kAXD8OoZ4GmMATA==}
@@ -6927,6 +6970,11 @@ packages:
 
   zod@3.25.76:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
+
+  zxing-wasm@3.1.6:
+    resolution: {integrity: sha512-mU7UNuvl+hOT+nlSOQTMHZ2tM8lRMsbjDIp5IO/+HmBl/FOq77q0OSZPJ3cm42A9c1MKU6Uve67FiGdkhsrT9g==}
+    peerDependencies:
+      '@types/emscripten': '>=1.39.6'
 
 snapshots:
 
@@ -7823,7 +7871,11 @@ snapshots:
   '@esbuild/win32-x64@0.25.12':
     optional: true
 
+  '@expo-google-fonts/instrument-sans@0.4.2': {}
+
   '@expo-google-fonts/material-symbols@0.4.52': {}
+
+  '@expo-google-fonts/newsreader@0.4.1': {}
 
   '@expo/cli@55.0.37(@expo/dom-webview@55.0.6)(@expo/metro-runtime@55.0.12)(expo-constants@55.0.17)(expo-font@55.0.8)(expo-router@55.0.18)(expo@55.0.32)(react-dom@19.3.0(react@19.3.0))(react-native@0.83.6(@babel/core@7.29.7(supports-color@7.2.0))(@types/react@19.3.0)(react@19.3.0)(supports-color@7.2.0))(react@19.3.0)(supports-color@7.2.0)(typescript@5.9.3)':
     dependencies:
@@ -9414,6 +9466,8 @@ snapshots:
 
   '@types/deep-eql@4.0.2': {}
 
+  '@types/emscripten@1.41.6': {}
+
   '@types/estree@1.0.9': {}
 
   '@types/fs-extra@9.0.13':
@@ -9946,6 +10000,12 @@ snapshots:
   balanced-match@1.0.2: {}
 
   balanced-match@4.0.4: {}
+
+  barcode-detector@3.2.3(@types/emscripten@1.41.6):
+    dependencies:
+      zxing-wasm: 3.1.6(@types/emscripten@1.41.6)
+    transitivePeerDependencies:
+      - '@types/emscripten'
 
   base64-js@1.5.1: {}
 
@@ -10934,6 +10994,15 @@ snapshots:
       expo: 55.0.32(@babel/core@7.29.7(supports-color@7.2.0))(@expo/dom-webview@55.0.6)(@expo/metro-runtime@55.0.12)(expo-router@55.0.18)(react-dom@19.3.0(react@19.3.0))(react-native-worklets@0.7.4(@babel/core@7.29.7(supports-color@7.2.0))(react-native@0.83.6(@babel/core@7.29.7(supports-color@7.2.0))(@types/react@19.3.0)(react@19.3.0)(supports-color@7.2.0))(react@19.3.0)(supports-color@7.2.0))(react-native@0.83.6(@babel/core@7.29.7(supports-color@7.2.0))(@types/react@19.3.0)(react@19.3.0)(supports-color@7.2.0))(react@19.3.0)(supports-color@7.2.0)(typescript@5.9.3)
       resolve-from: 5.0.0
       semver: 7.8.5
+
+  expo-camera@55.0.23(@types/emscripten@1.41.6)(expo@55.0.32)(react-native@0.83.6(@babel/core@7.29.7(supports-color@7.2.0))(@types/react@19.3.0)(react@19.3.0)(supports-color@7.2.0))(react@19.3.0):
+    dependencies:
+      barcode-detector: 3.2.3(@types/emscripten@1.41.6)
+      expo: 55.0.32(@babel/core@7.29.7(supports-color@7.2.0))(@expo/dom-webview@55.0.6)(@expo/metro-runtime@55.0.12)(expo-router@55.0.18)(react-dom@19.3.0(react@19.3.0))(react-native-worklets@0.7.4(@babel/core@7.29.7(supports-color@7.2.0))(react-native@0.83.6(@babel/core@7.29.7(supports-color@7.2.0))(@types/react@19.3.0)(react@19.3.0)(supports-color@7.2.0))(react@19.3.0)(supports-color@7.2.0))(react-native@0.83.6(@babel/core@7.29.7(supports-color@7.2.0))(@types/react@19.3.0)(react@19.3.0)(supports-color@7.2.0))(react@19.3.0)(supports-color@7.2.0)(typescript@5.9.3)
+      react: 19.3.0
+      react-native: 0.83.6(@babel/core@7.29.7(supports-color@7.2.0))(@types/react@19.3.0)(react@19.3.0)(supports-color@7.2.0)
+    transitivePeerDependencies:
+      - '@types/emscripten'
 
   expo-constants@55.0.17(expo@55.0.32)(react-native@0.83.6(@babel/core@7.29.7(supports-color@7.2.0))(@types/react@19.3.0)(react@19.3.0)(supports-color@7.2.0))(supports-color@7.2.0):
     dependencies:
@@ -13748,6 +13817,8 @@ snapshots:
 
   systeminformation@5.33.15: {}
 
+  tagged-tag@1.0.0: {}
+
   tailwindcss-animate@1.0.7(tailwindcss@3.4.19(yaml@2.9.1)):
     dependencies:
       tailwindcss: 3.4.19(yaml@2.9.1)
@@ -13904,6 +13975,10 @@ snapshots:
   type-fest@0.7.1: {}
 
   type-fest@4.41.0: {}
+
+  type-fest@5.10.0:
+    dependencies:
+      tagged-tag: 1.0.0
 
   type-is@2.1.0:
     dependencies:
@@ -14339,3 +14414,8 @@ snapshots:
       zod: 3.25.76
 
   zod@3.25.76: {}
+
+  zxing-wasm@3.1.6(@types/emscripten@1.41.6):
+    dependencies:
+      '@types/emscripten': 1.41.6
+      type-fest: 5.10.0

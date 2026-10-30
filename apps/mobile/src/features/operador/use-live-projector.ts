@@ -1,17 +1,20 @@
 import { useEffect, useState } from "react";
 import type { ProjectorPayload } from "@shared/types";
 import { streamLumenEvents } from "@/lib/lumen-events";
-import { LumenApiError } from "@/lib/lumen-client";
 import { useLumenSession } from "@/providers/session-provider";
 
-const RETRY_MS = 2000;
+const RETRY_MS = 3000;
 
-/** What the projector shows now, kept current by Lumen's event stream. */
+/**
+ * What the projector shows now, kept current by Lumen's event stream. When the
+ * stream drops, the provider looks for an address that still answers (Wi-Fi or
+ * Tailscale) before the next attempt.
+ */
 export function useLiveProjector(): {
   payload: ProjectorPayload | null;
   connected: boolean;
 } {
-  const { session, forget } = useLumenSession();
+  const { session, reconnect } = useLumenSession();
   const [payload, setPayload] = useState<ProjectorPayload | null>(null);
   const [connected, setConnected] = useState(false);
 
@@ -31,16 +34,13 @@ export function useLiveProjector(): {
             }
           },
         });
-      } catch (error) {
-        if (controller.signal.aborted) return;
-        if (error instanceof LumenApiError && error.status === 401) {
-          void forget();
-          return;
-        }
+      } catch {
+        // Handled below: the address may be gone or the token may be dead.
       }
       if (controller.signal.aborted) return;
-      // The stream ended or failed: the host may be asleep or on another network.
       setConnected(false);
+      await reconnect();
+      if (controller.signal.aborted) return;
       retry = setTimeout(() => void connect(), RETRY_MS);
     };
 
@@ -50,7 +50,9 @@ export function useLiveProjector(): {
       clearTimeout(retry);
       setConnected(false);
     };
-  }, [session, forget]);
+    // `session` changes identity when the provider switches address, which
+    // restarts the stream on the new one.
+  }, [session, reconnect]);
 
   return { payload, connected };
 }

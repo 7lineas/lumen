@@ -8,6 +8,14 @@ module.exports = {
   presets: [require("nativewind/preset")],
   theme: {
     extend: {
+      // Each weight is its own loaded font file, so each gets its own name.
+      fontFamily: {
+        sans: ["InstrumentSans_400Regular"],
+        "sans-medium": ["InstrumentSans_500Medium"],
+        "sans-semibold": ["InstrumentSans_600SemiBold"],
+        serif: ["Newsreader_400Regular"],
+        "serif-medium": ["Newsreader_500Medium"],
+      },
       colors: {
         border: "rgb(var(--border) / <alpha-value>)",
         input: "rgb(var(--input) / <alpha-value>)",

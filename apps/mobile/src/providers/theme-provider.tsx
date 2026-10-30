@@ -1,18 +1,15 @@
 import type { PropsWithChildren } from "react";
 import { View } from "react-native";
-import { useColorScheme } from "nativewind";
 import { StatusBar } from "expo-status-bar";
 
-/** Follows the phone's light or dark setting. Mount once via `AppProviders`. */
+/**
+ * The operator UI is always dark: it is used in a dim sanctuary, where a bright
+ * phone screen is distracting. Mount once via `AppProviders`.
+ */
 export function ThemeProvider({ children }: PropsWithChildren) {
-  const { colorScheme } = useColorScheme();
-  const dark = colorScheme === "dark";
-
   return (
-    <View
-      className={dark ? "dark flex-1 bg-background" : "flex-1 bg-background"}
-    >
-      <StatusBar style={dark ? "light" : "dark"} />
+    <View className="dark flex-1 bg-background">
+      <StatusBar style="light" />
       {children}
     </View>
   );

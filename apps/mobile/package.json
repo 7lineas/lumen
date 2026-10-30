@@ -17,10 +17,14 @@
     "export": "expo export --platform android --output-dir dist"
   },
   "dependencies": {
+    "@expo-google-fonts/instrument-sans": "^0.4.2",
+    "@expo-google-fonts/newsreader": "^0.4.1",
     "expo": "~55.0.25",
     "expo-build-properties": "~55.0.3",
+    "expo-camera": "~55.0.23",
     "expo-constants": "~55.0.16",
     "expo-dev-client": "~55.0.35",
+    "expo-font": "~55.0.8",
     "expo-linking": "~55.0.15",
     "expo-router": "~55.0.15",
     "expo-secure-store": "~55.0.14",
