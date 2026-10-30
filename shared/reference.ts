@@ -247,27 +247,36 @@ export function expandRange(range: VerseRange, maxVerses = 30): VerseRef[] {
   return refs;
 }
 
+/**
+ * Moves `delta` verses from `ref`, crossing chapter boundaries inside the same
+ * book. `verseCountIn(chapter)` must return the number of verses in a chapter
+ * of this book; pass it to walk backward across chapters. Without it, only a
+ * forward crossing can be resolved (it lands on verse 1); a backward crossing
+ * returns null. Returns null at the first or last verse of the book.
+ */
 export function stepVerse(
   ref: VerseRef,
   delta: number,
   verseCountInChapter: number,
+  verseCountIn?: (chapter: number) => number,
 ): VerseRef | null {
   const book = BOOK_BY_CODE.get(ref.book);
   if (!book) return null;
 
   let { chapter, verse } = ref;
+  let count = verseCountInChapter;
   verse += delta;
 
-  while (verse < 1) {
-    chapter -= 1;
-    if (chapter < 1) return null;
-    verse = 999;
-  }
-  while (verse > verseCountInChapter) {
-    chapter += 1;
-    verse = 1;
-    if (chapter > book.chapters) return null;
-    verseCountInChapter = 999;
+  while (verse < 1 || verse > count) {
+    const forward = verse > count;
+    chapter += forward ? 1 : -1;
+    if (chapter < 1 || chapter > book.chapters) return null;
+    if (!verseCountIn) {
+      return forward ? { book: ref.book, chapter, verse: 1 } : null;
+    }
+    count = verseCountIn(chapter);
+    if (count < 1) return null;
+    verse = forward ? 1 : count;
   }
 
   if (chapter < 1 || chapter > book.chapters) return null;

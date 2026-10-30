@@ -1,0 +1,12 @@
+{
+  "$schema": "../../node_modules/oxlint/configuration_schema.json",
+  "extends": ["../../.oxlintrc.json"],
+  "plugins": ["unicorn", "typescript"],
+  "ignorePatterns": [
+    "dist/**",
+    ".expo/**",
+    "babel.config.js",
+    "metro.config.js",
+    "tailwind.config.js"
+  ]
+}

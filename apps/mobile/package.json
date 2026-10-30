@@ -1,0 +1,47 @@
+{
+  "name": "lumen-mobile",
+  "version": "0.1.0",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "android": "expo start --dev-client --android",
+    "ios": "expo start --dev-client --ios",
+    "start": "expo start --dev-client",
+    "build:dev:android": "pnpm dlx eas-cli build --profile development --platform android",
+    "build:preview": "pnpm dlx eas-cli build --profile preview",
+    "build:production:android": "pnpm dlx eas-cli build --profile production --platform android",
+    "eas": "pnpm dlx eas-cli",
+    "lint": "oxlint . --quiet",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "export": "expo export --platform android --output-dir dist"
+  },
+  "dependencies": {
+    "expo": "~55.0.25",
+    "expo-build-properties": "~55.0.3",
+    "expo-constants": "~55.0.16",
+    "expo-dev-client": "~55.0.35",
+    "expo-linking": "~55.0.15",
+    "expo-router": "~55.0.15",
+    "expo-secure-store": "~55.0.14",
+    "expo-splash-screen": "~55.0.21",
+    "expo-status-bar": "55.0.6",
+    "nativewind": "^4.2.4",
+    "react": "^19.2.4",
+    "react-native": "0.83.6",
+    "react-native-css-interop": "^0.2.4",
+    "react-native-reanimated": "4.2.1",
+    "react-native-safe-area-context": "~5.6.2",
+    "react-native-screens": "~4.23.0",
+    "react-native-worklets": "0.7.4"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.29.0",
+    "@types/react": "^19.2.10",
+    "babel-preset-expo": "~55.0.21",
+    "tailwindcss": "^3.4.19",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}

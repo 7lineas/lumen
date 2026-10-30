@@ -29,6 +29,12 @@
     "smoke:packaged": "xvfb-run -a env ELECTRON_DISABLE_GPU=1 node scripts/smoke-packaged.mjs",
     "landing": "node scripts/serve-landing.mjs",
     "landing:check": "node scripts/check-landing.mjs",
+    "mobile": "pnpm --filter lumen-mobile start",
+    "mobile:android": "pnpm --filter lumen-mobile android",
+    "mobile:ios": "pnpm --filter lumen-mobile ios",
+    "mobile:typecheck": "pnpm --filter lumen-mobile typecheck",
+    "mobile:test": "pnpm --filter lumen-mobile test",
+    "mobile:build:dev:android": "pnpm --filter lumen-mobile build:dev:android",
     "publish:release": "node scripts/publish-release.mjs"
   },
   "dependencies": {
