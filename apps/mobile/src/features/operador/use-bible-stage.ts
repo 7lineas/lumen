@@ -1,23 +1,20 @@
 import { useCallback, useEffect, useState } from "react";
 import type { AppSettings, BibleData, BibleVersionMeta } from "@shared/types";
-import {
-  fetchRangeTexts,
-  getBible,
-  getChapterVerseCount,
-  loadBible,
-} from "@shared/bible-service";
+import { fetchRangeTexts, getBible, loadBible } from "@shared/bible-service";
 import {
   formatRange,
   parseReference,
-  stepVerse,
   type VerseRange,
 } from "@shared/reference";
 import type { LumenClient } from "@/lib/lumen-client";
 import { describeLumenError } from "@/lib/lumen-errors";
 import { buildBlankPayload, buildVersePayload } from "./build-payload";
+import { nextStageTarget } from "./step-target";
 
 export type StagedVerse = {
   range: VerseRange;
+  /** The version the texts were read in, which is not always the primary one. */
+  versionId: string;
   referenceLabel: string;
   blocks: Array<{ label?: string; text: string }>;
 };
@@ -81,7 +78,7 @@ export function useBibleStage(client: LumenClient | null) {
       await ensureLoaded(id);
       if (secondaryId) await ensureLoaded(secondaryId);
       const texts = fetchRangeTexts(id, secondaryId, range);
-      return texts ? { range, ...texts } : null;
+      return texts ? { range, versionId: id, ...texts } : null;
     },
     [settings, ensureLoaded],
   );
@@ -140,14 +137,7 @@ export function useBibleStage(client: LumenClient | null) {
         await ensureLoaded(versionId);
         const bible = getBible(versionId);
         if (!bible) return;
-        // Step from the edge of the staged range in the direction of travel.
-        const from = delta > 0 ? staged.range.end : staged.range.start;
-        const next = stepVerse(
-          from,
-          delta,
-          getChapterVerseCount(bible, from.book, from.chapter),
-          (chapter) => getChapterVerseCount(bible, from.book, chapter),
-        );
+        const next = nextStageTarget(staged.range, delta, bible);
         if (!next) {
           setError("No hay más versículos en esa dirección.");
           return;
@@ -171,7 +161,7 @@ export function useBibleStage(client: LumenClient | null) {
           {
             at: Date.now(),
             reference: formatRange(staged.range),
-            versionId: current.primaryVersionId,
+            versionId: staged.versionId,
           },
         ]);
       }),
