@@ -54,3 +54,5 @@ Reglas:
 - `eas init` para crear el proyecto EAS y añadir su `projectId` en `app.json`.
 - Revisar `ios.bundleIdentifier` y `android.package` (`com.7lineas.lumen`) con la cuenta de la organización.
 - Probar el emparejamiento y el flujo de proyección en un teléfono real, con la app de escritorio abierta.
+- **Bloqueante de publicación: tráfico HTTP sin cifrar en la red local.** La app habla HTTP plano con Lumen en la LAN; para eso están `usesCleartextTraffic` (Android) y `NSAllowsLocalNetworking` (iOS) en `app.json`. `docs/BROWSER-ACCESS.md` (alrededor de la línea 38) indica que antes de publicar una app móvil nativa, o de exponer Lumen más allá de una LAN de confianza, deben existir TLS, roles por usuario, esquemas de petición auditados y un SDK de cliente estable. Hasta entonces, resolver este punto o aceptarlo explícitamente antes de cualquier release en tienda o EAS.
+- La dirección que escribe el voluntario se normaliza con `normalizeHostAddress`, que acepta cualquier nombre de host. El código de emparejamiento y el token de sesión se envían, por tanto, a cualquier host que se escriba, así que confirme que la dirección corresponde al equipo de Lumen.

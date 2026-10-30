@@ -1,14 +1,19 @@
 import { useCallback, useEffect, useState } from "react";
 import type { AppSettings, BibleData, BibleVersionMeta } from "@shared/types";
-import { fetchRangeTexts, getBible, loadBible } from "@shared/bible-service";
+import {
+  fetchRangeTexts,
+  getBible,
+  getChapterVerseCount,
+  loadBible,
+} from "@shared/bible-service";
 import {
   formatRange,
   parseReference,
+  stepVerse,
   type VerseRange,
 } from "@shared/reference";
 import type { LumenClient } from "@/lib/lumen-client";
 import { describeLumenError } from "@/lib/lumen-errors";
-import { stepInBible } from "./step-verse";
 import { buildBlankPayload, buildVersePayload } from "./build-payload";
 
 export type StagedVerse = {
@@ -135,7 +140,14 @@ export function useBibleStage(client: LumenClient | null) {
         await ensureLoaded(versionId);
         const bible = getBible(versionId);
         if (!bible) return;
-        const next = stepInBible(bible, staged.range.start, delta);
+        // Step from the edge of the staged range in the direction of travel.
+        const from = delta > 0 ? staged.range.end : staged.range.start;
+        const next = stepVerse(
+          from,
+          delta,
+          getChapterVerseCount(bible, from.book, from.chapter),
+          (chapter) => getChapterVerseCount(bible, from.book, chapter),
+        );
         if (!next) {
           setError("No hay más versículos en esa dirección.");
           return;
