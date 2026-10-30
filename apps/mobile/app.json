@@ -1,0 +1,59 @@
+{
+  "expo": {
+    "name": "Lumen",
+    "slug": "lumen",
+    "version": "0.1.0",
+    "orientation": "default",
+    "icon": "./assets/app-icon.png",
+    "scheme": "lumen",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.7lineas.lumen",
+      "infoPlist": {
+        "NSLocalNetworkUsageDescription": "Lumen se conecta al equipo de proyección en tu red local.",
+        "NSAppTransportSecurity": {
+          "NSAllowsLocalNetworking": true
+        }
+      }
+    },
+    "android": {
+      "versionCode": 1,
+      "package": "com.7lineas.lumen",
+      "softwareKeyboardLayoutMode": "resize",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/android-adaptive-foreground.png",
+        "backgroundColor": "#0f1419"
+      }
+    },
+    "plugins": [
+      "expo-dev-client",
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/logo.png",
+          "imageWidth": 80,
+          "resizeMode": "contain",
+          "backgroundColor": "#0f1419"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true,
+            "enableMinifyInReleaseBuilds": true
+          }
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {}
+    }
+  }
+}
