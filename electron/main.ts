@@ -278,6 +278,7 @@ import {
   resolveBibleDataDir,
 } from "./bible-data-path";
 import { setupUpdater } from "./updater";
+import { applyLaunchAtStartup } from "./launch-at-startup";
 import { YouVersionClient, resolveAppKey } from "./youversion";
 import {
   buildLibraryView,
@@ -865,6 +866,9 @@ app.whenReady().then(() => {
   }
 
   createOperatorWindow();
+  // Every launch, so the login item matches the saved setting (including the
+  // default for installs that predate it).
+  applyLaunchAtStartup(currentSettings().launchAtStartup);
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -1125,7 +1129,13 @@ registerIpcHandle("fonts:remove", (_e, id: string) => {
 registerIpcHandle("settings:get", () => currentSettings());
 
 registerIpcHandle("settings:set", (_e, settings: AppSettings) => {
+  const launchAtStartupBefore = currentSettings().launchAtStartup;
   store.set("settings", settings);
+  // Only a change touches the OS login item, so turning it off in the system
+  // settings is not undone by editing an unrelated Lumen setting.
+  const launchAtStartupAfter = currentSettings().launchAtStartup;
+  if (launchAtStartupAfter !== launchAtStartupBefore)
+    applyLaunchAtStartup(launchAtStartupAfter);
   if (projectorWindow && !projectorWindow.isDestroyed()) {
     projectorWindow.webContents.send("settings:update", settings);
     publishBrowserEvent("settings:update", settings);
