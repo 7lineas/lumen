@@ -138,6 +138,8 @@ export interface AppSettings {
   accentColor: string;
   /** Fade windows and dialogs in and out. Off by default so they open and close at once. */
   overlayAnimation: boolean;
+  /** Open Lumen when the user signs in to the computer. On by default. */
+  launchAtStartup: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -163,6 +165,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   padding: 9,
   accentColor: "#f6a623",
   overlayAnimation: false,
+  launchAtStartup: true,
 };
 
 export interface HistoryEntry {

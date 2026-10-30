@@ -17,6 +17,7 @@ import {
   Copy,
   MonitorPlay,
   Palette,
+  Power,
   RefreshCw,
   Timer,
   Wifi,
@@ -553,6 +554,20 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
             </Select>
           </SettingRow>
         )}
+      </SettingsGroup>
+
+      <SettingsGroup icon={Power} title="Sistema">
+        <SettingRow
+          label="Iniciar con el equipo"
+          hint="Abre Lumen al iniciar sesión"
+        >
+          <Switch
+            checked={local.launchAtStartup}
+            onCheckedChange={(checked) =>
+              setLocal({ ...local, launchAtStartup: checked === true })
+            }
+          />
+        </SettingRow>
       </SettingsGroup>
     </div>
   );
