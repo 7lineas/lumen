@@ -21,6 +21,25 @@ const EMPTY: ProjectorPayload = {
   backgroundColor: DEFAULT_SETTINGS.backgroundColor,
 };
 
+/**
+ * Resolves once a slide's image is decoded (at once for anything else), so the
+ * swap never fades in a blank or half-drawn slide. Gives up after a while
+ * rather than hold the screen on a file that never loads.
+ */
+function imageReady(p: ProjectorPayload): Promise<void> {
+  const url =
+    p.mode === "slides" && p.slideImagePath
+      ? backgroundImageUrl(p.slideImagePath)
+      : undefined;
+  if (!url) return Promise.resolve();
+  const image = new Image();
+  image.src = url;
+  return Promise.race([
+    image.decode().catch(() => undefined),
+    new Promise<void>((resolve) => window.setTimeout(resolve, 1500)),
+  ]);
+}
+
 export function ProjectorView() {
   // `payload` is what is currently displayed (lags behind incoming updates
   // during the fade-out phase so the old content can fade instead of cutting).
@@ -61,7 +80,11 @@ export function ProjectorView() {
         requestAnimationFrame(() => show(p.mode !== "blank"));
       });
     };
+    // Each update takes a token. A swap still waiting on its image is dropped
+    // when a newer update arrives, so the last update always wins.
+    let swapToken = 0;
     const off = api.onProjectorUpdate((p) => {
+      const token = ++swapToken;
       setSlidesActive(p.mode === "slides" || p.mode === "video");
       const ms = Math.max(
         0,
@@ -86,24 +109,33 @@ export function ProjectorView() {
         if (p.mode !== "blank" && !visibleRef.current) show(true);
         return;
       }
-      // Nothing on screen: swap immediately, then fade in.
+      // Nothing on screen: swap in once the image is decoded, then fade in.
       if (!visibleRef.current || displayedRef.current.mode === "blank") {
-        displayedRef.current = p;
-        setPayload(p);
         show(false);
-        fadeIn(p);
+        void imageReady(p).then(() => {
+          if (token !== swapToken) return;
+          displayedRef.current = p;
+          setPayload(p);
+          fadeIn(p);
+        });
         return;
       }
       // Content change: fade the old content out, swap, fade the new in.
+      // The new image decodes during the fade-out, so it is ready at the swap.
       show(false);
+      const ready = imageReady(p);
       timerRef.current = window.setTimeout(() => {
         timerRef.current = null;
-        displayedRef.current = p;
-        setPayload(p);
-        fadeIn(p);
+        void ready.then(() => {
+          if (token !== swapToken) return;
+          displayedRef.current = p;
+          setPayload(p);
+          fadeIn(p);
+        });
       }, ms);
     });
     return () => {
+      swapToken++;
       if (timerRef.current !== null) clearTimeout(timerRef.current);
       off?.();
       offSettings?.();
@@ -156,7 +188,8 @@ export function ProjectorView() {
   const backgroundStyle: React.CSSProperties = {
     backgroundColor: payload.backgroundColor || settings.backgroundColor,
     transition: `background-color ${backgroundFadeMs}ms ease`,
-    filter: `brightness(${brightness})`,
+    // brightness(1) changes nothing but still costs a compositing layer.
+    filter: brightness === 1 ? undefined : `brightness(${brightness})`,
   };
 
   if (payload.mode === "blank") {

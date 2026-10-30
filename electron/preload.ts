@@ -198,6 +198,11 @@ contextBridge.exposeInMainWorld("proyector", {
     jpegBase64: string,
   ): Promise<boolean> =>
     ipcRenderer.invoke("background:saveThumbnail", filePath, jpegBase64),
+  saveSlideThumbnail: (
+    imagePath: string,
+    jpegBase64: string,
+  ): Promise<boolean> =>
+    ipcRenderer.invoke("slides:saveThumbnail", imagePath, jpegBase64),
   deleteBackgroundMedia: (filePath: string): Promise<boolean> =>
     ipcRenderer.invoke("background:delete", filePath),
   onProjectorUpdate: (cb: (p: ProjectorPayload) => void): (() => void) => {

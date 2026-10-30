@@ -146,6 +146,10 @@ export interface ProyectorApi {
     videoPath: string,
     jpegBase64: string,
   ) => Promise<boolean>;
+  saveSlideThumbnail: (
+    imagePath: string,
+    jpegBase64: string,
+  ) => Promise<boolean>;
   deleteBackgroundMedia: (path: string) => Promise<boolean>;
   getAppUpdateState: () => Promise<AppUpdateState>;
   checkAppUpdate: () => Promise<AppUpdateState>;

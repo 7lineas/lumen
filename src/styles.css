@@ -5527,6 +5527,12 @@ button.primary:not(:disabled):active,
   border-radius: 8px;
 }
 
+/* Long lists: rows scrolled out of view skip layout and paint. */
+.lx-item {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 56px;
+}
+
 .lx-item:hover {
   background: var(--surface2);
 }

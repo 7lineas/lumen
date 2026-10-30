@@ -19,7 +19,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
-import { backgroundImageUrl } from "@shared/background-image";
+import {
+  backgroundImageUrl,
+  slideThumbnailUrl,
+} from "@shared/background-image";
 import { slideLabel } from "@shared/slide-deck";
 import {
   mediaKind,
@@ -31,6 +34,31 @@ import { FitToggle } from "./FitToggle";
 import { AudioIcon, MediaIcon, SearchIcon, SlidesIcon } from "./icons";
 import { ItemMenu } from "./ItemMenu";
 import { rasterizePdfToPngs } from "./pdfConvert";
+import { createSlideThumbnail } from "./slide-thumbnail";
+
+/**
+ * A slide in the Media grid. Tiles show a small JPEG copy: decoding every
+ * full-size slide just to draw a tile this small is what made big decks slow
+ * to open. Until that copy exists the full slide is shown, and it is made
+ * from the slide for the next time.
+ */
+function SlideTileImage({ path }: { path: string }) {
+  const [src, setSrc] = useState(() => slideThumbnailUrl(path));
+  return (
+    <img
+      src={src}
+      alt=""
+      loading="lazy"
+      decoding="async"
+      onError={() => {
+        setSrc(backgroundImageUrl(path));
+        void createSlideThumbnail(path).then((created) => {
+          if (created) setSrc(slideThumbnailUrl(path));
+        });
+      }}
+    />
+  );
+}
 
 const IMPORT_ERRORS: Record<string, string> = {
   "unsupported-format":
@@ -719,7 +747,9 @@ export function MediaWorkspace({
                   const isLive = liveImage != null && image === liveImage;
                   return (
                     <button
-                      key={index}
+                      // Keyed by the image too: SlideTileImage reads its path once, so a
+                      // different deck at the same index must mount a fresh tile.
+                      key={`${index}:${image}`}
                       type="button"
                       className={`lx-card${index === staged.index ? " sel" : ""}${isLive ? " live" : ""}`}
                       data-current={index === staged.index ? "" : undefined}
@@ -740,12 +770,7 @@ export function MediaWorkspace({
                       onDoubleClick={() => onTakeSlide(index)}
                     >
                       <span className="lx-tile lx-tile-image">
-                        <img
-                          src={backgroundImageUrl(image)}
-                          alt=""
-                          loading="lazy"
-                          decoding="async"
-                        />
+                        <SlideTileImage path={image} />
                       </span>
                       <span className="lx-tag-live">En vivo</span>
                       <span className="lx-card-foot">
