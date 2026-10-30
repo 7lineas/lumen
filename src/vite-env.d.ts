@@ -65,12 +65,14 @@ export interface BrowserAccessInfo {
   pairingCode: string;
   port: number;
   addresses: string[];
+  tailnetAddresses: string[];
 }
 
 export interface ProyectorApi {
   getBrowserAccess: () => Promise<BrowserAccessInfo>;
   setBrowserAccess: (enabled: boolean) => Promise<BrowserAccessInfo>;
   rotateBrowserAccessCode: () => Promise<BrowserAccessInfo>;
+  openTailscaleDownload: () => Promise<void>;
   listBibleVersions: () => Promise<
     Array<{ id: string; name: string; abbr: string; language: string }>
   >;

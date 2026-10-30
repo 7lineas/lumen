@@ -64,6 +64,7 @@ contextBridge.exposeInMainWorld("proyector", {
   setBrowserAccess: (enabled: boolean) =>
     ipcRenderer.invoke("browser:configure", enabled),
   rotateBrowserAccessCode: () => ipcRenderer.invoke("browser:rotate-code"),
+  openTailscaleDownload: () => ipcRenderer.invoke("browser:open-tailscale"),
   listBibleVersions: (): Promise<unknown[]> =>
     ipcRenderer.invoke("bibles:list"),
   loadBible: (id: string): Promise<unknown> =>
