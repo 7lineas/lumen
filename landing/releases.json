@@ -1,23 +1,23 @@
 {
-  "version": "1.4.0",
-  "releasedAt": "2026-10-30",
+  "version": "1.4.1",
+  "releasedAt": "2026-10-31",
   "downloadBaseUrl": "https://downloads.7lineas.com",
   "files": [
     {
       "id": "setup",
       "role": "primary",
       "label": "Instalador para Windows",
-      "filename": "lumen-1.4.0-setup.exe",
-      "bytes": 128003260,
-      "sha256": "90c286c46fc484205a8fb07d4bf0268c56443789f914bed11fd32af2ff4d71fa"
+      "filename": "lumen-1.4.1-setup.exe",
+      "bytes": 90739973,
+      "sha256": "03569deee6b520f65a206a9036a4d8b473643ec194ebbfd6da4108bdaddff6f6"
     },
     {
       "id": "portable",
       "role": "secondary",
       "label": "Versión portable",
-      "filename": "lumen-1.4.0-portable.exe",
-      "bytes": 127590835,
-      "sha256": "5854df04d6c76b58d30c7d0c2a7250b8b702e5a11bcd1b5c9b802e1a2840a53b"
+      "filename": "lumen-1.4.1-portable.exe",
+      "bytes": 90327554,
+      "sha256": "07f5467014b38c9d2e064b8426e2c999685109a4f067c2ee7f636e075b9d3944"
     }
   ]
 }
