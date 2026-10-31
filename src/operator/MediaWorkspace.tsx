@@ -33,7 +33,6 @@ import {
 import { FitToggle } from "./FitToggle";
 import { AudioIcon, MediaIcon, SearchIcon, SlidesIcon } from "./icons";
 import { ItemMenu } from "./ItemMenu";
-import { rasterizePdfToPngs } from "./pdfConvert";
 import { createSlideThumbnail } from "./slide-thumbnail";
 
 /**
@@ -241,6 +240,8 @@ export function MediaWorkspace({
       if (pending.source.kind === "pdf") {
         const base64 = await api.readSlideSource(pending.source.file);
         if (!base64) throw new Error("No se pudo leer el PDF guardado.");
+        // Loaded on demand: pdf.js is ~1 MB and only needed when a PDF is imported.
+        const { rasterizePdfToPngs } = await import("./pdfConvert");
         const { pngBase64 } = await rasterizePdfToPngs(base64, {
           targetWidth: 1920,
           onProgress: (done, total) => setJob({ done, total }),
