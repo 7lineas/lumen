@@ -24,6 +24,7 @@ import {
   slideThumbnailUrl,
 } from "@shared/background-image";
 import { slideLabel } from "@shared/slide-deck";
+import { reconcileById } from "@shared/reconcile";
 import {
   mediaKind,
   type MediaFit,
@@ -211,7 +212,8 @@ export function MediaWorkspace({
       void api
         .getSlideDecks()
         .then((saved) => {
-          if (mounted.current) setItems(Array.isArray(saved) ? saved : []);
+          if (mounted.current)
+            setItems((current) => reconcileById(current, saved));
         })
         .catch(() => undefined);
     });

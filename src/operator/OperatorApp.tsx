@@ -569,6 +569,17 @@ export function OperatorApp() {
     void api.getSettings().then((s) => {
       const merged = mergeSettings(s);
       setSettings(merged);
+      // A browser or phone joins a projector that is already running: it
+      // follows what is live (replayed by the host on connect) and must not
+      // clear the screen for everyone just by opening.
+      if (window.__LUMEN_BROWSER__) {
+        if (!liveRef.current) {
+          const initial = blankPayload(merged);
+          liveRef.current = initial;
+          setLive(initial);
+        }
+        return;
+      }
       // Project the permanent background right away so the congregation
       // screen never sits black: color/media from the start, text empty.
       const initial = blankPayload(merged);

@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import type { StoredSong } from "@shared/types";
 import type { FontFamilyId } from "@shared/fonts";
 import { songParts, type SongSection } from "@shared/song-sections";
+import { reconcileById } from "@shared/reconcile";
 import { SearchIcon, SongIcon } from "./icons";
 import { ItemMenu } from "./ItemMenu";
 import { SlideTile } from "./SlideTile";
@@ -131,9 +132,10 @@ export function SongsWorkspace({
     const api = window.proyector;
     return api?.onOperatorSync?.(({ scope }) => {
       if (scope !== "songs" && scope !== "all") return;
-      void api.getSongs().then((saved) => {
-        setSongs(Array.isArray(saved) ? saved : []);
-      });
+      void api
+        .getSongs()
+        .then((saved) => setSongs((current) => reconcileById(current, saved)))
+        .catch(() => undefined);
     });
   }, []);
 

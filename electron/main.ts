@@ -678,8 +678,8 @@ function createProjectorWindow(): void {
     projectorReady = true;
     const payload = pendingProjectorPayload ?? lastProjectorPayload;
     if (payload) {
+      // Operators already got it from sendToProjector.
       projectorWindow?.webContents.send("projector:update", payload);
-      publishBrowserEvent("projector:update", payload);
       pendingProjectorPayload = null;
     }
   });
@@ -735,17 +735,18 @@ function sendToProjector(
   if (!projectorWindow) {
     createProjectorWindow();
   }
+  // Other operators mirror the live screen even while the projector window is
+  // still loading. The desktop operator follows browser changes this way; the
+  // sender already has the payload, so it is skipped.
+  publishBrowserEvent("projector:update", payload, origin);
+  if (
+    origin !== DESKTOP_ORIGIN &&
+    operatorWindow &&
+    !operatorWindow.isDestroyed()
+  )
+    operatorWindow.webContents.send("projector:update", payload);
   if (projectorReady) {
     projectorWindow?.webContents.send("projector:update", payload);
-    publishBrowserEvent("projector:update", payload, origin);
-    // The desktop operator mirrors the live screen too, so a change made from
-    // a browser shows there without a reload. The sender already has it.
-    if (
-      origin !== DESKTOP_ORIGIN &&
-      operatorWindow &&
-      !operatorWindow.isDestroyed()
-    )
-      operatorWindow.webContents.send("projector:update", payload);
     pendingProjectorPayload = null;
   }
 }
