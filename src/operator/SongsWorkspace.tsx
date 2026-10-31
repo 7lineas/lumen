@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import type { StoredSong } from "@shared/types";
 import type { FontFamilyId } from "@shared/fonts";
 import { songParts, type SongSection } from "@shared/song-sections";
+import { reconcileById } from "@shared/reconcile";
 import { SearchIcon, SongIcon } from "./icons";
 import { ItemMenu } from "./ItemMenu";
 import { SlideTile } from "./SlideTile";
@@ -125,6 +126,18 @@ export function SongsWorkspace({
   useEffect(() => {
     if (songsLoaded) void window.proyector?.setSongs(songs);
   }, [songs, songsLoaded]);
+
+  // Songs saved from another operator (browser or desktop) appear here as they happen.
+  useEffect(() => {
+    const api = window.proyector;
+    return api?.onOperatorSync?.(({ scope }) => {
+      if (scope !== "songs" && scope !== "all") return;
+      void api
+        .getSongs()
+        .then((saved) => setSongs((current) => reconcileById(current, saved)))
+        .catch(() => undefined);
+    });
+  }, []);
 
   const visibleSongs = useMemo(() => {
     const q = normalize(query.trim());

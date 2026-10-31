@@ -24,6 +24,7 @@ import {
   slideThumbnailUrl,
 } from "@shared/background-image";
 import { slideLabel } from "@shared/slide-deck";
+import { reconcileById } from "@shared/reconcile";
 import {
   mediaKind,
   type MediaFit,
@@ -203,6 +204,20 @@ export function MediaWorkspace({
   useEffect(() => {
     if (loaded) void window.proyector?.setSlideDecks(items);
   }, [items, loaded]);
+  // Slide decks added or changed by another operator (browser or desktop) appear here as they happen.
+  useEffect(() => {
+    const api = window.proyector;
+    return api?.onOperatorSync?.(({ scope }) => {
+      if (scope !== "slides" && scope !== "all") return;
+      void api
+        .getSlideDecks()
+        .then((saved) => {
+          if (mounted.current)
+            setItems((current) => reconcileById(current, saved));
+        })
+        .catch(() => undefined);
+    });
+  }, []);
   useEffect(() => {
     const unsubscribe = window.proyector?.onSlideProgress?.((progress) => {
       if (!mounted.current) return;

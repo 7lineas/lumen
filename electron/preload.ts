@@ -211,6 +211,12 @@ contextBridge.exposeInMainWorld("proyector", {
     ipcRenderer.on("projector:update", handler);
     return () => ipcRenderer.removeListener("projector:update", handler);
   },
+  onOperatorSync: (cb: (sync: { scope: string }) => void): (() => void) => {
+    const handler = (_: Electron.IpcRendererEvent, sync: { scope: string }) =>
+      cb(sync);
+    ipcRenderer.on("operator:sync", handler);
+    return () => ipcRenderer.removeListener("operator:sync", handler);
+  },
   onBibleDownloadProgress: (
     cb: (progress: BibleDownloadProgress) => void,
   ): (() => void) => {

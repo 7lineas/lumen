@@ -569,6 +569,17 @@ export function OperatorApp() {
     void api.getSettings().then((s) => {
       const merged = mergeSettings(s);
       setSettings(merged);
+      // A browser or phone joins a projector that is already running: it
+      // follows what is live (replayed by the host on connect) and must not
+      // clear the screen for everyone just by opening.
+      if (window.__LUMEN_BROWSER__) {
+        if (!liveRef.current) {
+          const initial = blankPayload(merged);
+          liveRef.current = initial;
+          setLive(initial);
+        }
+        return;
+      }
       // Project the permanent background right away so the congregation
       // screen never sits black: color/media from the start, text empty.
       const initial = blankPayload(merged);
@@ -621,7 +632,8 @@ export function OperatorApp() {
 
   const [hasLiveContent, setHasLiveContent] = useState(false);
 
-  const send = useCallback(async (payload: ProjectorPayload) => {
+  /** Updates this operator's view of what is live. Does not touch the projector. */
+  const applyLive = useCallback((payload: ProjectorPayload) => {
     const previous = liveRef.current;
     liveRef.current = payload;
     setLive(payload);
@@ -643,8 +655,34 @@ export function OperatorApp() {
       lastContent.current = null;
       setHasLiveContent(false);
     }
-    await window.proyector?.showOnProjector(payload);
   }, []);
+
+  const send = useCallback(
+    async (payload: ProjectorPayload) => {
+      applyLive(payload);
+      await window.proyector?.showOnProjector(payload);
+    },
+    [applyLive],
+  );
+
+  // Other operators (this desktop app's browsers, or a phone) may change what
+  // is on the projector or the shared lists. Follow them without a reload.
+  useEffect(() => {
+    const api = window.proyector;
+    if (!api) return;
+    const offProjector = api.onProjectorUpdate(applyLive);
+    const offSync = api.onOperatorSync?.(({ scope }) => {
+      const all = scope === "all";
+      if (all || scope === "queue") void api.getQueue().then(setQueue);
+      if (all || scope === "history") void api.getHistory().then(setHistory);
+      if (all || scope === "settings")
+        void api.getSettings().then((s) => setSettings(mergeSettings(s)));
+    });
+    return () => {
+      offProjector();
+      offSync?.();
+    };
+  }, [applyLive]);
 
   const projectStaged = useCallback(async () => {
     if (!previewPayload || !staged) return;

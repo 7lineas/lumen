@@ -42,18 +42,31 @@ const eventNames: Record<string, string> = {
   onBibleDownloadProgress: "bibles:download-progress",
   onSlideProgress: "slides:progress",
   onFontsUpdate: "fonts:update",
+  onOperatorSync: "operator:sync",
 };
 
 let eventsController: AbortController | null = null;
 let reconnectTimer = 0;
 const callbacks = new Map<string, Set<(payload: unknown) => void>>();
 
+/**
+ * Names this page to the host, so the host does not send this page's own
+ * changes back to it. `randomUUID` is unavailable on plain-HTTP LAN addresses,
+ * so the id is built from `getRandomValues`, which works everywhere.
+ */
+const clientId = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) =>
+  b.toString(16).padStart(2, "0"),
+).join("");
+
 function token(): string {
   return localStorage.getItem("lumen-access-token") ?? "";
 }
 
 async function rpc(channel: string, args: unknown[]): Promise<unknown> {
-  const headers: HeadersInit = { "content-type": "application/json" };
+  const headers: HeadersInit = {
+    "content-type": "application/json",
+    "x-lumen-client": clientId,
+  };
   const accessToken = token();
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
   const response = await fetch("/api/v1/rpc", {
@@ -78,8 +91,8 @@ function connectEvents(): void {
   eventsController = controller;
   const accessToken = token();
   const headers: HeadersInit = accessToken
-    ? { Authorization: `Bearer ${accessToken}` }
-    : {};
+    ? { Authorization: `Bearer ${accessToken}`, "x-lumen-client": clientId }
+    : { "x-lumen-client": clientId };
   void (async () => {
     try {
       const response = await fetch("/api/v1/events", {
@@ -88,6 +101,10 @@ function connectEvents(): void {
       });
       if (!response.ok || !response.body)
         throw new Error("event_stream_unavailable");
+      // Changes made while the stream was down were not sent: re-read everything.
+      callbacks
+        .get("operator:sync")
+        ?.forEach((callback) => callback({ scope: "all" }));
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";

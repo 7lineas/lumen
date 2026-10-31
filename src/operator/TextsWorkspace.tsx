@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import type { StoredText } from "@shared/types";
 import type { FontFamilyId } from "@shared/fonts";
 import { textSlides } from "@shared/text-slides";
+import { reconcileById } from "@shared/reconcile";
 import { SearchIcon, TextIcon } from "./icons";
 import { ItemMenu } from "./ItemMenu";
 import { SlideTile } from "./SlideTile";
@@ -105,6 +106,18 @@ export function TextsWorkspace({
   useEffect(() => {
     if (textsLoaded) void window.proyector?.setTexts(texts);
   }, [texts, textsLoaded]);
+
+  // Texts saved from another operator (browser or desktop) appear here as they happen.
+  useEffect(() => {
+    const api = window.proyector;
+    return api?.onOperatorSync?.(({ scope }) => {
+      if (scope !== "texts" && scope !== "all") return;
+      void api
+        .getTexts()
+        .then((saved) => setTexts((current) => reconcileById(current, saved)))
+        .catch(() => undefined);
+    });
+  }, []);
 
   const visibleTexts = useMemo(() => {
     const q = normalize(query.trim());

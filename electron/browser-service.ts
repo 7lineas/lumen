@@ -12,7 +12,16 @@ import { randomBytes, timingSafeEqual } from "node:crypto";
  * exposes a small capability allow-list; native dialogs, updater controls,
  * display enumeration and arbitrary file operations stay inside Electron.
  */
-export type RpcHandler = (args: unknown[]) => Promise<unknown> | unknown;
+/**
+ * Identifies the client that caused a change, so its own event stream does not
+ * echo the change back. Browsers send `x-lumen-client`; the desktop window uses
+ * `DESKTOP_ORIGIN`.
+ */
+export type RpcHandler = (
+  args: unknown[],
+  origin: string,
+) => Promise<unknown> | unknown;
+export const DESKTOP_ORIGIN = "desktop:local";
 
 const BROWSER_CHANNELS = new Set([
   "bibles:list",
@@ -52,10 +61,12 @@ const EVENT_NAMES = new Set([
   "bibles:download-progress",
   "slides:progress",
 ]);
+const SIGNAL_EVENTS = new Set(["operator:sync"]);
 const API_PREFIX = "/api/v1";
 
 type EventMessage = { event: string; payload: unknown };
-const subscribers = new Set<ServerResponse>();
+/** Event stream connections, each keyed by the client id that opened it. */
+const subscribers = new Map<ServerResponse, string>();
 const latestEvents = new Map<string, unknown>();
 const rpcHandlers = new Map<string, RpcHandler>();
 let server: ReturnType<typeof createServer> | null = null;
@@ -68,17 +79,48 @@ export function registerBrowserRpc(channel: string, handler: RpcHandler): void {
   rpcHandlers.set(channel, handler);
 }
 
-export function publishBrowserEvent(event: string, payload: unknown): void {
-  if (!EVENT_NAMES.has(event)) return;
-  latestEvents.set(event, payload);
+function writeToSubscribers(
+  event: string,
+  payload: unknown,
+  origin: string,
+): void {
   const data = `data: ${JSON.stringify({ event, payload } satisfies EventMessage)}\n\n`;
-  for (const response of subscribers) {
+  for (const [response, clientId] of subscribers) {
+    if (origin && clientId === origin) continue;
     try {
       response.write(data);
     } catch {
       subscribers.delete(response);
     }
   }
+}
+
+/** Replayed to clients that connect later, so keep it to the latest state. */
+export function publishBrowserEvent(
+  event: string,
+  payload: unknown,
+  origin = "",
+): void {
+  if (!EVENT_NAMES.has(event)) return;
+  latestEvents.set(event, payload);
+  writeToSubscribers(event, payload, origin);
+}
+
+/** Tells connected clients to re-read shared data. Not replayed to late joiners. */
+export function publishBrowserSignal(
+  event: string,
+  payload: unknown,
+  origin = "",
+): void {
+  if (!SIGNAL_EVENTS.has(event)) return;
+  writeToSubscribers(event, payload, origin);
+}
+
+/** Reads the caller's client id from a request header; ids are only used to skip echoes. */
+function clientIdOf(request: IncomingMessage): string {
+  const raw = request.headers["x-lumen-client"];
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  return typeof value === "string" ? value.slice(0, 64) : "";
 }
 
 function authorized(request: IncomingMessage, lan: boolean): boolean {
@@ -267,7 +309,7 @@ export function startBrowserService(options: {
         "access-control-allow-origin": request.headers.origin ?? "null",
       });
       response.write(": connected\n\n");
-      subscribers.add(response);
+      subscribers.set(response, clientIdOf(request));
       for (const [event, payload] of latestEvents) {
         response.write(
           `data: ${JSON.stringify({ event, payload } satisfies EventMessage)}\n\n`,
@@ -285,7 +327,10 @@ export function startBrowserService(options: {
         if (!BROWSER_CHANNELS.has(channel) || !handler)
           return send(response, 404, { error: "unsupported_operation" });
         return send(response, 200, {
-          result: await handler(Array.isArray(data.args) ? data.args : []),
+          result: await handler(
+            Array.isArray(data.args) ? data.args : [],
+            clientIdOf(request),
+          ),
         });
       } catch (error) {
         return send(response, 400, {
@@ -383,7 +428,7 @@ export function startBrowserService(options: {
 }
 
 export function stopBrowserService(): void {
-  for (const response of subscribers) response.end();
+  for (const response of subscribers.keys()) response.end();
   subscribers.clear();
   sessionTokens.clear();
   pairingFailures.clear();
