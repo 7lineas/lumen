@@ -486,6 +486,8 @@ function createOperatorWindow(): void {
         }
       : { frame: false }),
     autoHideMenuBar: true,
+    // The app shell colour: the window no longer flashes white before the first paint.
+    backgroundColor: "#141415",
     webPreferences: {
       preload: getPreload(),
       contextIsolation: true,
@@ -785,13 +787,6 @@ async function captureScreenshots(): Promise<void> {
 
 app.whenReady().then(() => {
   app.setName("Lumen");
-  // Warm the remote Bible catalog so the first Biblias overlay opens without waiting.
-  void buildLibraryView(
-    biblesPath(),
-    userBiblesDir(),
-    catalogPath(),
-    nodeFetch,
-  ).catch(() => undefined);
   app.setAppUserModelId("com.7lineas.lumen");
   Menu.setApplicationMenu(null);
   protocol.handle("lumen-media", async (request) => {
@@ -841,6 +836,21 @@ app.whenReady().then(() => {
       headers,
     });
   });
+  if (process.env.PROYECTOR_SCREENSHOT !== "1") {
+    // First, so the renderer process boots while the rest of startup runs.
+    createOperatorWindow();
+  }
+  // Warm the remote Bible catalog so the first Biblias overlay opens without
+  // waiting. Deferred: its first fetch() loads Node's HTTP client (~90 ms of
+  // main-thread work) while the windows are still starting.
+  setTimeout(() => {
+    void buildLibraryView(
+      biblesPath(),
+      userBiblesDir(),
+      catalogPath(),
+      nodeFetch,
+    ).catch(() => undefined);
+  }, 3000);
   setupUpdater({ getOperatorWindow: () => operatorWindow, isProjectionActive });
   const browserAccess = store.get("browserAccess");
   const accessConfig =
@@ -867,7 +877,6 @@ app.whenReady().then(() => {
     return;
   }
 
-  createOperatorWindow();
   // Every launch, so the login item matches the saved setting (including the
   // default for installs that predate it).
   applyLaunchAtStartup(currentSettings().launchAtStartup);
@@ -952,10 +961,23 @@ registerIpcHandle("browser:rotate-code", () => {
   return browserAccessInfo();
 });
 
-registerIpcHandle("bibles:load", (_e, id: string) => {
-  const file = resolveModulePath(biblesPath(), userBiblesDir(), String(id));
-  return JSON.parse(fs.readFileSync(file, "utf-8"));
-});
+function bibleModuleFile(id: unknown): string {
+  return resolveModulePath(biblesPath(), userBiblesDir(), String(id));
+}
+
+// The desktop window gets the module's raw JSON text: one string crosses IPC
+// instead of ~31,000 nested verse objects, which Chromium deserialized on the
+// UI thread for ~0.4 s per Bible at startup. The renderer parses it.
+// Read as bytes and decoded in one pass: readFile's "utf-8" option decodes
+// chunk by chunk, which took ~65 ms of main-thread time for a 10 MB Bible.
+async function readBibleModule(id: unknown): Promise<string> {
+  return (await fs.promises.readFile(bibleModuleFile(id))).toString("utf8");
+}
+ipcMain.handle("bibles:load", (_e, id: string) => readBibleModule(id));
+// The LAN browser RPC is JSON already, so it keeps getting the object.
+registerBrowserRpc("bibles:load", async (args) =>
+  JSON.parse(await readBibleModule(args[0])),
+);
 
 let youVersion: YouVersionClient | null = null;
 function yvp(): YouVersionClient {

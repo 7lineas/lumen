@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { BibleData, BibleVersionMeta } from "@shared/types";
 import {
   loadBible,
@@ -16,6 +16,9 @@ export function useBibleLoader(
   const [ready, setReady] = useState(false);
   const [versions, setVersions] = useState<BibleVersionMeta[]>([]);
   const [error, setError] = useState<string | null>(null);
+  // Library refresh each Bible was loaded at: the effect also re-runs when the
+  // online version list changes, and must not re-read a 10 MB Bible for that.
+  const loadedAt = useRef(new Map<string, number>());
 
   useEffect(() => {
     let cancelled = false;
@@ -39,8 +42,15 @@ export function useBibleLoader(
             if (meta && !getBible(id)) loadBible(emptyOnlineBible(meta));
             continue;
           }
-          const data = (await api.loadBible(id)) as BibleData;
-          loadBible(data);
+          if (getBible(id) && loadedAt.current.get(id) === refreshKey) continue;
+          const raw = await api.loadBible(id);
+          if (cancelled) return;
+          // Desktop IPC sends the JSON text (much cheaper to transfer); the
+          // LAN browser RPC sends the parsed object.
+          loadBible(
+            (typeof raw === "string" ? JSON.parse(raw) : raw) as BibleData,
+          );
+          loadedAt.current.set(id, refreshKey);
         }
         if (!cancelled) setReady(true);
       } catch (e) {

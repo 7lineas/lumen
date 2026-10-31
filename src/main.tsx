@@ -1,7 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { Toaster } from "@/components/ui/sonner";
-import { App } from "./App";
+import { App, isProjectorRoute, preloadOperatorApp } from "./App";
 import { BrowserAccessGate } from "./BrowserAccessGate";
 import { installBrowserApi, refreshBrowserSession } from "./browser-api";
 import { InstalledFontFaces } from "./components/InstalledFontFaces";
@@ -13,6 +13,15 @@ import "./styles.css";
 if (navigator.userAgent.includes("Electron"))
   document.body.classList.add("electron");
 document.body.classList.add(/Mac/.test(navigator.userAgent) ? "mac" : "win");
+
+// The operator UI chunk downloads alongside this one; rendering once it is in
+// avoids a suspended first render (see preloadOperatorApp).
+const operatorReady = isProjectorRoute()
+  ? Promise.resolve()
+  : preloadOperatorApp().then(
+      () => undefined,
+      () => undefined,
+    );
 
 function renderApp() {
   createRoot(document.getElementById("root")!).render(
@@ -30,7 +39,7 @@ if (!window.proyector) {
   installBrowserApi();
   void refreshBrowserSession()
     .catch(() => localStorage.removeItem("lumen-access-token"))
-    .finally(renderApp);
+    .finally(() => void operatorReady.then(renderApp));
 } else {
-  renderApp();
+  void operatorReady.then(renderApp);
 }

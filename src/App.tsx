@@ -1,15 +1,37 @@
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, type ComponentType } from "react";
 import { ProjectorView } from "./projector/ProjectorView";
 
 // Separate chunk so the projector window doesn't parse the operator UI.
+let operatorModule: Promise<ComponentType> | null = null;
+let LoadedOperatorApp: ComponentType | null = null;
+
+/**
+ * Starts (once) loading the operator UI chunk. main.tsx waits for it before
+ * the first render: a lazy component that suspends on mount is revealed by
+ * React 19 only after its ~300 ms Suspense throttle, which held back the
+ * window's first frame.
+ */
+export function preloadOperatorApp(): Promise<ComponentType> {
+  operatorModule ??= import("./operator/OperatorApp").then((m) => {
+    LoadedOperatorApp = m.OperatorApp;
+    return m.OperatorApp;
+  });
+  return operatorModule;
+}
+
 const OperatorApp = lazy(() =>
-  import("./operator/OperatorApp").then((m) => ({ default: m.OperatorApp })),
+  preloadOperatorApp().then((component) => ({ default: component })),
 );
 
-export function App() {
-  const isProjector =
+export function isProjectorRoute(): boolean {
+  return (
     window.location.hash === "#/projector" ||
-    window.location.hash === "#projector";
+    window.location.hash === "#projector"
+  );
+}
+
+export function App() {
+  const isProjector = isProjectorRoute();
   const hostname = window.location.hostname;
   const isRemoteBrowser =
     window.__LUMEN_BROWSER__ &&
@@ -32,6 +54,7 @@ export function App() {
   if (isProjector && !isRemoteBrowser) {
     return <ProjectorView />;
   }
+  if (LoadedOperatorApp) return <LoadedOperatorApp />;
   return (
     <Suspense fallback={null}>
       <OperatorApp />

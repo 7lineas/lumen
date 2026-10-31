@@ -10,6 +10,12 @@ export interface PptxWorkerRequest {
   total: number;
   /** Hard cap on rendered slides. */
   maxSlides: number;
+  /** First slide (1-based) this worker renders. Defaults to 1. */
+  firstSlide?: number;
+  /** Last slide this worker renders (inclusive). Defaults to maxSlides. */
+  lastSlide?: number;
+  /** Font folders used after the system fonts (per-user installs). */
+  fontDirs?: string[];
 }
 
 export type PptxWorkerResponse =
