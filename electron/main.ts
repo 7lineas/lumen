@@ -312,30 +312,96 @@ import {
 } from "../shared/fonts";
 import type { ImportMetaInput } from "../shared/bible-import/build";
 import {
+  DESKTOP_ORIGIN,
   publishBrowserEvent,
+  publishBrowserSignal,
   registerBrowserRpc,
   rotateBrowserPairingCode,
   startBrowserService,
   stopBrowserService,
 } from "./browser-service";
 
+/**
+ * Stored lists that every operator (desktop and browser) shows. When one of
+ * these changes, the other operators are told to re-read `scope`.
+ */
+const SYNCED_STORES: Record<string, { scope: string; key: string }> = {
+  "history:add": { scope: "history", key: "history" },
+  "queue:set": { scope: "queue", key: "queue" },
+  "favorites:set": { scope: "favorites", key: "favorites" },
+  "songs:set": { scope: "songs", key: "songs" },
+  "texts:set": { scope: "texts", key: "texts" },
+  "slides:set": { scope: "slides", key: "slideDecks" },
+  "settings:set": { scope: "settings", key: "settings" },
+};
+
+/** Tells every operator except the one that made the change to re-read `scope`. */
+function notifyOperators(scope: string, origin: string): void {
+  publishBrowserSignal("operator:sync", { scope }, origin);
+  if (
+    origin !== DESKTOP_ORIGIN &&
+    operatorWindow &&
+    !operatorWindow.isDestroyed()
+  )
+    operatorWindow.webContents.send("operator:sync", { scope });
+}
+
+/**
+ * Runs a handler and notifies other operators only when the stored value really
+ * changed. Comparing values stops an echo loop: a client that re-saves what it
+ * just read writes nothing new, so nothing is sent back.
+ */
+function runSynced<T>(channel: string, origin: string, run: () => T): T {
+  const sync = SYNCED_STORES[channel];
+  if (!sync) return run();
+  const snapshot = () => JSON.stringify(store.get(sync.key as "settings"));
+  const before = snapshot();
+  const notifyIfChanged = () => {
+    if (snapshot() !== before) notifyOperators(sync.scope, origin);
+  };
+  const result = run();
+  if (result instanceof Promise) {
+    return result.then((value) => {
+      notifyIfChanged();
+      return value;
+    }) as T;
+  }
+  notifyIfChanged();
+  return result;
+}
+
 function registerIpcHandle<TArgs extends unknown[], TResult>(
   channel: string,
   handler: (event: Electron.IpcMainInvokeEvent, ...args: TArgs) => TResult,
 ): void {
-  ipcMain.handle(channel, handler as never);
-  registerBrowserRpc(channel, (args) =>
-    handler(
-      {
-        sender: {
-          isDestroyed: () => false,
-          send: (event: string, payload: unknown) =>
-            publishBrowserEvent(event, payload),
-        },
-      } as unknown as Electron.IpcMainInvokeEvent,
-      ...(args as TArgs),
+  ipcMain.handle(channel, ((
+    event: Electron.IpcMainInvokeEvent,
+    ...args: TArgs
+  ) =>
+    runSynced(channel, DESKTOP_ORIGIN, () =>
+      handler(Object.assign(event, { lumenOrigin: DESKTOP_ORIGIN }), ...args),
+    )) as never);
+  registerBrowserRpc(channel, (args, origin) =>
+    runSynced(channel, origin, () =>
+      handler(
+        {
+          lumenOrigin: origin,
+          sender: {
+            isDestroyed: () => false,
+            send: (event: string, payload: unknown) =>
+              publishBrowserEvent(event, payload, origin),
+          },
+        } as unknown as Electron.IpcMainInvokeEvent,
+        ...(args as TArgs),
+      ),
     ),
   );
+}
+
+/** Where a call came from, as set by registerIpcHandle. */
+function originOf(event: Electron.IpcMainInvokeEvent): string {
+  const origin = (event as { lumenOrigin?: unknown }).lumenOrigin;
+  return typeof origin === "string" ? origin : DESKTOP_ORIGIN;
 }
 
 // Isolated profile for automated checks (never used in normal installs).
@@ -659,7 +725,10 @@ function isProjectionActive(): boolean {
   );
 }
 
-function sendToProjector(payload: ProjectorPayload): void {
+function sendToProjector(
+  payload: ProjectorPayload,
+  origin: string = DESKTOP_ORIGIN,
+): void {
   pendingProjectorPayload = payload;
   lastProjectorPayload = payload;
   lastProjectorMode = payload.mode;
@@ -668,7 +737,15 @@ function sendToProjector(payload: ProjectorPayload): void {
   }
   if (projectorReady) {
     projectorWindow?.webContents.send("projector:update", payload);
-    publishBrowserEvent("projector:update", payload);
+    publishBrowserEvent("projector:update", payload, origin);
+    // The desktop operator mirrors the live screen too, so a change made from
+    // a browser shows there without a reload. The sender already has it.
+    if (
+      origin !== DESKTOP_ORIGIN &&
+      operatorWindow &&
+      !operatorWindow.isDestroyed()
+    )
+      operatorWindow.webContents.send("projector:update", payload);
     pendingProjectorPayload = null;
   }
 }
@@ -1646,8 +1723,8 @@ registerIpcHandle("projector:open", () => {
 
 registerIpcHandle("projector:bounds", () => projectorContentBounds());
 
-registerIpcHandle("projector:show", (_e, payload: ProjectorPayload) => {
-  sendToProjector(payload);
+registerIpcHandle("projector:show", (e, payload: ProjectorPayload) => {
+  sendToProjector(payload, originOf(e));
   return true;
 });
 

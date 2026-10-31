@@ -157,6 +157,8 @@ export interface ProyectorApi {
   installAppUpdate: () => Promise<AppUpdateState>;
   onAppUpdateState: (cb: (state: AppUpdateState) => void) => () => void;
   onProjectorUpdate: (cb: (p: ProjectorPayload) => void) => () => void;
+  /** Another operator (desktop or browser) changed shared data; re-read `scope`. */
+  onOperatorSync: (cb: (sync: { scope: string }) => void) => () => void;
   onBibleDownloadProgress: (
     cb: (progress: BibleDownloadProgress) => void,
   ) => () => void;

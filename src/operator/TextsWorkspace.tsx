@@ -106,6 +106,17 @@ export function TextsWorkspace({
     if (textsLoaded) void window.proyector?.setTexts(texts);
   }, [texts, textsLoaded]);
 
+  // Texts saved from another operator (browser or desktop) appear here as they happen.
+  useEffect(() => {
+    const api = window.proyector;
+    return api?.onOperatorSync?.(({ scope }) => {
+      if (scope !== "texts" && scope !== "all") return;
+      void api.getTexts().then((saved) => {
+        setTexts(Array.isArray(saved) ? saved : []);
+      });
+    });
+  }, []);
+
   const visibleTexts = useMemo(() => {
     const q = normalize(query.trim());
     return texts

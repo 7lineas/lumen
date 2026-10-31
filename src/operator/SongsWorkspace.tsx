@@ -126,6 +126,17 @@ export function SongsWorkspace({
     if (songsLoaded) void window.proyector?.setSongs(songs);
   }, [songs, songsLoaded]);
 
+  // Songs saved from another operator (browser or desktop) appear here as they happen.
+  useEffect(() => {
+    const api = window.proyector;
+    return api?.onOperatorSync?.(({ scope }) => {
+      if (scope !== "songs" && scope !== "all") return;
+      void api.getSongs().then((saved) => {
+        setSongs(Array.isArray(saved) ? saved : []);
+      });
+    });
+  }, []);
+
   const visibleSongs = useMemo(() => {
     const q = normalize(query.trim());
     return songs
