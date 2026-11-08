@@ -156,6 +156,72 @@ function rootBooks(
   return Object.fromEntries(entries);
 }
 
+/** Metadata of the "books → chapters → items" layout (`local_title`, `copyright.text`, …). */
+function bookListHint(root: Record<string, unknown>): ImportMetaHint {
+  const hint: ImportMetaHint = {};
+  const text = (value: unknown) =>
+    typeof value === "string" && value.trim() ? value.trim() : undefined;
+  const language = isPlainObject(root.language) ? root.language : {};
+  const copyright = isPlainObject(root.copyright) ? root.copyright : {};
+  const name = text(root.local_title) ?? text(root.title);
+  const abbr = text(root.local_abbreviation) ?? text(root.abbreviation);
+  const code =
+    text(language.iso_639_1) ??
+    (text(language.language_tag)
+      ? normalizeLanguage(String(language.language_tag))
+      : undefined);
+  const rights = text(copyright.text);
+  if (name) hint.name = name;
+  if (abbr) hint.abbr = abbr;
+  if (code) hint.language = code;
+  if (rights) hint.copyright = rights;
+  return hint;
+}
+
+/**
+ * Downloaded Bibles laid out as `books → chapters → items`:
+ * `{ "books": [{ "usfm": "GEN", "chapters": [{ "usfm": "GEN.1", "items": [
+ *   { "type": "verse", "verse_numbers": [1], "lines": ["En el principio…"] }
+ * ] }] }] }`.
+ * Only `verse` items are kept; headings, labels and notes are skipped.
+ * A verse split across paragraphs comes as several items with the same number:
+ * their pieces are joined. An item for a range (`[20, 21]`) goes to its first number,
+ * like `\v 20-21` in USFM.
+ */
+function addBookList(books: unknown[], collector: Collector): void {
+  for (const book of books) {
+    if (!isPlainObject(book) || !Array.isArray(book.chapters)) continue;
+    const token =
+      typeof book.usfm === "string" ? book.usfm : String(book.human ?? "?");
+    const code = resolveBook(token);
+    book.chapters.forEach((chapter: unknown, index: number) => {
+      if (!isPlainObject(chapter) || !Array.isArray(chapter.items)) return;
+      const match =
+        typeof chapter.usfm === "string" ? /\.(\d+)$/.exec(chapter.usfm) : null;
+      const chapterNumber = match ? Number(match[1]) : index + 1;
+      const pieces = new Map<number, string[]>();
+      for (const item of chapter.items) {
+        if (
+          !isPlainObject(item) ||
+          item.type !== "verse" ||
+          !Array.isArray(item.verse_numbers) ||
+          item.verse_numbers.length === 0
+        )
+          continue;
+        const verse = toInt(item.verse_numbers[0]);
+        const lines = Array.isArray(item.lines) ? item.lines : [];
+        const text = lines
+          .filter((line): line is string => typeof line === "string")
+          .join(" ");
+        pieces.set(verse, [...(pieces.get(verse) ?? []), text]);
+      }
+      for (const [verse, parts] of pieces) {
+        collector.add(token, chapterNumber, verse, parts.join(" "), code);
+      }
+    });
+  }
+}
+
 function parseJson(text: string): ParsedBible {
   let data: unknown;
   try {
@@ -184,6 +250,15 @@ function parseJson(text: string): ParsedBible {
     for (const key of ["name", "abbr", "language", "copyright"] as const) {
       if (typeof meta[key] === "string" && meta[key])
         hint[key] = meta[key] as string;
+    }
+    if (root.verses === undefined && Array.isArray(root.books)) {
+      addBookList(root.books, collector);
+      return {
+        format: "json",
+        verses: collector.verses,
+        hint: { ...hint, ...bookListHint(root) },
+        warnings: collector.warnings(),
+      };
     }
     const books = root.verses === undefined ? rootBooks(root) : root.verses;
     if (!books || typeof books !== "object" || Array.isArray(books)) {

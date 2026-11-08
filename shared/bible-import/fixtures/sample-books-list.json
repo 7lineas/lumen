@@ -1,0 +1,94 @@
+{
+  "version_id": 999,
+  "local_abbreviation": "MUE",
+  "local_title": "Muestra Lista",
+  "language": {
+    "iso_639_1": "es",
+    "iso_639_3": "spa",
+    "language_tag": "spa",
+    "local_name": "Español",
+    "text_direction": "ltr"
+  },
+  "copyright": {
+    "html": "<p>Dominio público</p>",
+    "text": "Dominio público"
+  },
+  "books": [
+    {
+      "usfm": "GEN",
+      "human": "Génesis",
+      "chapters": [
+        {
+          "usfm": "GEN.1",
+          "human": "Génesis 1",
+          "previous": null,
+          "next": { "usfm": "GEN.2", "human": "Génesis 2" },
+          "html": null,
+          "items": [
+            {
+              "type": "heading1",
+              "verse_numbers": [],
+              "lines": ["El relato de la creación"],
+              "rlw_lines": [],
+              "np": true
+            },
+            {
+              "type": "verse",
+              "verse_numbers": [1],
+              "lines": ["En el principio, Dios creó los cielos y la tierra."],
+              "rlw_lines": [],
+              "np": true
+            },
+            {
+              "type": "verse",
+              "verse_numbers": [2],
+              "lines": ["La tierra no tenía forma", "y estaba vacía."],
+              "rlw_lines": [],
+              "np": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "usfm": "JHN",
+      "human": "Juan",
+      "chapters": [
+        {
+          "usfm": "JHN.3",
+          "human": "Juan 3",
+          "items": [
+            {
+              "type": "label",
+              "verse_numbers": [],
+              "lines": ["Interludio"],
+              "rlw_lines": [],
+              "np": true
+            },
+            {
+              "type": "verse",
+              "verse_numbers": [16],
+              "lines": ["Porque de tal manera amó Dios al mundo"],
+              "rlw_lines": [],
+              "np": true
+            },
+            {
+              "type": "verse",
+              "verse_numbers": [16],
+              "lines": ["que dio a su Hijo unigénito."],
+              "rlw_lines": [],
+              "np": false
+            },
+            {
+              "type": "verse",
+              "verse_numbers": [20, 21],
+              "lines": ["Texto de un rango."],
+              "rlw_lines": [],
+              "np": true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

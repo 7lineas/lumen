@@ -73,6 +73,32 @@ describe("parseBibleText", () => {
     expect(parsed.warnings).toEqual([]);
   });
 
+  it('reads the "books → chapters → items" layout: joins split verses, skips headings and labels, reads its metadata', () => {
+    const parsed = parseBibleText(
+      "NTV_vid_127.json",
+      fixture("sample-books-list.json"),
+    );
+    expect(parsed.format).toBe("json");
+    expect(parsed.verses.GEN["1"]["1"]).toBe(
+      "En el principio, Dios creó los cielos y la tierra.",
+    );
+    expect(parsed.verses.GEN["1"]["2"]).toBe(
+      "La tierra no tenía forma y estaba vacía.",
+    );
+    expect(parsed.verses.JHN["3"]["16"]).toBe(
+      "Porque de tal manera amó Dios al mundo que dio a su Hijo unigénito.",
+    );
+    expect(parsed.verses.JHN["3"]["20"]).toBe("Texto de un rango.");
+    expect(parsed.verses.JHN["3"]["21"]).toBeUndefined();
+    expect(parsed.hint).toEqual({
+      name: "Muestra Lista",
+      abbr: "MUE",
+      language: "es",
+      copyright: "Dominio público",
+    });
+    expect(parsed.warnings).toEqual([]);
+  });
+
   it('recognizes the Spanish "S./San" gospel names', () => {
     for (const [name, code] of [
       ["S. Mateo", "MAT"],
