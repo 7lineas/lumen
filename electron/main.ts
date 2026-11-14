@@ -9,7 +9,6 @@ import {
   net,
   nativeImage,
   protocol,
-  shell,
 } from "electron";
 import path from "path";
 import { pathToFileURL } from "url";
@@ -981,25 +980,17 @@ registerIpcHandle("bibles:list", () =>
   listSelectableVersions(biblesPath(), userBiblesDir()),
 );
 
-const TAILSCALE_DOWNLOAD_URL = "https://tailscale.com/download";
-
 function browserAccessInfo() {
   const config = store.get("browserAccess");
-  const { lan, tailnet } = classifyBrowserAddresses(os.networkInterfaces());
+  const { lan } = classifyBrowserAddresses(os.networkInterfaces());
   const port = Number(process.env.LUMEN_BROWSER_PORT ?? 43124);
   return {
     enabled: config.enabled,
     pairingCode: config.pairingCode,
     port,
     addresses: lan,
-    tailnetAddresses: tailnet,
   };
 }
-
-// Kept off the LAN browser RPC on purpose: only the desktop window may open links.
-ipcMain.handle("browser:open-tailscale", () =>
-  shell.openExternal(TAILSCALE_DOWNLOAD_URL),
-);
 
 registerIpcHandle("browser:status", () => browserAccessInfo());
 registerIpcHandle("browser:configure", (_event, enabled: boolean) => {

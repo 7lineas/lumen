@@ -15,7 +15,6 @@ import {
   Check,
   Church,
   Copy,
-  Download,
   MonitorPlay,
   Palette,
   Power,
@@ -41,7 +40,7 @@ async function makeQrCodes(
 ): Promise<Record<string, string>> {
   if (!info.enabled || !info.pairingCode) return {};
   const entries = await Promise.all(
-    [...info.addresses, ...info.tailnetAddresses].map(async (address) => {
+    info.addresses.map(async (address) => {
       const connectUrl = `http://${address}:${info.port}/?pair=${info.pairingCode}`;
       return [
         address,
@@ -237,9 +236,7 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
     : browserAccessBusy
       ? "Aplicando…"
       : browserAccess.enabled
-        ? browserAccess.tailnetAddresses.length
-          ? "Activo en la red local y en Tailscale"
-          : "Activo en la red local"
+        ? "Activo en la red local"
         : "Apagado";
 
   const rotateCode = async () => {
@@ -269,16 +266,6 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
       );
     } finally {
       setBrowserAccessBusy(false);
-    }
-  };
-
-  const openTailscale = async () => {
-    try {
-      await window.proyector?.openTailscaleDownload();
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "No se pudo abrir el enlace",
-      );
     }
   };
 
@@ -361,44 +348,6 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
                       </div>
                     </div>
                   </div>
-                </div>
-                <div className="ajustes-access-remote">
-                  <h4>Desde fuera de la iglesia</h4>
-                  {browserAccess.tailnetAddresses.length ? (
-                    <>
-                      <AccessAddressList
-                        addresses={browserAccess.tailnetAddresses}
-                        port={browserAccess.port}
-                        qrCodes={browserQrCodes}
-                      />
-                      <p className="ajustes-note">
-                        Funciona con datos móviles u otra red, mientras
-                        Tailscale esté activo en el teléfono.
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <ol className="ajustes-access-steps">
-                        <li>
-                          Instale Tailscale en este equipo y en el teléfono.
-                        </li>
-                        <li>Inicie sesión con la misma cuenta en ambos.</li>
-                        <li>
-                          Active Tailscale en el teléfono y vuelva a abrir
-                          Ajustes.
-                        </li>
-                      </ol>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => void openTailscale()}
-                      >
-                        <Download size={14} aria-hidden />
-                        Descargar Tailscale
-                      </Button>
-                    </>
-                  )}
                 </div>
                 <p className="ajustes-access-warn">
                   Compártalo solo con operadores de confianza.

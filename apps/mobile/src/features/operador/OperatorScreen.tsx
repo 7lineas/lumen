@@ -152,7 +152,7 @@ export function OperatorScreen() {
           {live.connected ? null : (
             <Text className="font-sans text-sm text-muted-foreground">
               Buscando Lumen en sus direcciones guardadas. Si cambió de red, use
-              Tailscale o escanee el QR de nuevo.
+              túnel o escanee el QR de nuevo.
             </Text>
           )}
 

@@ -8,7 +8,7 @@ const RETRY_MS = 3000;
 /**
  * What the projector shows now, kept current by Lumen's event stream. When the
  * stream drops, the provider looks for an address that still answers (Wi-Fi or
- * Tailscale) before the next attempt.
+ * tunnel) before the next attempt.
  */
 export function useLiveProjector(): {
   payload: ProjectorPayload | null;
