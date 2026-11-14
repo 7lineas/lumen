@@ -9,7 +9,7 @@ describe("parsePairingLink", () => {
     });
   });
 
-  it("reads the QR link from a Tailscale address", () => {
+  it("reads the QR link from a remote address", () => {
     expect(
       parsePairingLink("http://100.101.102.103:43124/?pair=000042"),
     ).toEqual({

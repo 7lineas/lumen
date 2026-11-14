@@ -18,7 +18,7 @@ function iface(
 }
 
 describe("classifyBrowserAccessAddresses", () => {
-  it("separates LAN and Tailscale addresses and skips loopback and public ones", () => {
+  it("returns private LAN addresses and skips loopback, overlay, and public ones", () => {
     const result = classifyBrowserAddresses({
       lo0: [iface("127.0.0.1", { internal: true })],
       en0: [iface("192.168.1.20")],
@@ -28,11 +28,10 @@ describe("classifyBrowserAccessAddresses", () => {
 
     expect(result).toEqual({
       lan: ["192.168.1.20"],
-      tailnet: ["100.101.102.103"],
     });
   });
 
-  it("treats only 100.64.0.0/10 as Tailscale, not the rest of 100.x", () => {
+  it("does not treat carrier-grade NAT addresses as LAN addresses", () => {
     const result = classifyBrowserAddresses({
       en0: [
         iface("100.63.0.1"),
@@ -42,11 +41,11 @@ describe("classifyBrowserAccessAddresses", () => {
       ],
     });
 
-    expect(result.tailnet).toEqual(["100.64.0.1", "100.127.255.1"]);
+    expect(result).toEqual({ lan: [] });
     expect(result.lan).toEqual([]);
   });
 
-  it("ignores IPv6 entries and internal interfaces on the tailnet range", () => {
+  it("ignores IPv6 entries and internal interfaces", () => {
     const result = classifyBrowserAddresses({
       en0: [
         iface("fe80::1", { family: "IPv6" }),
@@ -54,6 +53,6 @@ describe("classifyBrowserAccessAddresses", () => {
       ],
     });
 
-    expect(result).toEqual({ lan: [], tailnet: [] });
+    expect(result).toEqual({ lan: [] });
   });
 });

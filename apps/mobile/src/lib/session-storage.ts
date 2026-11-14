@@ -13,7 +13,7 @@ function parseSession(value: unknown): LumenSession | null {
 }
 
 /**
- * One session per address Lumen was paired on (local network, Tailscale), in
+ * One session per address Lumen was paired on (local network or tunnel), in
  * the order they should be tried. The first entry is the active one. Tokens
  * live only in the Keychain / Keystore, never in AsyncStorage, which is plain
  * text on disk.

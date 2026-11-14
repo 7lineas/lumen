@@ -75,7 +75,7 @@ export function ConnectScreen() {
           <Text className="font-sans text-base leading-6 text-muted-foreground">
             En el equipo de proyección abra Lumen y vaya a Ajustes → Acceso
             desde otros dispositivos. Escanee el código QR. Puede estar en la
-            misma red Wi-Fi o, desde otra red, con Tailscale encendido en ambos
+            misma red Wi-Fi
             equipos.
           </Text>
         </View>

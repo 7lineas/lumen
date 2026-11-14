@@ -5,7 +5,7 @@ Aplicación nativa (Expo, React Native) para operar Lumen desde un teléfono o t
 Qué hace hoy:
 
 - Conectarse escaneando el código QR de Lumen, o escribiendo la dirección y el código de seis dígitos.
-- Conectarse desde la misma red Wi-Fi o desde otra red con Tailscale. Si el teléfono cambia de red, la app prueba las direcciones guardadas y usa la que responda.
+- Conectarse desde la misma red Wi-Fi. Si el teléfono cambia de red, la app prueba las direcciones guardadas y usa la que responda.
 - Ver en vivo lo que se proyecta.
 - Buscar un pasaje (`Juan 3:16`), revisarlo en vista previa y **Proyectar**.
 - Anterior / Siguiente versículo, cambiar de versión y pantalla negra.
@@ -21,9 +21,9 @@ Pendiente: cola del culto, canciones, textos y diapositivas.
 Hay dos caminos según la red:
 
 - **Misma red Wi-Fi o cable:** use el QR o la dirección de red local de Lumen.
-- **Otra red (datos móviles, otro Wi-Fi):** instale Tailscale en el equipo con Lumen y en el teléfono, con la misma cuenta. Use el QR de la sección **Desde fuera de la iglesia** de Ajustes.
+- **Otra red (datos móviles, otro Wi-Fi):** el acceso remoto aún no está disponible.
 
-El tráfico es HTTP. En la red local viaja sin cifrar; con Tailscale va cifrado por la propia red privada. No exponga el puerto `43124` a internet.
+El tráfico es HTTP y viaja sin cifrar en la red local. No exponga el puerto `43124` a internet.
 
 ## Desarrollo
 

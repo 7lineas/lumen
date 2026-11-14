@@ -35,7 +35,7 @@ type SessionValue = {
   forget: () => Promise<void>;
   /**
    * Checks the saved addresses and switches to one that answers, e.g. the
-   * Tailscale address after leaving Wi-Fi. Does nothing if none answer.
+   * paired remote address after leaving Wi-Fi. Does nothing if none answer.
    */
   reconnect: () => Promise<void>;
 };
