@@ -50,7 +50,6 @@ describe("session storage", () => {
   });
 
   it("migrates the single session saved by the first build", async () => {
-    // First read is the current key (empty), second is the legacy key.
     vi.mocked(SecureStore.getItemAsync)
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce(JSON.stringify(LAN));

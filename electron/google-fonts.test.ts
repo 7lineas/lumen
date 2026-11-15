@@ -75,7 +75,6 @@ const LORA: GoogleFontEntry = {
   weights: ["400", "700"],
 };
 
-/** Fake Google: serves the CSS for any family and a WOFF2 file per requested URL. */
 function fakeGoogle(
   overrides: { css?: string; bytes?: Uint8Array; status?: number } = {},
 ) {

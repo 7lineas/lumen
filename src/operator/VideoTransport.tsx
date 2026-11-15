@@ -6,14 +6,12 @@ import type { VideoPlayback } from "@shared/types";
 
 interface Props {
   video: VideoPlayback;
-  /** Length in seconds, null until the live monitor has read it. */
   duration: number | null;
   onToggle: () => void;
   onSeek: (seconds: number) => void;
   onVolume: (volume: number) => void;
 }
 
-/** Play, pause, seek and volume for the video that is on the projector. */
 export function VideoTransport({
   video,
   duration,

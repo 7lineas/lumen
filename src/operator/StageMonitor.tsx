@@ -12,31 +12,18 @@ import { VerseScreen } from "@/components/VerseScreen";
 interface Props {
   title: string;
   payload: ProjectorPayload | null;
-  /** Hint shown only when there is truly no payload (e.g. preview with
-   *  nothing staged). The live monitor omits it: the background is
-   *  permanent, so something is always projecting. */
   empty?: string;
   testId?: string;
   isLive?: boolean;
-  /** Numeric width / height ratio matching the real projector content bounds. */
   aspectRatio?: number;
-  /** Real projector display width in px, used to scale fonts proportionally. */
   displayWidth?: number;
-  /** What is on this screen ("Juan 3:16", "Coro"), next to the title. */
   label?: string;
-  /** Short note at the right of the header, e.g. "16:9 · 1920×1080". */
   ratioLabel?: string;
-  /** Controls under the screen. */
   children?: ReactNode;
-  /** Length of the video on this screen, once it is known. */
   onVideoDuration?: (seconds: number) => void;
-  /** How background media fills the screen (settings.backgroundFit). */
   backgroundFit?: MediaFit;
-  /** How a diapositiva image fills the screen (settings.slideFit). */
   slideFit?: MediaFit;
-  /** When the live content last changed (epoch ms); shown as the time on screen. */
   liveSince?: number | null;
-  /** Typeface of the projected text (settings.fontFamily). */
   fontFamily?: FontFamilyId;
 }
 
@@ -57,10 +44,6 @@ export function StageMonitor({
   liveSince,
   fontFamily = DEFAULT_SETTINGS.fontFamily,
 }: Props) {
-  // Live monitor mirrors the projector: fade out old content, swap, fade in.
-  // Preview renders instantly (no fade).
-  // The inner screen renders at the real projector aspect ratio so the
-  // operator sees the same framing as the congregation.
   const screenAspect =
     Number.isFinite(aspectRatio) && (aspectRatio ?? 0) > 0
       ? aspectRatio!
@@ -71,7 +54,6 @@ export function StageMonitor({
   const displayedRef = useRef(payload);
   const visibleRef = useRef(true);
   const timerRef = useRef<number | null>(null);
-  // Duration of the fade in progress: the incoming payload's, as on the projector.
   const [fadeMsNow, setFadeMsNow] = useState<number | null>(null);
 
   useEffect(() => {
@@ -136,9 +118,6 @@ export function StageMonitor({
     [],
   );
 
-  // "Take" flash: the live monitor pulses an on-air ring whenever new content
-  // is projected. Web Animations restarts on every take, even back-to-back.
-  // Style-only updates and "Limpiar" do not flash.
   const takeKey = useRef<string | null>(null);
   useEffect(() => {
     if (!isLive) return;
@@ -159,7 +138,6 @@ export function StageMonitor({
   }, [payload, isLive]);
 
   const renderPayload = isLive ? displayed : payload;
-  // Same rule as the projector: a song's or text's own typeface wins over Ajustes.
   const monitorFontFamily = renderPayload?.fontFamily ?? fontFamily;
   const theme = renderPayload?.theme === "light" ? "light" : "dark";
   const brightness = renderPayload?.brightness ?? 1;
@@ -174,12 +152,8 @@ export function StageMonitor({
   const projecting = renderPayload != null && renderPayload.mode !== "blank";
   const referenceColor = renderPayload?.referenceColor ?? "#f6a623";
   const versionColor = renderPayload?.versionColor ?? "#f6a623";
-  // Same rule as the projector: slides => solid color background, switched
-  // from the incoming payload (not the lagging displayed one) so it fades in
-  // parallel with the slide.
   const incomingMode = (isLive ? payload : renderPayload)?.mode;
   const slidesActive = incomingMode === "slides" || incomingMode === "video";
-  // The logo takes the fondo's place (covering), as on the projector.
   const backgroundPath = isLogo
     ? renderPayload?.logoImagePath
     : slidesActive
@@ -197,8 +171,6 @@ export function StageMonitor({
     width: number;
     height: number;
   } | null>(null);
-  // Inner width of the miniature screen (inside its border): the scale of the
-  // projector replica that draws verse text.
   const [screenInnerWidth, setScreenInnerWidth] = useState(0);
   useEffect(() => {
     const screen = screenRef.current;
@@ -210,9 +182,6 @@ export function StageMonitor({
     return () => observer.disconnect();
   }, []);
 
-  // The card is a fixed-height monitor viewport. Fit the simulated projector
-  // screen inside it instead of allowing the aspect ratio to determine the
-  // card's height.
   useEffect(() => {
     const monitor = monitorRef.current;
     if (!monitor) return;
@@ -260,7 +229,6 @@ export function StageMonitor({
         />
       )}
       {video && (
-        // A still frame: only the projector plays the video (see SyncedVideo's `still`).
         <SyncedVideo
           playback={video}
           muted
@@ -274,8 +242,6 @@ export function StageMonitor({
         <span className="monitor-video-note">Reproduciendo en la pantalla</span>
       )}
       {renderPayload?.mode === "countdown" && renderPayload.countdown && (
-        // Container units keep the miniature in the same proportions as the
-        // projector's vw/vh sizes.
         <div className="monitor-countdown">
           {renderPayload.countdown.caption && (
             <p className="monitor-countdown-caption">
@@ -288,8 +254,6 @@ export function StageMonitor({
         </div>
       )}
       {renderPayload?.mode === "verse" && screenInnerWidth > 0 && (
-        // The projector's own layout at the projector's resolution, scaled down
-        // to the miniature: same fit, wrapping and proportions as the real screen.
         <div
           className="monitor-replica"
           style={{
@@ -357,8 +321,6 @@ export function StageMonitor({
             aspectRatio: screenAspect,
             fontFamily: fontStack(monitorFontFamily),
             fontWeight: renderPayload?.fontWeight,
-            // A slide image or a video is full-bleed: the text padding must not
-            // shrink it. Verse text brings its own padding at projector scale.
             padding:
               fullBleed || renderPayload?.mode === "verse" ? 0 : `${pad}%`,
           }}
@@ -379,7 +341,6 @@ export function StageMonitor({
             fadeMs={backgroundFadeMs}
             fit={isLogo ? "cover" : backgroundFit}
             className="monitor-background-media"
-            // Only the projector plays a background video (see FadingBackgroundMedia's `still`).
             still
           />
           <div

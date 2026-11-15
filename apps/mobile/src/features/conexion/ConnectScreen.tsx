@@ -32,7 +32,6 @@ export function ConnectScreen() {
   };
 
   const submit = () => {
-    // A pasted QR link carries its own address and code.
     const link = parsePairingLink(address);
     if (link) {
       void connect(link.origin, link.code);
@@ -51,7 +50,6 @@ export function ConnectScreen() {
   };
 
   const onScan = ({ data }: { data: string }) => {
-    // The camera can report the same code several times; the first valid one wins.
     if (busy) return;
     const link = parsePairingLink(data);
     setScanning(false);

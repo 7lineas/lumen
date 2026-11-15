@@ -81,7 +81,6 @@ describe("buildOnlineVersions", () => {
       "yv-3365",
       "yv-9999",
     ]);
-    // 2664 and 3365 are not defaults, so they sort after the defaults when present in the catalog
   });
 
   it("tells the two NVI-S editions apart by year", () => {
@@ -214,7 +213,6 @@ describe("searchOnlineCatalog", () => {
       added: false,
       language: "Español",
     });
-    // Searching "PDT" must not pretend 3365 is "Palabra de Dios para Todos"
     expect(
       searchOnlineCatalog(catalog, "pdt", new Set()).every(
         (h) => h.abbr !== "PDT",

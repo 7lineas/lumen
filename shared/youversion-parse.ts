@@ -1,14 +1,3 @@
-/**
- * Turns the `content` of a YouVersion Platform passage (format=html) into
- * plain verse texts keyed by verse number.
- *
- * The API marks each verse start with an empty `<span class="yv-v" v="16">`
- * and prints its number in `yv-vlbl`; footnotes (`yv-n`) and section headings
- * (`yv-h`) are not part of the verse text and are dropped. Everything between
- * two markers belongs to the earlier verse. A marker with a range (`v="1-2"`)
- * is stored under its first number.
- */
-
 const SKIP_CLASS = /(^|\s)(yv-n|yv-vlbl|yv-h|yv-fn|yv-label)(\s|$)/;
 const VERSE_CLASS = /(^|\s)yv-v(\s|$)/;
 const VOID_TAGS = new Set(["br", "img", "hr", "wbr"]);
@@ -69,7 +58,6 @@ function attr(tag: string, name: string): string | null {
 export function parseChapterContent(html: string): Record<number, string> {
   const parts = new Map<number, string[]>();
   let current: number | null = null;
-  // Open elements; `skip` marks the ones whose content is not verse text.
   const stack: Array<{ tag: string; skip: boolean }> = [];
   let skipDepth = 0;
   const tagRe = /<(\/?)([a-zA-Z][a-zA-Z0-9]*)([^>]*?)(\/?)>/g;

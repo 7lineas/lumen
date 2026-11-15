@@ -19,7 +19,6 @@ export function parseAttrs(source: string): Record<string, string> {
   return attrs;
 }
 
-/** Minimal, forgiving XML walker for Bible files (no DTD, no namespaces; tags are lower-cased). */
 export function walkXml(xml: string, handlers: XmlHandlers): void {
   let last = 0;
   TOKEN.lastIndex = 0;
@@ -30,12 +29,11 @@ export function walkXml(xml: string, handlers: XmlHandlers): void {
       handlers.text(m[1]);
       continue;
     }
-    if (m[3] === undefined) continue; // comment, PI, doctype
+    if (m[3] === undefined) continue;
     const tag = m[3].toLowerCase();
     if (m[2] === "/") handlers.close(tag);
     else {
       const selfClosing = m[5] === "/";
-      // Self-closing tags get no close() call: handlers use the flag.
       handlers.open(tag, parseAttrs(m[4]), selfClosing);
     }
   }

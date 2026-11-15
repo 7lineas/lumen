@@ -16,24 +16,18 @@ interface SearchHit {
 
 interface Props {
   versionId: string;
-  /** Version picker shown in the library head. */
   versionControl: ReactNode;
   ready: boolean;
   viewBook: string;
   viewChapter: number;
   staged: VerseRange | null;
-  /** Verses on the projector right now. */
   liveRange: VerseRange | null;
   onOpenChapter: (book: string, chapter: number) => void;
-  /** Stage a typed reference ("jn 3:16"). Returns the error to show, or null when it worked. */
   onReference: (text: string) => string | null;
   onVerseClick: (verse: number, shiftKey: boolean) => void;
-  /** Double-click: stage the verse and project it. */
   onVerseTake: (verse: number) => void;
   onAddCurrent: () => void;
-  /** References already stored in the rundown; caps how many can be added. */
   savedCount: number;
-  /** Online Bible status (offline / license / rate limit) shown above the list. */
   notice?: string | null;
   onRetryOnline?: () => void;
   loadingChapter?: boolean;
@@ -43,13 +37,11 @@ interface Props {
   onSearchPick: (hit: SearchHit) => void;
 }
 
-/** Above this many matching books the chapter lists stay closed until one is opened. */
 const AUTO_OPEN_LIMIT = 6;
 
 export function BibleWorkspace(props: Props) {
   const [query, setQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
-  // Book whose chapters are open while browsing; follows the chapter on screen.
   const [expanded, setExpanded] = useState<string | null>(props.viewBook);
   const listRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
@@ -96,7 +88,6 @@ export function BibleWorkspace(props: Props) {
     setExpanded(props.viewBook);
   }, [props.viewBook]);
 
-  // Keep the whole open book in view in the library (all its chapters), and the staged verse in the grid.
   useEffect(() => {
     if (filtering) return;
     listRef.current
@@ -116,7 +107,6 @@ export function BibleWorkspace(props: Props) {
     verses.length,
   ]);
 
-  // Opening a chapter ends the search: the list goes back to every book, open on this one.
   const openChapter = (code: string, chapter: number) => {
     setError(null);
     setQuery("");
@@ -127,7 +117,6 @@ export function BibleWorkspace(props: Props) {
   const submit = () => {
     const text = query.trim();
     if (!text) return;
-    // With a verse ("jn 3:16") it is a reference; otherwise the first match opens.
     if (text.includes(":")) {
       const failure = props.onReference(text);
       setError(failure);

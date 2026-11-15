@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import type { InstalledFont } from "@shared/fonts";
 
-/** Fonts downloaded from Google Fonts. Starts empty, then follows every change made in the app. */
 export function useInstalledFonts(): InstalledFont[] {
   const [fonts, setFonts] = useState<InstalledFont[]>([]);
 

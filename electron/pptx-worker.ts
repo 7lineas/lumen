@@ -1,7 +1,3 @@
-/**
- * PPTX -> PNG worker. Runs inside an Electron utilityProcess so the heavy
- * resvg/WASM work never blocks the main process (projector/IPC stay snappy).
- */
 import { renderPptxFile } from "./pptx-render-core";
 import type {
   PptxWorkerRequest,

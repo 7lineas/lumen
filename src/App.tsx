@@ -1,16 +1,9 @@
 import { lazy, Suspense, useEffect, type ComponentType } from "react";
 import { ProjectorView } from "./projector/ProjectorView";
 
-// Separate chunk so the projector window doesn't parse the operator UI.
 let operatorModule: Promise<ComponentType> | null = null;
 let LoadedOperatorApp: ComponentType | null = null;
 
-/**
- * Starts (once) loading the operator UI chunk. main.tsx waits for it before
- * the first render: a lazy component that suspends on mount is revealed by
- * React 19 only after its ~300 ms Suspense throttle, which held back the
- * window's first frame.
- */
 export function preloadOperatorApp(): Promise<ComponentType> {
   operatorModule ??= import("./operator/OperatorApp").then((m) => {
     LoadedOperatorApp = m.OperatorApp;
@@ -49,8 +42,6 @@ export function App() {
     }
   }, [isProjector, isRemoteBrowser]);
 
-  // The LAN client exposes the controller only. The actual projector remains
-  // on the host computer in its dedicated Electron window.
   if (isProjector && !isRemoteBrowser) {
     return <ProjectorView />;
   }

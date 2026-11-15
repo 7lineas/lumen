@@ -36,14 +36,9 @@ function useAppUpdateState() {
   return [state, setState] as const;
 }
 
-/**
- * Icono de recarga para buscar una versión nueva a mano. Va en la barra
- * superior y solo se oculta mientras el botón de actualización está visible.
- */
 export function UpdateCheckButton() {
   const [state, setState] = useAppUpdateState();
 
-  // En desarrollo no hay nada que comprobar.
   if (!state || state.mode === "disabled" || shouldShowUpdateButton(state))
     return null;
 
@@ -51,13 +46,10 @@ export function UpdateCheckButton() {
 
   async function onCheck() {
     const api = window.proyector;
-    // Una comprobación ya en curso (el icono gira) no se repite.
     if (!api || checking) return;
     try {
       setState(await api.checkAppUpdate());
-    } catch {
-      // Sin respuesta del proceso principal: el icono simplemente deja de girar.
-    }
+    } catch {}
   }
 
   return (
@@ -76,10 +68,6 @@ export function UpdateCheckButton() {
   );
 }
 
-/**
- * Botón de actualización: solo existe cuando hay una versión nueva (o una
- * descarga en curso).
- */
 export function UpdateButton() {
   const [state, setState] = useAppUpdateState();
   const [dialogState, setDialogState] = useState<AppUpdateState | null>(null);
@@ -96,7 +84,6 @@ export function UpdateButton() {
     if (!api || busy) return;
     setBusy(true);
     try {
-      // Estado fresco: si se está proyectando o no cambia el aviso del diálogo.
       const fresh = await api.getAppUpdateState();
       setState(fresh);
       if (resolveUpdateButtonAction(fresh) === "open") {
@@ -105,7 +92,6 @@ export function UpdateButton() {
       }
       setDialogState(fresh);
     } catch {
-      // Sin respuesta del proceso principal: no hay nada que hacer aquí.
     } finally {
       setBusy(false);
     }
@@ -120,9 +106,7 @@ export function UpdateButton() {
       if (resolveUpdateButtonAction(current) === "install")
         setState(await api.installAppUpdate());
       else setState(await api.startAppUpdate());
-    } catch {
-      // El proceso principal informa los fallos mediante el estado.
-    }
+    } catch {}
   }
 
   const confirmation = dialogState ? getUpdateConfirmation(dialogState) : null;

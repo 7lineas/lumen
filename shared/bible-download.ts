@@ -1,6 +1,5 @@
 import { createHash } from "node:crypto";
 
-/** Public base for module files. The app never follows another host from the catalog. */
 export const BIBLES_DOWNLOAD_BASE = "https://downloads.7lineas.com/bibles";
 export const BIBLES_CATALOG_URL = `${BIBLES_DOWNLOAD_BASE}/bibles-catalog.json`;
 
@@ -87,7 +86,6 @@ function asRecord(value: unknown): Record<string, unknown> | null {
   return value as Record<string, unknown>;
 }
 
-/** Keeps only complete, non-draft entries. Download URLs stay on the fixed public host. */
 export function parseCatalog(
   data: unknown,
   extensionNote = "",

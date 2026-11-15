@@ -15,12 +15,6 @@ export function isPortableExe(exePath = app.getPath("exe")): boolean {
   return /portable/i.test(exePath);
 }
 
-/**
- * - Instalador NSIS de Windows: electron-updater descarga e instala (`auto`).
- * - Portable de Windows: no puede reemplazarse a sí mismo; solo avisa y abre la descarga (`manual`).
- * - Ejecución sin empaquetar u otras plataformas: sin actualizaciones (`disabled`).
- * - Solo para pruebas: sin empaquetar y con `LUMEN_UPDATE_DEV_FEED`, usa electron-updater contra ese feed.
- */
 export function resolveUpdateMode(options: {
   platform: NodeJS.Platform;
   packaged: boolean;
@@ -38,7 +32,6 @@ function devFeedUrl(): string | null {
   return value ? value.replace(/\/+$/, "") : null;
 }
 
-/** Solo URLs https del bucket de descargas (nunca algo que llegue del renderer). */
 export function safeDownloadUrl(value: string): string | null {
   const trimmed = value.trim();
   if (!trimmed.startsWith(`${UPDATE_FEED_URL}/`)) return null;
@@ -102,7 +95,6 @@ async function createAutoBackend(
   feedUrl: string,
   forceDev: boolean,
 ): Promise<UpdateBackend> {
-  // Carga perezosa: las pruebas y el modo desarrollo no la necesitan.
   const { autoUpdater } = await import("electron-updater");
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
@@ -110,8 +102,6 @@ async function createAutoBackend(
   autoUpdater.allowDowngrade = false;
   if (forceDev) autoUpdater.forceDevUpdateConfig = true;
   autoUpdater.setFeedURL({ provider: "generic", url: feedUrl });
-  // Sin oyente, un "error" asíncrono del actualizador sería una excepción no capturada;
-  // los fallos ya llegan al controlador por las promesas y el vigilante de instalación.
   autoUpdater.on("error", (error: unknown) => {
     log(
       `[updater] evento de error: ${error instanceof Error ? error.message : String(error)}`,
@@ -135,7 +125,6 @@ async function createAutoBackend(
       }
     },
     install() {
-      // Instalación silenciosa y reapertura de Lumen al terminar.
       autoUpdater.quitAndInstall(true, true);
     },
   };

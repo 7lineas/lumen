@@ -108,9 +108,6 @@ function resolveBookName(raw: string): BookMeta | null {
   return null;
 }
 
-/**
- * Parse Spanish-friendly references: "jn 3:16", "Juan 3 16", "1 cor 13:4-7", "salmo 23", "Gén 1"
- */
 export function parseReference(input: string): ParseReferenceResult {
   const trimmed = input.trim();
   if (!trimmed) {
@@ -247,13 +244,6 @@ export function expandRange(range: VerseRange, maxVerses = 30): VerseRef[] {
   return refs;
 }
 
-/**
- * Moves `delta` verses from `ref`, crossing chapter boundaries inside the same
- * book. `verseCountIn(chapter)` must return the number of verses in a chapter
- * of this book; pass it to walk backward across chapters. Without it, only a
- * forward crossing can be resolved (it lands on verse 1); a backward crossing
- * returns null. Returns null at the first or last verse of the book.
- */
 export function stepVerse(
   ref: VerseRef,
   delta: number,

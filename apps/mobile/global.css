@@ -2,12 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/*
- * Lumen operator palette. Always dark: the operator works in a dim room, and a
- * bright phone screen would distract the congregation. Amber is the colour of
- * light going to the wall, so it marks only the live projector and the main
- * action. NativeWind needs sRGB channels: rgb(var(--token) / <alpha-value>).
- */
 @layer base {
   :root {
     --background: 23 19 14;

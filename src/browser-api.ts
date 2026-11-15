@@ -49,11 +49,6 @@ let eventsController: AbortController | null = null;
 let reconnectTimer = 0;
 const callbacks = new Map<string, Set<(payload: unknown) => void>>();
 
-/**
- * Names this page to the host, so the host does not send this page's own
- * changes back to it. `randomUUID` is unavailable on plain-HTTP LAN addresses,
- * so the id is built from `getRandomValues`, which works everywhere.
- */
 const clientId = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) =>
   b.toString(16).padStart(2, "0"),
 ).join("");
@@ -101,7 +96,6 @@ function connectEvents(): void {
       });
       if (!response.ok || !response.body)
         throw new Error("event_stream_unavailable");
-      // Changes made while the stream was down were not sent: re-read everything.
       callbacks
         .get("operator:sync")
         ?.forEach((callback) => callback({ scope: "all" }));
@@ -126,14 +120,10 @@ function connectEvents(): void {
               payload: unknown;
             };
             callbacks.get(name)?.forEach((callback) => callback(payload));
-          } catch {
-            /* Ignore malformed event frames. */
-          }
+          } catch {}
         }
       }
-    } catch {
-      /* Reconnect after a transient network loss. */
-    }
+    } catch {}
     if (eventsController === controller) eventsController = null;
     if (
       !controller.signal.aborted &&
@@ -168,8 +158,6 @@ const browserApi = new Proxy({} as ProyectorApi, {
     if (eventNames[property])
       return (callback: (payload: unknown) => void) =>
         subscribe(eventNames[property]!, callback);
-    // A LAN client is the operator/controller only. The projector remains a
-    // window owned by the host Electron app and is opened there when needed.
     if (property === "openProjector") return async () => false;
     if (property === "listDisplays") return async () => [];
     if (property === "getProjectorBounds") return async () => null;

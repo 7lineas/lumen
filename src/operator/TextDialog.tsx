@@ -26,16 +26,13 @@ import { OwnTypeface } from "./TypefaceSelect";
 export interface TextDraft {
   title: string;
   body: string;
-  /** Undefined when the text follows Ajustes > Tipo de letra. */
   fontFamily?: FontFamilyId;
   fontWeight?: number;
 }
 
 interface Props {
   open: boolean;
-  /** Text being edited; null creates a new one. */
   text: StoredText | null;
-  /** Ajustes > Tipo de letra, used when the text turns on its own typeface. */
   defaultFontFamily: FontFamilyId;
   onOpenChange: (open: boolean) => void;
   onSave: (draft: TextDraft) => void;

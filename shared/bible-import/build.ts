@@ -2,12 +2,10 @@ import { BOOKS } from "../books";
 import type { BibleData, BibleVersionMeta } from "../types";
 import { countVerses, type ParsedBible } from "./parsers";
 
-/** Fields the user must confirm before a file becomes a Bible version. */
 export interface ImportMetaInput {
   name: string;
   abbr: string;
   language: string;
-  /** Required: the user states who holds the rights to the text. */
   copyright: string;
 }
 
@@ -29,7 +27,6 @@ export function slugifyAbbr(abbr: string): string {
     .slice(0, 24);
 }
 
-/** `custom-<abbr>`; adds -2, -3… until it is free. */
 export function customIdFor(abbr: string, taken: ReadonlySet<string>): string {
   const base = `${CUSTOM_ID_PREFIX}${slugifyAbbr(abbr) || "biblia"}`;
   if (!taken.has(base)) return base;
@@ -48,7 +45,6 @@ export function cleanMetaInput(input: ImportMetaInput): ImportMetaInput {
   };
 }
 
-/** Clear Spanish errors per field; empty object when the data can be saved. */
 export function validateImportMeta(
   raw: ImportMetaInput,
   existing: ReadonlyArray<Pick<BibleVersionMeta, "id" | "name" | "abbr">>,

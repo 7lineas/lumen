@@ -1,13 +1,5 @@
-/**
- * Client for Lumen's `/api/v1` boundary (see docs/BROWSER-ACCESS.md in the
- * desktop repository). Plain fetch only: this module must stay free of native
- * imports so its contract can be tested in Node.
- */
-
 export type LumenSession = {
-  /** Service origin, e.g. http://192.168.1.20:43124 */
   origin: string;
-  /** Random session token returned by the pairing exchange. */
   token: string;
 };
 
@@ -51,7 +43,6 @@ async function requestJson(
   }
 }
 
-/** Exchanges the six-digit code shown in Lumen for a session token. */
 export async function createLumenSession(
   origin: string,
   code: string,
@@ -71,11 +62,6 @@ export async function createLumenSession(
   return data.token;
 }
 
-/**
- * Asks one address whether it still knows this session. Resolves when it does;
- * throws `unauthorized` (401) when the host restarted or access was turned off,
- * and a network error when the address cannot be reached from here.
- */
 export async function checkLumenSession(
   session: LumenSession,
   timeoutMs = 4_000,
@@ -87,10 +73,6 @@ export async function checkLumenSession(
   );
 }
 
-/**
- * RPC client bound to one session. A 401 means the host restarted or turned
- * access off, so the session is dead: `onUnauthorized` lets the app forget it.
- */
 export function createLumenClient(
   session: LumenSession,
   onUnauthorized?: () => void,

@@ -1,4 +1,3 @@
-/** Typefaces that ship with the app. Each one has a fallback stack, so a font missing on a computer never breaks the text. */
 export const BUILTIN_FONT_IDS = [
   "system",
   "geist",
@@ -10,7 +9,6 @@ export const BUILTIN_FONT_IDS = [
 
 export type BuiltinFontId = (typeof BUILTIN_FONT_IDS)[number];
 
-/** Fonts downloaded from Google Fonts are saved with this prefix (see InstalledFont.id). */
 export const GOOGLE_FONT_PREFIX = "google-";
 
 export type FontFamilyId =
@@ -27,7 +25,6 @@ export const BUILTIN_FONT_OPTIONS: {
     label: "Sistema",
     stack: `"Segoe UI", system-ui, -apple-system, sans-serif`,
   },
-  // Bundled with the app (see src/main.tsx), so it looks the same on every computer.
   {
     id: "geist",
     label: "Geist",
@@ -47,17 +44,14 @@ export const BUILTIN_FONT_OPTIONS: {
   },
 ];
 
-/** One @font-face of an installed font: one weight and one unicode range (a script or language subset). */
 export interface InstalledFace {
   weight: string;
   style: "normal" | "italic";
   unicodeRange: string;
-  /** Absolute path of the .woff2 file inside the app's user data folder. */
   file: string;
 }
 
 export interface InstalledFont {
-  /** `google-<slug>`, e.g. `google-lora`. Also the CSS family name used for it. */
   id: string;
   family: string;
   category: string;
@@ -67,11 +61,9 @@ export interface InstalledFont {
 export interface GoogleFontSearchResult {
   family: string;
   category: string;
-  /** Has a Hebrew subset, so the Bible text can be set in it. */
   hebrew: boolean;
 }
 
-/** One remote file of a Google font, enough to draw it before it is installed. */
 export interface GoogleFontPreviewFace {
   weight: string;
   unicodeRange: string;
@@ -88,7 +80,6 @@ export function isInstalledFontId(id: string): boolean {
   return id.startsWith(GOOGLE_FONT_PREFIX);
 }
 
-/** A saved id that names a built-in font or an installed Google font (not a free-form string). */
 export function isFontFamilyId(value: unknown): value is FontFamilyId {
   return (
     typeof value === "string" &&
@@ -97,7 +88,6 @@ export function isFontFamilyId(value: unknown): value is FontFamilyId {
   );
 }
 
-/** Weight used when nothing else is chosen (CSS "normal"). */
 export const DEFAULT_FONT_WEIGHT = 400;
 
 const WEIGHT_LABELS: Record<number, string> = {
@@ -116,11 +106,6 @@ export function weightLabel(weight: number): string {
   return WEIGHT_LABELS[weight] ?? String(weight);
 }
 
-/**
- * Weights the operator can pick for a font. Installed fonts offer the upright
- * weights that were downloaded; Geist is a variable font; the other built-in
- * fonts are assumed to ship regular and bold only.
- */
 export function fontWeightChoices(
   id: FontFamilyId | string | undefined,
   installed: InstalledFont[],
@@ -142,7 +127,6 @@ export function fontWeightChoices(
   return [DEFAULT_FONT_WEIGHT, 700];
 }
 
-/** Keeps the current weight when the font offers it; otherwise normal, otherwise the lightest offered. */
 export function resolveFontWeight(weight: number, choices: number[]): number {
   if (choices.includes(weight)) return weight;
   return choices.includes(DEFAULT_FONT_WEIGHT)
@@ -150,7 +134,6 @@ export function resolveFontWeight(weight: number, choices: number[]): number {
     : (choices[0] ?? DEFAULT_FONT_WEIGHT);
 }
 
-/** CSS font-family for a saved id. Unknown built-in ids use the system font. */
 export function fontStack(id: FontFamilyId | string | undefined): string {
   if (id && isInstalledFontId(id))
     return `"${id}", system-ui, -apple-system, sans-serif`;
@@ -160,7 +143,6 @@ export function fontStack(id: FontFamilyId | string | undefined): string {
   ).stack;
 }
 
-/** Every font the operator can pick: built-in first, then the installed ones by name. */
 export function fontChoices(installed: InstalledFont[]): FontChoice[] {
   const installedChoices = installed.map((font) => ({
     id: font.id as FontFamilyId,
@@ -173,7 +155,6 @@ export function fontChoices(installed: InstalledFont[]): FontChoice[] {
   ];
 }
 
-/** @font-face rules for installed fonts. `urlFor` turns a stored file path into a URL the windows can load. */
 export function installedFontFaceCss(
   fonts: InstalledFont[],
   urlFor: (file: string) => string | undefined,

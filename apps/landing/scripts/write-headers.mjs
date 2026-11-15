@@ -1,6 +1,3 @@
-// Writes dist/client/_headers (Cloudflare Workers Static Assets / Pages).
-// The CSP keeps script-src strict: each inline <script> emitted by the
-// prerendered HTML is allowed by its sha256 hash, recomputed on every build.
 import { createHash } from "node:crypto";
 import { readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";

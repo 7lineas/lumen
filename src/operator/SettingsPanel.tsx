@@ -31,7 +31,6 @@ import { TransitionRow } from "./TransitionRow";
 import { TypefaceSelect } from "./TypefaceSelect";
 import { useInstalledFonts } from "@/hooks/useInstalledFonts";
 
-/** Read once when the app starts, so opening Ajustes already has the access state and QR codes. */
 let browserAccessCache: BrowserAccessInfo | null = null;
 let browserQrCache: Record<string, string> = {};
 
@@ -161,8 +160,6 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
     setLocal(settings);
   }, [settings]);
 
-  // Save on change: wait a moment so slider drags save once, and only when
-  // the values differ from what is already saved (so the echo does not loop).
   const saveTimer = useRef<number | undefined>(undefined);
   const pendingSave = useRef<AppSettings | null>(null);
   useEffect(() => {
@@ -176,7 +173,6 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
     }, 350);
   }, [local]);
 
-  // Leaving before the timer fires still keeps the last change.
   useEffect(
     () => () => {
       window.clearTimeout(saveTimer.current);
@@ -225,12 +221,9 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
       await navigator.clipboard.writeText(code);
       setCodeCopied(true);
       window.setTimeout(() => setCodeCopied(false), 1600);
-    } catch {
-      // Clipboard can be blocked in some browser contexts; the code stays visible to copy by hand.
-    }
+    } catch {}
   };
 
-  // Known from the first render, so the section keeps its height while the state loads.
   const accessStatus = !browserAccess
     ? "Cargando…"
     : browserAccessBusy
@@ -269,7 +262,6 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
     }
   };
 
-  // A removed font can no longer be projected: fall back to the system font.
   const forgetFont = (id: string) =>
     setLocal((current) =>
       current.fontFamily === id

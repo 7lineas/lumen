@@ -1,6 +1,5 @@
 import type { AppSettings, ProjectorPayload } from "@shared/types";
 
-/** Settings that style what the projector shows. Same fields the desktop operator sends. */
 export type ProjectorSettings = Pick<
   AppSettings,
   | "churchName"
@@ -46,7 +45,6 @@ export function buildVersePayload(
   };
 }
 
-/** Black screen on the projector, keeping the operator's styling for the next verse. */
 export function buildBlankPayload(
   settings: ProjectorSettings,
 ): ProjectorPayload {

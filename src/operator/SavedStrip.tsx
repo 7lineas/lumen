@@ -20,7 +20,6 @@ interface Props {
   onHistory: (reference: string) => void;
 }
 
-/** Bottom strip with the verses saved for the service, in order, plus the recent history. */
 export function SavedStrip(props: Props) {
   const rowRef = useRef<HTMLDivElement>(null);
   const countRef = useRef(props.queue.length);

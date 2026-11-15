@@ -48,7 +48,6 @@ const config = configData as {
 const releases = releasesData as Release;
 const licenses = licensesData as Licenses;
 
-/** Setup and portable downloads, resolved at build time from releases.json. */
 export const landingData = (() => {
   const files = Array.isArray(releases.files) ? releases.files : [];
   const base = String(

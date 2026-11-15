@@ -4,7 +4,6 @@ import { BibleIcon, MediaIcon, SongIcon, TextIcon } from "./icons";
 
 export type OperatorMode = "biblia" | "canciones" | "textos" | "media";
 
-/** Order of the workspaces, matching the number keys 1, 2, 3. */
 export const MODE_ORDER: readonly OperatorMode[] = [
   "biblia",
   "canciones",
@@ -34,15 +33,10 @@ interface Props {
   onSwitch: (mode: OperatorMode) => void;
 }
 
-/**
- * Segmented switch between the workspaces. The highlight is one element that
- * slides from the old mode to the new one, instead of two buttons swapping.
- */
 export function ModeSwitch({ mode, onSwitch }: Props) {
   const railRef = useRef<HTMLDivElement>(null);
   const indicatorRef = useRef<HTMLSpanElement>(null);
 
-  // Position the highlight before paint so the first frame is already right.
   useLayoutEffect(() => {
     const rail = railRef.current;
     const indicator = indicatorRef.current;
@@ -61,8 +55,6 @@ export function ModeSwitch({ mode, onSwitch }: Props) {
     return () => observer.disconnect();
   }, [mode]);
 
-  // The slide is only enabled after the first placement, so the highlight does
-  // not fly in from the left edge when the app opens.
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
       if (indicatorRef.current) indicatorRef.current.dataset.ready = "true";

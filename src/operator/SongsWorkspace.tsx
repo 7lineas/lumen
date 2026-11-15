@@ -25,32 +25,23 @@ export type Song = StoredSong;
 export interface SongStage {
   title: string;
   slides: string[];
-  /** Label of each part ("Coro"), empty for unlabelled parts. */
   labels: string[];
   index: number;
-  /** The song's own transition duration; undefined follows Ajustes > Canciones. */
   fadeMs?: number;
-  /** The song's own typeface and weight; undefined follows Ajustes > Tipo de letra. */
   fontFamily?: FontFamilyId;
   fontWeight?: number;
-  /** A texto (not a song) staged or live: it is never uppercased. */
   isText?: boolean;
 }
 
-/** What the workspace hands up when a song changes. */
 export type SongSelection = Omit<SongStage, "index"> & { index?: number };
 
 interface Props {
   staged: SongStage | null;
   selectedId: string | null;
-  /** Text on the projector right now, when it is a song part. */
   liveText?: string | null;
-  /** Position of that part in the staged song, when it was projected from it (a repeated chorus is live only once). */
   liveIndex?: number | null;
   projectOnClick: boolean;
-  /** Ajustes > Canciones transition, shown in the song dialog as the default. */
   defaultFadeMs: number;
-  /** Ajustes > Tipo de letra, shown in the song dialog as the default typeface. */
   defaultFontFamily: FontFamilyId;
   onToggleProjectOnClick: (value: boolean) => void;
   onSelectSong: (
@@ -58,7 +49,6 @@ interface Props {
     selection: SongSelection | null,
   ) => void;
   onSelectPart: (index: number) => void;
-  /** Double-click: stage the part and project it. */
   onTakePart: (index: number) => void;
 }
 
@@ -66,7 +56,6 @@ function id() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-/** The staged selection for a song: its projected parts, clamped to a valid index. */
 function stageOf(song: Song, index = 0): SongSelection {
   const parts = songParts(song.lyrics);
   return {
@@ -99,9 +88,7 @@ export function SongsWorkspace({
   const [songs, setSongs] = useState<Song[]>([]);
   const [songsLoaded, setSongsLoaded] = useState(false);
   const [query, setQuery] = useState("");
-  // null = closed, "new" = creating, otherwise the id of the song being edited.
   const [editing, setEditing] = useState<string | null>(null);
-  // The song whose delete confirmation is open from its row.
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -127,7 +114,6 @@ export function SongsWorkspace({
     if (songsLoaded) void window.proyector?.setSongs(songs);
   }, [songs, songsLoaded]);
 
-  // Songs saved from another operator (browser or desktop) appear here as they happen.
   useEffect(() => {
     const api = window.proyector;
     return api?.onOperatorSync?.(({ scope }) => {
@@ -161,7 +147,6 @@ export function SongsWorkspace({
     () => (selectedSong ? songParts(selectedSong.lyrics) : []),
     [selectedSong],
   );
-  // Until the library has loaded, the staged song is what the operator sees.
   const shown: SongSection[] = selectedSong
     ? parts
     : (staged?.slides ?? []).map((text, i) => ({
@@ -219,7 +204,6 @@ export function SongsWorkspace({
     );
     setEditing(null);
     setQuery("");
-    // A new song opens straight away; an edited one keeps the part that was staged.
     if (!stored) onSelectSong(next.id, stageOf(next));
     else if (next.id === selectedId)
       onSelectSong(next.id, stageOf(next, staged?.index ?? 0));

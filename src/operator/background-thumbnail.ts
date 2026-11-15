@@ -96,8 +96,6 @@ async function decodeAndSaveThumbnail(filePath: string): Promise<boolean> {
       await toBase64(blob),
     );
   } catch {
-    // Unsupported codecs or malformed media still remain usable as backgrounds;
-    // their library card displays a static video placeholder instead.
     return false;
   } finally {
     video.pause();
@@ -106,7 +104,6 @@ async function decodeAndSaveThumbnail(filePath: string): Promise<boolean> {
   }
 }
 
-/** Serialize thumbnail work: older libraries can be backfilled without loading many videos at once. */
 export function createBackgroundVideoThumbnail(
   filePath: string,
 ): Promise<boolean> {

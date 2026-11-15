@@ -1,18 +1,4 @@
 #!/usr/bin/env node
-/**
- * Builds downloadable Bible modules from eBible VPL sources.
- *
- * Each module is the same JSON the app already loads (metadata, books and
- * verses). SQLite is not used: the projector already reads this JSON offline,
- * and a native database addon would complicate the Windows build.
- *
- * A new free version is data: add its license entry (with vplZip) and rerun
- * this script. The app reads bibles-catalog.json; it does not hardcode ids.
- *
- * Output (not uploaded from here):
- *   data/bible-modules/{id}.json
- *   data/bible-modules/bibles-catalog.json
- */
 import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
 import fs from "node:fs";

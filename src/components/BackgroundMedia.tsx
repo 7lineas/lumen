@@ -9,36 +9,19 @@ import type { MediaFit } from "@shared/types";
 interface Layer {
   src: string;
   video: boolean;
-  /** True while fading out to reveal the solid color beneath. */
   leaving: boolean;
-  /** True until the entrance fade completes. A returning layer glides back
-   * via transition instead of restarting the entrance animation. */
   fresh: boolean;
 }
 
 interface FadingBackgroundMediaProps {
-  /** Managed background media path from settings/payload. Null = solid color. */
   path: string | null | undefined;
   brightness: number;
-  /** Crossfade duration in ms (backgroundFadeMs). */
   fadeMs: number;
-  /** How the media fills the screen (default: cover). */
   fit?: MediaFit;
   className?: string;
-  /**
-   * Show a video background as its still thumbnail instead of playing it. The
-   * operator monitors use it: each playing copy is one more full decode of the
-   * video, and only the projector needs to play it.
-   */
   still?: boolean;
 }
 
-/**
- * Last-known playback position per media URL within this process. If a
- * `<video>` element is ever recreated, it resumes where it left off instead
- * of visibly restarting from 0 (e.g. projecting must never restart the
- * background video).
- */
 const videoPositions = new Map<string, number>();
 
 function BackgroundVideo({
@@ -51,12 +34,10 @@ function BackgroundVideo({
   src: string;
   style: React.CSSProperties;
   className?: string;
-  /** False for an explicitly selected new media (always starts at 0). */
   resume: boolean;
   onReady?: () => void;
 }) {
   const currentRef = useRef<HTMLVideoElement | null>(null);
-  // Stable per-src: on detach, remember where playback was.
   const setRef = useCallback(
     (el: HTMLVideoElement | null) => {
       if (el) {
@@ -65,9 +46,7 @@ function BackgroundVideo({
         try {
           const t = currentRef.current.currentTime;
           if (Number.isFinite(t) && t > 0) videoPositions.set(src, t);
-        } catch {
-          // ignore (media already gone)
-        }
+        } catch {}
         currentRef.current = null;
       }
     },
@@ -92,9 +71,7 @@ function BackgroundVideo({
         if (t != null && Number.isFinite(t) && t > 0.25) {
           try {
             event.currentTarget.currentTime = t;
-          } catch {
-            // ignore (seek not yet possible)
-          }
+          } catch {}
         }
       }}
       onCanPlay={(event) => {
@@ -107,17 +84,6 @@ function BackgroundVideo({
   );
 }
 
-/**
- * Renders background image/video with a crossfade when the media changes.
- * Plain `src` swaps cut instantly (only `background-color` had a CSS
- * transition), so the old layer stays mounted underneath while the new one
- * fades in on top over `fadeMs`. Removing the media fades the old layer out
- * to reveal the solid color beneath.
- *
- * Layers are keyed by their `src` and never move slots, so an outgoing
- * `<video>` keeps playing seamlessly underneath the fade instead of
- * remounting (which would restart it from 0 and feel glitchy).
- */
 export function FadingBackgroundMedia({
   path,
   brightness,
@@ -127,7 +93,6 @@ export function FadingBackgroundMedia({
   still = false,
 }: FadingBackgroundMediaProps) {
   const videoPath = isBackgroundVideo(path);
-  // In still mode a video is its thumbnail image: nothing is decoded or played.
   const url =
     still && videoPath
       ? backgroundThumbnailUrl(path)
@@ -146,8 +111,6 @@ export function FadingBackgroundMedia({
         ]
       : [],
   );
-  // The top layer stays hidden until its file decodes, so a slow load never
-  // flashes a half-ready frame over the old media.
   const [readySrc, setReadySrc] = useState<string | null>(null);
 
   const lastUrlRef = useRef<string | null>(url ?? null);
@@ -156,7 +119,6 @@ export function FadingBackgroundMedia({
     if (lastUrlRef.current === target) return;
     lastUrlRef.current = target;
     if (!url) {
-      // Back to solid color: fade the stacked media out.
       setLayers((prev) =>
         prev.length > 0 ? prev.map((l) => ({ ...l, leaving: true })) : prev,
       );
@@ -165,7 +127,6 @@ export function FadingBackgroundMedia({
     const video = isBackgroundVideo(path) && !still;
     setLayers((prev) => {
       const top = prev[prev.length - 1];
-      // Re-selecting the fading-out media just brings it back.
       if (top && top.src === url)
         return prev.map((l) => ({ ...l, leaving: false }));
       return [
@@ -178,7 +139,6 @@ export function FadingBackgroundMedia({
     setReadySrc(null);
   }, [url, path, still]);
 
-  // Drop covered/faded layers once the crossfade completes.
   useEffect(() => {
     if (layers.length === 0) return;
     const top = layers[layers.length - 1];
@@ -196,17 +156,12 @@ export function FadingBackgroundMedia({
     return () => window.clearTimeout(timer);
   }, [layers, duration]);
 
-  // brightness(1) is an identity filter that still costs a compositing layer per video.
   const filter = brightness === 1 ? undefined : `brightness(${brightness})`;
 
   return (
     <>
       {layers.map((layer, index) => {
         const isTop = index === layers.length - 1;
-        // The entering top layer animates in via keyframes (starts on style
-        // application, no rAF paint dance needed). A leaving layer fades out
-        // via transition from its previously painted opacity of 1. Covered
-        // layers hold full opacity underneath.
         const layerStyle: React.CSSProperties = layer.leaving
           ? { opacity: 0, transition: `opacity ${duration}ms ease`, filter }
           : isTop

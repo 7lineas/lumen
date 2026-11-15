@@ -8,7 +8,6 @@ module.exports = {
   presets: [require("nativewind/preset")],
   theme: {
     extend: {
-      // Each weight is its own loaded font file, so each gets its own name.
       fontFamily: {
         sans: ["InstrumentSans_400Regular"],
         "sans-medium": ["InstrumentSans_500Medium"],

@@ -24,12 +24,10 @@ export function decodeBibleBytes(bytes: Buffer): string {
   try {
     return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
   } catch {
-    // Old Windows modules are often Latin-1 / Windows-1252.
     return new TextDecoder("windows-1252").decode(bytes);
   }
 }
 
-/** Reads and parses one or more files into a single Bible (nothing is written). */
 export function parseBibleFiles(files: string[]): {
   parsed: ParsedBible;
   fileNames: string[];
@@ -76,7 +74,6 @@ export class ImportSession {
       const summary = summarize(parsed);
       this.counter += 1;
       const previewId = `p${Date.now().toString(36)}${this.counter}`;
-      // Only the latest preview is kept: files are large and the dialog is modal.
       this.previews.clear();
       this.previews.set(previewId, { parsed });
       return {
@@ -96,7 +93,6 @@ export class ImportSession {
     }
   }
 
-  /** Validates the user's fields, writes `<userDir>/<id>.json` and forgets the preview. */
   commit(
     previewId: string,
     input: ImportMetaInput,

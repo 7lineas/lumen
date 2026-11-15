@@ -19,20 +19,13 @@ export interface ChapterRef {
   chapter: number;
 }
 
-/**
- * Online Bibles (YouVersion Platform) for the operator window. The App Key and
- * all network access stay in the main process; this hook only asks for
- * chapters over IPC and merges them into the in-memory Bible cache.
- */
 export function useOnlineBibles() {
   const [online, setOnline] = useState<OnlineVersionsResult>({
     configured: false,
     versions: [],
     stale: false,
   });
-  /** Bumps every time a chapter is merged so memoized readers recompute. */
   const [chapterTick, setChapterTick] = useState(0);
-  /** True once the first version-list request has answered (even with an error). */
   const [loaded, setLoaded] = useState(false);
   const [failures, setFailures] = useState<Record<string, ChapterFailure>>({});
   const [loading, setLoading] = useState<Record<string, true>>({});
@@ -46,7 +39,6 @@ export function useOnlineBibles() {
     try {
       setOnline(await api.listOnlineBibles(force));
     } catch {
-      // Keep whatever list we already have.
     } finally {
       setLoaded(true);
     }
@@ -124,8 +116,6 @@ export function useOnlineBibles() {
           bible = emptyOnlineBible(meta);
           loadBible(bible);
         }
-        // The publisher's attribution travels with every chapter and is what the
-        // projector footer prints for this Bible.
         if (result.copyright) bible.meta.copyright = result.copyright;
         mergeChapter(bible, ref.book, ref.chapter, result.verses);
         setFailures((prev) => {
@@ -136,8 +126,6 @@ export function useOnlineBibles() {
         });
         setChapterTick((tick) => tick + 1);
       } else {
-        // Stay "requested" so effects do not retry in a loop; an explicit
-        // retry (resetFailures) clears it.
         setFailures((prev) => ({ ...prev, [key]: result }));
       }
       return result;
@@ -145,7 +133,6 @@ export function useOnlineBibles() {
     [],
   );
 
-  /** Forget past failures so the next prefetch tries the network again. */
   const resetFailures = useCallback(() => {
     requested.current.clear();
     setFailures({});

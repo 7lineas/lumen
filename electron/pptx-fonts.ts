@@ -1,20 +1,3 @@
-/**
- * Fast system-font setup for pptx-glimpse.
- *
- * pptx-glimpse's own system-font loader parses EVERY font in C:\Windows\Fonts
- * with opentype.js before the first slide is drawn (~5 s and hundreds of MB on
- * a normal Windows install), on every import. Here only the `name` table of
- * each file is read up front (a few KB per file), and a font is fully parsed
- * the first time a slide actually asks for its family.
- *
- * Resolution is identical to the full scan: files are visited in the same
- * sorted order, a family is owned by the first file that parses and declares
- * it (directly or through the font mapping, e.g. Carlito -> Calibri), and the
- * fallback font is the first file that parses. The name index is only a
- * superset filter; the real opentype.js names decide.
- *
- * Pure Node (no Electron imports) so it can be unit-tested.
- */
 import fs from "fs";
 import os from "os";
 import path from "path";
@@ -31,13 +14,11 @@ type Opentype = {
 };
 type Glimpse = typeof import("pptx-glimpse");
 
-/** Same key pptx-glimpse builds for "system fonts, no extra dirs, default mapping". */
 const SYSTEM_SETUP_KEY = "\n\nfalse";
 const SYSTEM_CACHE_GLOBAL = "__pptxGlimpseSystemFontCache__";
 const TTC_TAG = 0x74746366;
 const NAME_TAG = 0x6e616d65;
 const FONT_EXTENSIONS = new Set([".ttf", ".otf"]);
-// pptx-glimpse only loads these .ttc collections (CJK UI fonts).
 const CJK_TTC_PATTERNS = [
   "NotoSansCJK",
   "NotoSerifCJK",
@@ -52,7 +33,6 @@ const CJK_TTC_PATTERNS = [
 
 const moduleRequire = createRequire(__filename);
 
-/** pptx-glimpse's own dependencies (pnpm keeps them out of our node_modules). */
 function glimpseRequire(): NodeRequire {
   return createRequire(moduleRequire.resolve("pptx-glimpse"));
 }
@@ -63,13 +43,6 @@ export function loadOpentype(): Opentype {
 
 const patchedPrototypes = new WeakSet<object>();
 
-/**
- * opentype.js 1.3.4 throws "lookupType: 7 - substFormat: 1 is not yet
- * supported" while applying ligatures for some fonts, Calibri (the Office
- * default) among them, which failed the whole import. Fall back to plain
- * character-to-glyph mapping for that text: the same glyphs without the
- * fi/fl ligature substitution, which PowerPoint doesn't apply by default either.
- */
 export function patchOpentypeShaping(
   opentype: Opentype = loadOpentype(),
 ): void {
@@ -124,16 +97,9 @@ function walk(dir: string, out: string[]): void {
       )
         out.push(full);
     }
-  } catch {
-    // unreadable folder: skipped, like pptx-glimpse
-  }
+  } catch {}
 }
 
-/**
- * The system fonts in pptx-glimpse's order (collectFontFilePaths), then any
- * extra folders. Extras go last so they only fill families the system lacks
- * and never change which file an existing family or the fallback comes from.
- */
 export function collectFontFiles(extraDirs: string[] = []): string[] {
   const sorted = (dirs: string[]) => {
     const files: string[] = [];
@@ -161,11 +127,6 @@ function decodeUtf16be(bytes: Buffer): string {
   return text;
 }
 
-/**
- * Family names (name IDs 1 and 16, every platform/language) from the name
- * table, without parsing the rest of the font. A superset of what
- * opentype.js reports; candidates are confirmed after a real parse.
- */
 export function readFamilyNames(file: string): string[] {
   const names = new Set<string>();
   let fd: number | null = null;
@@ -207,7 +168,6 @@ export function readFamilyNames(file: string): string[] {
       else if (platformId === 1) names.add(bytes.toString("latin1"));
     }
   } catch {
-    // unreadable or malformed: it simply never becomes a candidate
   } finally {
     if (fd !== null) fs.closeSync(fd);
   }
@@ -218,7 +178,6 @@ function alignTo4(n: number): number {
   return (n + 3) & ~3;
 }
 
-/** First font of a .ttc as a standalone sfnt (what pptx-glimpse parses). */
 function extractFirstTtcFont(data: Uint8Array): ArrayBuffer | null {
   const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
   if (view.byteLength < 12 || view.getUint32(0) !== TTC_TAG) return null;
@@ -286,9 +245,7 @@ function extractFirstTtcFont(data: Uint8Array): ArrayBuffer | null {
         cursor += alignTo4(table.length);
       });
       return output;
-    } catch {
-      // try the next entry, as pptx-glimpse does
-    }
+    } catch {}
   }
   return null;
 }
@@ -304,16 +261,10 @@ function familyNamesOf(font: OpentypeFont): Set<string> {
 }
 
 export interface LazySystemFonts {
-  /** opentype.js fonts actually parsed so far. */
   parsedCount(): number;
   fileCount: number;
 }
 
-/**
- * Pre-fill pptx-glimpse's system font cache with a lazily loaded font set, so
- * convertPptxToSvg never runs its full font scan. Call once per process
- * before converting.
- */
 export async function installLazySystemFonts(
   glimpse: Glimpse,
   extraDirs: string[] = [],
@@ -354,7 +305,6 @@ export async function installLazySystemFonts(
     return font;
   };
 
-  // name -> indexes of the files that may declare it, in scan order.
   const candidates = new Map<string, number[]>();
   files.forEach((file, index) => {
     for (const name of readFamilyNames(file)) {
@@ -402,7 +352,6 @@ export async function installLazySystemFonts(
     }
   }
 
-  // A real setup for its classes; its font tables are then swapped for the lazy one.
   const seed = fs.readFileSync(files.find((file) => parsed.get(file))!);
   const setup = await glimpse.createOpentypeSetupFromBuffers([
     { data: new Uint8Array(seed) },

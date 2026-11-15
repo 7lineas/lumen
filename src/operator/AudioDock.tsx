@@ -16,10 +16,6 @@ interface Props {
   onPlayingChange?: (playing: boolean) => void;
 }
 
-/**
- * Audio player of the operator window. It lives outside the workspaces, so a
- * track keeps playing while the operator moves between Bible, songs and media.
- */
 export function AudioDock({ track, onClose, onPlayingChange }: Props) {
   const ref = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
@@ -28,7 +24,6 @@ export function AudioDock({ track, onClose, onPlayingChange }: Props) {
   const [volume, setVolume] = useState(1);
   const [failed, setFailed] = useState(false);
 
-  // A new track object is a request to play, also for the track already loaded.
   useEffect(() => {
     const el = ref.current;
     if (!el || !track) return;

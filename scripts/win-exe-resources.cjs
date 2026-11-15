@@ -1,8 +1,3 @@
-// Pure-JS (no wine, no rcedit) editing of the Windows resources of an .exe:
-// the application icon and the version info that Explorer, the taskbar and
-// Task Manager show. electron-builder is configured with
-// `signAndEditExecutable: false` (it needs wine/winCodeSign off Windows), so
-// without this the packaged Lumen.exe keeps Electron's icon and metadata.
 const fs = require("node:fs");
 const ResEdit = require("resedit");
 
@@ -10,7 +5,6 @@ const RT_VERSION = 16;
 const LANG_EN_US = 1033;
 const CODEPAGE_UNICODE = 1200;
 
-/** Sizes and bit depths of the icon group embedded in an .ico file. */
 function readIcoSizes(icoBuffer) {
   if (
     icoBuffer.length < 6 ||
@@ -27,7 +21,6 @@ function readIcoSizes(icoBuffer) {
   return sizes;
 }
 
-/** Icon groups (sizes) and version strings currently inside an .exe. */
 function inspectExe(exeBuffer) {
   const exe = ResEdit.NtExecutable.from(exeBuffer);
   const resources = ResEdit.NtExecutableResource.from(exe);
@@ -44,10 +37,6 @@ function inspectExe(exeBuffer) {
   return { groups, strings };
 }
 
-/**
- * Replaces the icon (all group ids, so the exe icon is ours whichever id the
- * Electron binary used) and the version strings. Returns the new exe bytes.
- */
 function applyWindowsResources(exeBuffer, options) {
   const {
     icoBuffer,
@@ -77,8 +66,6 @@ function applyWindowsResources(exeBuffer, options) {
     );
   }
 
-  // Drop the original version info (Electron's) and write ours from scratch,
-  // so no leftover language block can win over it.
   for (let i = resources.entries.length - 1; i >= 0; i -= 1) {
     if (resources.entries[i].type === RT_VERSION)
       resources.entries.splice(i, 1);

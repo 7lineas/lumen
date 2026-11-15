@@ -2,11 +2,6 @@ import { fetch as expoFetch } from "expo/fetch";
 import { LumenApiError, type LumenSession } from "./lumen-client";
 import { parseSseFrames, type LumenEvent } from "./sse-frames";
 
-/**
- * Streams `/api/v1/events` until the server closes it or `signal` aborts.
- * `expo/fetch` is used because React Native's global fetch does not expose a
- * readable response body. Throws on HTTP or network failure.
- */
 export async function streamLumenEvents(
   session: LumenSession,
   options: {

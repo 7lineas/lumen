@@ -1,5 +1,3 @@
-// electron-builder afterPack hook: brands the Windows app exe (icon + version
-// info) before it is packed into the NSIS installer / portable exe.
 const fs = require("node:fs");
 const path = require("node:path");
 const {

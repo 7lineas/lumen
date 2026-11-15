@@ -15,7 +15,6 @@ export function parseVersionParts(version: string): VersionPart[] {
     });
 }
 
-/** Compare SemVer-like strings. Returns 1 when a > b, -1 when a < b, 0 when equal. */
 export function compareVersions(a: string, b: string): 1 | -1 | 0 {
   const left = parseVersionParts(a);
   const right = parseVersionParts(b);
@@ -41,12 +40,6 @@ export function isNewerVersion(current: string, latest: string): boolean {
   return compareVersions(latest, current) === 1;
 }
 
-// ---------------------------------------------------------------------------
-// Estado de actualización compartido entre el proceso principal y el operador.
-// Las funciones de este bloque son puras: el reductor vive en el main y la UI
-// solo lee el estado ya calculado.
-// ---------------------------------------------------------------------------
-
 export type AppUpdatePhase =
   | "disabled"
   | "idle"
@@ -57,11 +50,6 @@ export type AppUpdatePhase =
   | "downloaded"
   | "error";
 
-/**
- * - `auto`: instalador NSIS en Windows; electron-updater descarga e instala.
- * - `manual`: portable u otras plataformas; solo avisa y abre la descarga.
- * - `disabled`: ejecución sin empaquetar (desarrollo).
- */
 export type AppUpdateMode = "auto" | "manual" | "disabled";
 
 export type AppUpdateErrorContext = "check" | "download" | "install";
@@ -72,12 +60,10 @@ export interface AppUpdateState {
   currentVersion: string;
   availableVersion: string | null;
   downloadedVersion: string | null;
-  /** 0-100 mientras se descarga. */
   downloadPercent: number | null;
   checkedAt: string | null;
   message: string | null;
   errorContext: AppUpdateErrorContext | null;
-  /** Hay una ventana de proyección abierta mostrando algo (no en negro). */
   projectionActive: boolean;
 }
 
@@ -105,7 +91,6 @@ export function reduceOnCheckStart(
   state: AppUpdateState,
   checkedAt: string,
 ): AppUpdateState {
-  // Una comprobación en segundo plano no debe esconder un botón ya visible.
   if (
     state.status === "available" ||
     state.status === "downloaded" ||
@@ -165,7 +150,6 @@ export function reduceOnCheckResult(
   };
 }
 
-/** Un fallo al comprobar nunca molesta: se conserva lo que ya se sabía. */
 export function reduceOnCheckFailure(
   state: AppUpdateState,
   message: string,
@@ -247,7 +231,6 @@ export function reduceOnInstallFailure(
   return { ...state, status: "downloaded", message, errorContext: "install" };
 }
 
-/** Qué hace el botón ahora mismo (o `none` si no debe verse). */
 export function resolveUpdateButtonAction(
   state: AppUpdateState | null,
 ): AppUpdateButtonAction {
@@ -260,7 +243,6 @@ export function resolveUpdateButtonAction(
   return "none";
 }
 
-/** El botón solo existe cuando hay versión nueva (o una descarga en curso). */
 export function shouldShowUpdateButton(state: AppUpdateState | null): boolean {
   if (!state || state.mode === "disabled") return false;
   if (state.status === "downloading") return true;
@@ -304,12 +286,10 @@ export function updateButtonTitle(state: AppUpdateState): string {
 export interface UpdateConfirmation {
   title: string;
   description: string;
-  /** Aviso extra, solo si hay una proyección en curso. */
   projectionWarning: string | null;
   confirmLabel: string;
 }
 
-/** Texto del diálogo de confirmación antes de descargar/instalar. */
 export function getUpdateConfirmation(
   state: AppUpdateState,
 ): UpdateConfirmation {
@@ -337,7 +317,6 @@ export function isOfflineError(message: string | null | undefined): boolean {
   return OFFLINE_PATTERN.test(String(message ?? ""));
 }
 
-/** Mensaje corto y en español para mostrar al operador. */
 export function friendlyUpdateError(
   error: unknown,
   context: AppUpdateErrorContext,
@@ -355,7 +334,6 @@ export function friendlyUpdateError(
   return "No se pudo buscar la actualización.";
 }
 
-/** Sondeo discreto: al iniciar (con retraso) y luego cada pocas horas. */
 export const UPDATE_STARTUP_DELAY_MS = 30_000;
 export const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 export const UPDATE_RETRY_INTERVAL_MS = 30 * 60 * 1000;
