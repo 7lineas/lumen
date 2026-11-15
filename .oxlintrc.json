@@ -176,6 +176,14 @@
       "rules": {
         "typescript/no-require-imports": "off"
       }
+    },
+    {
+      "files": ["apps/landing/**/*.{ts,tsx,mjs}"],
+      "env": {
+        "builtin": true,
+        "browser": true,
+        "node": true
+      }
     }
   ]
 }
