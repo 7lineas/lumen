@@ -137,7 +137,7 @@ Genera `operator-window.png`, `settings-window.png`, `biblias-window.png` y `pro
 
 ## Página de descarga
 
-Sitio estático en `landing/`, listo para Vercel. El proyecto de Vercel debe usar la **raíz del repositorio**: `vercel.json` ejecuta `scripts/prepare-landing.mjs` y publica `landing-dist/`. No cambie el Root Directory a `landing/`, porque los créditos salen de `shared/bible-licenses.json`.
+La landing es una app TanStack Start en `apps/landing/`, prerenderizada a HTML estático y publicada en Cloudflare. Para desplegar: `pnpm --filter lumen-landing deploy` (compila y ejecuta `wrangler deploy`). Los datos de descarga siguen en `landing/` y los créditos bíblicos en `shared/bible-licenses.json`.
 
 Los enlaces de los `.exe` se arman con una sola base, `DOWNLOAD_BASE_URL`, en `landing/config.json`. El mismo valor está en `landing/releases.json` como `downloadBaseUrl`. El valor por defecto es `https://downloads.7lineas.com` (dominio público del bucket R2 `desktop-releases`). La página no llama al bucket: lee su propio `releases.json` y el botón es un enlace directo. Por eso el bucket no necesita CORS.
 
