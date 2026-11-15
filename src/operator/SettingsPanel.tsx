@@ -467,6 +467,17 @@ export function SettingsPanel({ settings, versions, onSave }: Props) {
       </SettingsGroup>
 
       <SettingsGroup icon={MonitorPlay} title="Proyector">
+        <SettingRow
+          label="Doble clic proyecta"
+          hint="Si está apagado, el doble clic solo prepara la vista previa"
+        >
+          <Switch
+            checked={local.doubleClickProjects}
+            onCheckedChange={(checked) =>
+              setLocal({ ...local, doubleClickProjects: checked === true })
+            }
+          />
+        </SettingRow>
         <SettingRow label="Pantalla" hint="Dónde se muestra la proyección">
           <Select
             value={

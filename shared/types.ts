@@ -96,6 +96,7 @@ export interface AppSettings {
   accentColor: string;
   overlayAnimation: boolean;
   launchAtStartup: boolean;
+  doubleClickProjects: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -122,6 +123,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   accentColor: "#f6a623",
   overlayAnimation: false,
   launchAtStartup: true,
+  doubleClickProjects: false,
 };
 
 export interface HistoryEntry {

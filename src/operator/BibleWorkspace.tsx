@@ -26,6 +26,7 @@ interface Props {
   onReference: (text: string) => string | null;
   onVerseClick: (verse: number, shiftKey: boolean) => void;
   onVerseTake: (verse: number) => void;
+  doubleClickProjects: boolean;
   onAddCurrent: () => void;
   savedCount: number;
   notice?: string | null;
@@ -359,7 +360,11 @@ export function BibleWorkspace(props: Props) {
                       className={`lx-result${inRange ? " on" : ""}${isLive ? " live" : ""}`}
                       data-verse-active={inRange ? "1" : undefined}
                       data-current={inRange ? "" : undefined}
-                      title="Clic prepara el versículo, Mayús+clic marca un rango, doble clic lo proyecta"
+                      title={
+                        props.doubleClickProjects
+                          ? "Clic prepara el versículo, Mayús+clic marca un rango, doble clic lo proyecta"
+                          : "Clic prepara el versículo, Mayús+clic marca un rango"
+                      }
                       onClick={(e) => props.onVerseClick(v, e.shiftKey)}
                       onDoubleClick={() => props.onVerseTake(v)}
                     >

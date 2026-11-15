@@ -729,10 +729,11 @@ export function OperatorApp() {
       if (text == null) return;
       const next = { ...songStaged, index };
       setSongStaged(next);
+      if (!settings.doubleClickProjects) return;
       setSongLive(next);
       void send(songPayload(next.title, text, next.fadeMs, next));
     },
-    [songStaged, send, songPayload],
+    [songStaged, send, songPayload, settings.doubleClickProjects],
   );
 
   const projectSongStaged = useCallback(async () => {
@@ -841,10 +842,11 @@ export function OperatorApp() {
       if (text == null) return;
       const next = { ...textStaged, index };
       setTextStaged(next);
+      if (!settings.doubleClickProjects) return;
       setSongLive({ ...next, isText: true });
       void send(textPayload(text, next));
     },
-    [textStaged, send, textPayload],
+    [textStaged, send, textPayload, settings.doubleClickProjects],
   );
 
   const projectTextStaged = useCallback(async () => {
@@ -955,10 +957,11 @@ export function OperatorApp() {
       if (image == null) return;
       const next = { ...slideStaged, index };
       setSlideStaged(next);
+      if (!settings.doubleClickProjects) return;
       setSlideLive(next);
       void send(slidePayload(image));
     },
-    [slideStaged, send, slidePayload],
+    [slideStaged, send, slidePayload, settings.doubleClickProjects],
   );
   const navigateSlidePreview = useCallback((delta: number) => {
     setSlideStaged((current) =>
@@ -1863,14 +1866,26 @@ export function OperatorApp() {
               );
               stageRange(next.range, next.anchor);
             }}
-            onVerseTake={(verse) =>
+            doubleClickProjects={settings.doubleClickProjects}
+            onVerseTake={(verse) => {
+              if (!settings.doubleClickProjects) {
+                const next = rangeFromVerseClick(
+                  anchor,
+                  viewBook,
+                  viewChapter,
+                  verse,
+                  false,
+                );
+                stageRange(next.range, next.anchor);
+                return;
+              }
               void projectReference(
                 formatRange({
                   start: { book: viewBook, chapter: viewChapter, verse },
                   end: { book: viewBook, chapter: viewChapter, verse },
                 }),
-              )
-            }
+              );
+            }}
             keyword={keyword}
             onKeyword={setKeyword}
             searchResults={searchResults}
