@@ -7,16 +7,6 @@ import { createReadStream, existsSync, statSync } from "node:fs";
 import path from "node:path";
 import { randomBytes, timingSafeEqual } from "node:crypto";
 
-/**
- * Browser transport for the Electron-owned application service. It deliberately
- * exposes a small capability allow-list; native dialogs, updater controls,
- * display enumeration and arbitrary file operations stay inside Electron.
- */
-/**
- * Identifies the client that caused a change, so its own event stream does not
- * echo the change back. Browsers send `x-lumen-client`; the desktop window uses
- * `DESKTOP_ORIGIN`.
- */
 export type RpcHandler = (
   args: unknown[],
   origin: string,
@@ -65,7 +55,6 @@ const SIGNAL_EVENTS = new Set(["operator:sync"]);
 const API_PREFIX = "/api/v1";
 
 type EventMessage = { event: string; payload: unknown };
-/** Event stream connections, each keyed by the client id that opened it. */
 const subscribers = new Map<ServerResponse, string>();
 const latestEvents = new Map<string, unknown>();
 const rpcHandlers = new Map<string, RpcHandler>();
@@ -95,7 +84,6 @@ function writeToSubscribers(
   }
 }
 
-/** Replayed to clients that connect later, so keep it to the latest state. */
 export function publishBrowserEvent(
   event: string,
   payload: unknown,
@@ -106,7 +94,6 @@ export function publishBrowserEvent(
   writeToSubscribers(event, payload, origin);
 }
 
-/** Tells connected clients to re-read shared data. Not replayed to late joiners. */
 export function publishBrowserSignal(
   event: string,
   payload: unknown,
@@ -116,7 +103,6 @@ export function publishBrowserSignal(
   writeToSubscribers(event, payload, origin);
 }
 
-/** Reads the caller's client id from a request header; ids are only used to skip echoes. */
 function clientIdOf(request: IncomingMessage): string {
   const raw = request.headers["x-lumen-client"];
   const value = Array.isArray(raw) ? raw[0] : raw;
@@ -206,15 +192,10 @@ function contentType(file: string): string {
   );
 }
 
-/**
- * Replace the pairing PIN of a running service. The old PIN stops working at once;
- * sessions already paired keep working. Turning access off is what revokes them.
- */
 export function rotateBrowserPairingCode(code: string): void {
   pairingCode = code;
 }
 
-/** Start only when explicitly enabled. LAN sessions must first exchange the pairing PIN. */
 export function startBrowserService(options: {
   root: string;
   userData: string;

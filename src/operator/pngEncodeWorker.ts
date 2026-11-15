@@ -1,10 +1,4 @@
 /// <reference lib="webworker" />
-/**
- * PNG encoder for rasterized PDF pages. Chromium encodes canvas.toBlob PNGs
- * one at a time, which made encoding ~70% of a PDF import. Several of these
- * workers encode pages in parallel with the same encoder (byte-identical
- * PNGs) and hand back base64 so the UI thread does no per-byte work.
- */
 export type PngEncodeRequest = { id: number; bitmap: ImageBitmap };
 export type PngEncodeResponse =
   | { id: number; base64: string }

@@ -38,12 +38,10 @@ function slideDecksDir(): string {
   return path.join(app.getPath("userData"), "slide-decks");
 }
 
-/** Video and audio imported in the Media workspace. */
 function mediaFilesDir(): string {
   return path.join(app.getPath("userData"), "media-files");
 }
 
-/** Folders under userData whose files may be shown or played in the app windows. */
 const SERVED_MEDIA_DIRS = [
   "background-images",
   "logo-images",
@@ -72,11 +70,6 @@ const MEDIA_CONTENT_TYPES: Record<string, string> = {
   ".webp": "image/webp",
 };
 
-/**
- * Serve part of a managed file. Chromium asks for audio and video with a
- * Range header and can only seek when it gets a 206 back, which net.fetch on
- * a file:// URL does not give.
- */
 const MEDIA_CHUNK_BYTES = 1024 * 1024;
 
 function rangeResponse(target: string, rangeHeader: string): Response | null {
@@ -94,7 +87,6 @@ function rangeResponse(target: string, rangeHeader: string): Response | null {
       headers: { "content-range": `bytes */${size}`, "accept-ranges": "bytes" },
     });
   }
-  // Large chunks: a video is read through this process, and 64 KB pieces make an hour-long file tens of thousands of hops.
   const stream = Readable.toWeb(
     fs.createReadStream(target, {
       start,
@@ -115,10 +107,6 @@ function rangeResponse(target: string, rangeHeader: string): Response | null {
   });
 }
 
-/**
- * Copy off the main thread: a synchronous copy of an hour-long video freezes
- * every window until it ends. FICLONE makes it instant where the disk allows.
- */
 async function copyToMediaFiles(filePath: string): Promise<string | null> {
   try {
     const dir = mediaFilesDir();
@@ -140,7 +128,6 @@ async function copyToMediaFiles(filePath: string): Promise<string | null> {
   }
 }
 
-/** Delete managed video/audio files no longer referenced by any stored item. */
 function pruneOrphanMediaFiles(next: Array<{ file?: string }>): void {
   try {
     const dir = path.resolve(mediaFilesDir());
@@ -153,12 +140,9 @@ function pruneOrphanMediaFiles(next: Array<{ file?: string }>): void {
       if (!referenced.has(full) && !isRecent(full))
         fs.rmSync(full, { force: true });
     }
-  } catch {
-    // pruning is best-effort
-  }
+  } catch {}
 }
 
-/** Copy an original .pptx into app data so the renderer can rasterize it. */
 function copyPptxToSlideDecks(deckId: string, filePath: string): string | null {
   try {
     const dir = slideDecksDir();
@@ -172,7 +156,6 @@ function copyPptxToSlideDecks(deckId: string, filePath: string): string | null {
   }
 }
 
-/** Copy an original PDF into app data so the renderer can rasterize it. */
 function copyPdfToSlideDecks(deckId: string, pdfPath: string): string | null {
   try {
     const dir = slideDecksDir();
@@ -203,7 +186,6 @@ function copyToSlideImages(filePath: string): string | null {
   }
 }
 
-/** Files younger than this are never pruned: they may belong to an import/conversion whose deck is not persisted yet. */
 const PRUNE_GRACE_MS = 5 * 60 * 1000;
 
 function isRecent(fullPath: string): boolean {
@@ -214,14 +196,12 @@ function isRecent(fullPath: string): boolean {
   }
 }
 
-/** Delete managed slide images no longer referenced by any stored deck. */
 function pruneOrphanSlideImages(
   next: Array<{ images: Array<string | null> }>,
 ): void {
   try {
     const dir = path.resolve(slideImagesDir());
     if (!fs.existsSync(dir)) return;
-    // Each slide's thumbnail sidecar lives and dies with the slide itself.
     const referenced = new Set(
       next
         .flatMap((deck) => deck.images)
@@ -233,17 +213,12 @@ function pruneOrphanSlideImages(
       if (!referenced.has(full) && !isRecent(full)) {
         try {
           fs.rmSync(full, { force: true });
-        } catch {
-          // ignore single-file failures
-        }
+        } catch {}
       }
     }
-  } catch {
-    // pruning is best-effort
-  }
+  } catch {}
 }
 
-/** Sources (original PPTX/PDF) are only needed while converting or retrying; drop stale leftovers. */
 const SOURCE_MAX_AGE_MS = 60 * 60 * 1000;
 
 function pruneStaleSlideSources(): void {
@@ -255,13 +230,9 @@ function pruneStaleSlideSources(): void {
       try {
         if (Date.now() - fs.statSync(full).mtimeMs > SOURCE_MAX_AGE_MS)
           fs.rmSync(full, { force: true });
-      } catch {
-        // ignore single-file failures
-      }
+      } catch {}
     }
-  } catch {
-    // pruning is best-effort
-  }
+  } catch {}
 }
 import type {
   AppSettings,
@@ -320,10 +291,6 @@ import {
   stopBrowserService,
 } from "./browser-service";
 
-/**
- * Stored lists that every operator (desktop and browser) shows. When one of
- * these changes, the other operators are told to re-read `scope`.
- */
 const SYNCED_STORES: Record<string, { scope: string; key: string }> = {
   "history:add": { scope: "history", key: "history" },
   "queue:set": { scope: "queue", key: "queue" },
@@ -334,7 +301,6 @@ const SYNCED_STORES: Record<string, { scope: string; key: string }> = {
   "settings:set": { scope: "settings", key: "settings" },
 };
 
-/** Tells every operator except the one that made the change to re-read `scope`. */
 function notifyOperators(scope: string, origin: string): void {
   publishBrowserSignal("operator:sync", { scope }, origin);
   if (
@@ -345,11 +311,6 @@ function notifyOperators(scope: string, origin: string): void {
     operatorWindow.webContents.send("operator:sync", { scope });
 }
 
-/**
- * Runs a handler and notifies other operators only when the stored value really
- * changed. Comparing values stops an echo loop: a client that re-saves what it
- * just read writes nothing new, so nothing is sent back.
- */
 function runSynced<T>(channel: string, origin: string, run: () => T): T {
   const sync = SYNCED_STORES[channel];
   if (!sync) return run();
@@ -397,13 +358,11 @@ function registerIpcHandle<TArgs extends unknown[], TResult>(
   );
 }
 
-/** Where a call came from, as set by registerIpcHandle. */
 function originOf(event: Electron.IpcMainInvokeEvent): string {
   const origin = (event as { lumenOrigin?: unknown }).lumenOrigin;
   return typeof origin === "string" ? origin : DESKTOP_ORIGIN;
 }
 
-// Isolated profile for automated checks (never used in normal installs).
 if (process.env.LUMEN_TEST_USERDATA) {
   app.setPath("userData", path.resolve(process.env.LUMEN_TEST_USERDATA));
 }
@@ -440,9 +399,6 @@ let lastProjectorPayload: ProjectorPayload | null = null;
 let lastProjectorMode: ProjectorPayload["mode"] | null = null;
 const isDev = !app.isPackaged && process.env.PROYECTOR_SCREENSHOT !== "1";
 
-// Video and audio elements need the stream privilege when served through a
-// custom protocol. Without it Chromium can load an image but leaves videos
-// black because media range/stream requests are rejected.
 protocol.registerSchemesAsPrivileged([
   {
     scheme: "lumen-media",
@@ -495,7 +451,6 @@ function googleFontsCatalogFile(): string {
   return path.join(app.getPath("userData"), "google-fonts-catalog.json");
 }
 
-/** Tells every window which fonts can be used now, so the projector and the operator load the same faces. */
 function broadcastInstalledFonts(): void {
   const fonts = store.get("installedFonts");
   for (const window of BrowserWindow.getAllWindows()) {
@@ -519,11 +474,6 @@ function currentSettings(): AppSettings {
   return { ...DEFAULT_SETTINGS, ...store.get("settings") };
 }
 
-/**
- * Window/taskbar/dock icon. Windows needs the multi-size .ico (the taskbar
- * picks 24/32/48/256 from it); it ships both inside the asar and as a loose
- * file in resources. Elsewhere the PNG is used.
- */
 function appIconPath(): string {
   if (process.platform === "win32") {
     const loose = path.join(process.resourcesPath, "icon.ico");
@@ -541,9 +491,6 @@ function createOperatorWindow(): void {
     minHeight: 680,
     icon: appIconPath(),
     title: "Lumen",
-    // The app's top bar is the window title bar (same as Lectern): macOS keeps
-    // the traffic lights inside it. Elsewhere the window is frameless and the top
-    // bar draws its own window controls, so dialogs can cover them like any content.
     ...(process.platform === "darwin"
       ? {
           titleBarStyle: "hiddenInset" as const,
@@ -551,7 +498,6 @@ function createOperatorWindow(): void {
         }
       : { frame: false }),
     autoHideMenuBar: true,
-    // The app shell colour: the window no longer flashes white before the first paint.
     backgroundColor: "#141415",
     webPreferences: {
       preload: getPreload(),
@@ -586,8 +532,6 @@ function createOperatorWindow(): void {
   operatorWindow.on("unmaximize", sendMaximized);
 }
 
-// Window controls for the frameless operator window (see the top bar). Only the
-// operator window may drive them, so these stay off the LAN browser RPC.
 ipcMain.handle(
   "window:control",
   (event, action: "minimize" | "toggle-maximize" | "close") => {
@@ -677,7 +621,6 @@ function createProjectorWindow(): void {
     projectorReady = true;
     const payload = pendingProjectorPayload ?? lastProjectorPayload;
     if (payload) {
-      // Operators already got it from sendToProjector.
       projectorWindow?.webContents.send("projector:update", payload);
       pendingProjectorPayload = null;
     }
@@ -690,8 +633,6 @@ function createProjectorWindow(): void {
   });
 
   projectorWindow.on("resize", emitProjectorBounds);
-  // Content bounds are known once the window is shown; push them so the
-  // operator live/preview screens can match the real window ratio.
   projectorWindow.once("show", emitProjectorBounds);
   projectorWindow.once("ready-to-show", emitProjectorBounds);
 }
@@ -714,7 +655,6 @@ function emitProjectorBounds(): void {
   }
 }
 
-/** Hay una ventana de proyección abierta y mostrando algo (no en negro). */
 function isProjectionActive(): boolean {
   return Boolean(
     projectorWindow &&
@@ -734,9 +674,6 @@ function sendToProjector(
   if (!projectorWindow) {
     createProjectorWindow();
   }
-  // Other operators mirror the live screen even while the projector window is
-  // still loading. The desktop operator follows browser changes this way; the
-  // sender already has the payload, so it is skipped.
   publishBrowserEvent("projector:update", payload, origin);
   if (
     origin !== DESKTOP_ORIGIN &&
@@ -779,7 +716,6 @@ async function captureScreenshots(): Promise<void> {
   const outDir = process.env.SCREENSHOT_OUT_DIR ?? "/opt/cursor/artifacts";
   fs.mkdirSync(outDir, { recursive: true });
 
-  // Prove path resolution before UI loads
   const manifest = JSON.parse(
     fs.readFileSync(path.join(biblesPath(), "manifest.json"), "utf-8"),
   );
@@ -870,8 +806,6 @@ app.whenReady().then(() => {
     const encodedPath = new URL(request.url).pathname.slice("/media/".length);
     const target = path.resolve(decodeURIComponent(encodedPath));
     const userData = path.resolve(app.getPath("userData"));
-    // Only folders whose files are meant to be shown on screen. slide-decks
-    // (original PPTX/PDF sources) is deliberately NOT served.
     const allowed = SERVED_MEDIA_DIRS.map(
       (dir) => `${path.join(userData, dir)}${path.sep}`,
     );
@@ -914,12 +848,8 @@ app.whenReady().then(() => {
     });
   });
   if (process.env.PROYECTOR_SCREENSHOT !== "1") {
-    // First, so the renderer process boots while the rest of startup runs.
     createOperatorWindow();
   }
-  // Warm the remote Bible catalog so the first Biblias overlay opens without
-  // waiting. Deferred: its first fetch() loads Node's HTTP client (~90 ms of
-  // main-thread work) while the windows are still starting.
   setTimeout(() => {
     void buildLibraryView(
       biblesPath(),
@@ -954,8 +884,6 @@ app.whenReady().then(() => {
     return;
   }
 
-  // Every launch, so the login item matches the saved setting (including the
-  // default for installs that predate it).
   applyLaunchAtStartup(currentSettings().launchAtStartup);
 
   app.on("activate", () => {
@@ -1034,16 +962,10 @@ function bibleModuleFile(id: unknown): string {
   return resolveModulePath(biblesPath(), userBiblesDir(), String(id));
 }
 
-// The desktop window gets the module's raw JSON text: one string crosses IPC
-// instead of ~31,000 nested verse objects, which Chromium deserialized on the
-// UI thread for ~0.4 s per Bible at startup. The renderer parses it.
-// Read as bytes and decoded in one pass: readFile's "utf-8" option decodes
-// chunk by chunk, which took ~65 ms of main-thread time for a 10 MB Bible.
 async function readBibleModule(id: unknown): Promise<string> {
   return (await fs.promises.readFile(bibleModuleFile(id))).toString("utf8");
 }
 ipcMain.handle("bibles:load", (_e, id: string) => readBibleModule(id));
-// The LAN browser RPC is JSON already, so it keeps getting the object.
 registerBrowserRpc("bibles:load", async (args) =>
   JSON.parse(await readBibleModule(args[0])),
 );
@@ -1060,7 +982,6 @@ function yvp(): YouVersionClient {
   return youVersion;
 }
 
-// Online Bibles (YouVersion Platform). The App Key stays in this process.
 registerIpcHandle("yvp:versions", (_e, force?: boolean) =>
   yvp().listVersions(force === true),
 );
@@ -1079,7 +1000,6 @@ registerIpcHandle(
     yvp().getChapter(String(id), String(book), Number(chapter)),
 );
 
-// Importing the user's own Bible files (JSON, Zefania, OSIS, USFM, CSV/TSV).
 const bibleImports = new ImportSession();
 
 registerIpcHandle("bibles:import-pick", async () => {
@@ -1224,8 +1144,6 @@ registerIpcHandle("settings:get", () => currentSettings());
 registerIpcHandle("settings:set", (_e, settings: AppSettings) => {
   const launchAtStartupBefore = currentSettings().launchAtStartup;
   store.set("settings", settings);
-  // Only a change touches the OS login item, so turning it off in the system
-  // settings is not undone by editing an unrelated Lumen setting.
   const launchAtStartupAfter = currentSettings().launchAtStartup;
   if (launchAtStartupAfter !== launchAtStartupBefore)
     applyLaunchAtStartup(launchAtStartupAfter);
@@ -1262,7 +1180,6 @@ registerIpcHandle("favorites:set", (_e, favorites: QueueEntry[]) => {
   return favorites;
 });
 
-/** A song's or text's own typeface and weight: kept only when the typeface is valid and a weight came with it. */
 function storedTypeface(item: { fontFamily?: unknown; fontWeight?: unknown }): {
   fontFamily?: FontFamilyId;
   fontWeight?: number;
@@ -1340,7 +1257,6 @@ registerIpcHandle("texts:set", (_e, texts: StoredText[]) => {
 });
 
 registerIpcHandle("slides:get", () => {
-  // Older versions stored slide text (and text-only decks): migrate to images-only.
   const saved = store.get("slideDecks");
   const migrated = sanitizeSlideDecks(saved);
   if (JSON.stringify(saved) !== JSON.stringify(migrated))
@@ -1378,7 +1294,6 @@ const AUDIO_EXTENSIONS = [
   "flac",
 ];
 
-/** Copy a video or audio file into app data and describe it as a media item. */
 async function importAvFile(filePath: string): Promise<StoredSlideDeck | null> {
   const file = await copyToMediaFiles(filePath);
   if (!file) return null;
@@ -1417,13 +1332,10 @@ registerIpcHandle(
         { name: "Imágenes", extensions: ["png", "jpg", "jpeg", "webp"] },
         { name: "Video", extensions: VIDEO_EXTENSIONS },
         { name: "Audio", extensions: AUDIO_EXTENSIONS },
-        // Lets the user pick Keynote/.ppt/.odp to get a clear "export to PDF" hint instead of a greyed-out file.
         { name: "Todos los archivos", extensions: ["*"] },
       ],
     });
     if (result.canceled || result.filePaths.length === 0) return null;
-    // Multi-image pick (e.g. PowerPoint "Exportar como imágenes"): one deck,
-    // slides ordered naturally (Diapositiva2 antes que Diapositiva10).
     if (
       result.filePaths.length > 1 &&
       result.filePaths.every(isSlideImagePath)
@@ -1435,9 +1347,7 @@ registerIpcHandle(
           if (entry) {
             try {
               fs.rmSync(entry, { force: true });
-            } catch {
-              // ignore cleanup failures
-            }
+            } catch {}
           }
         }
         return importError("read-failed");
@@ -1458,7 +1368,6 @@ registerIpcHandle(
         },
       };
     }
-    // Video and audio: one item per file, so several can be imported at once.
     const avFiles = result.filePaths.filter(
       (file) => isVideoPath(file) || isAudioPath(file),
     );
@@ -1488,9 +1397,6 @@ registerIpcHandle(
       };
     }
     if (isPptxPath(filePath)) {
-      // The PNGs are generated by "slides:convertPptx" (pptx-glimpse in a
-      // utilityProcess). Only the slide count is read here (progress); no text
-      // is extracted or stored.
       let total: number;
       try {
         total = await countPptxSlides(fs.readFileSync(filePath));
@@ -1526,12 +1432,10 @@ registerIpcHandle(
         },
       };
     }
-    // Keynote/.ppt/.odp have no JS renderer, and anything else is not a presentation: don't fake it.
     return importError("unsupported-format");
   },
 );
 
-/** Remove a managed source file once its slides were converted (or the import was abandoned). */
 registerIpcHandle("slides:discardSource", (_e, file: string): boolean => {
   try {
     if (!isManagedSlideSource(file)) return false;
@@ -1551,10 +1455,6 @@ function isManagedSlideSource(file: unknown): file is string {
   return path.resolve(file).startsWith(`${root}${path.sep}`);
 }
 
-/**
- * Render a managed .pptx to PNGs (one per slide) in a utilityProcess with the
- * system fonts. Returns the stored image paths; progress goes out on "slides:progress".
- */
 registerIpcHandle(
   "slides:convertPptx",
   async (event, request: { deckId: string; file: string; total: number }) => {
@@ -1592,7 +1492,6 @@ registerIpcHandle(
   },
 );
 
-/** Read back a managed PDF so the operator window can rasterize it with pdf.js. */
 registerIpcHandle("slides:readFile", (_e, file: string): string | null => {
   try {
     if (!isManagedSlideSource(file)) return null;
@@ -1605,7 +1504,6 @@ registerIpcHandle("slides:readFile", (_e, file: string): string | null => {
   }
 });
 
-/** Copy a media item out of app data: one file for video or audio, numbered PNGs in a folder for slides. */
 registerIpcHandle(
   "media:download",
   async (_e, item: StoredSlideDeck): Promise<boolean> => {
@@ -1656,7 +1554,6 @@ function isInDir(file: unknown, dir: string): file is string {
   );
 }
 
-/** Persist rasterized slide PNGs (base64) as managed images. Returns stored paths. */
 registerIpcHandle(
   "slides:savePngs",
   (_e, images: string[]): string[] | null => {
@@ -1678,7 +1575,6 @@ registerIpcHandle(
         const data = Buffer.from(entry, "base64");
         if (data.length === 0 || data.length > MAX_SLIDE_PNG_BYTES)
           throw new Error("bad image size");
-        // Validate PNG signature before writing.
         if (
           data[0] !== 0x89 ||
           data[1] !== 0x50 ||
@@ -1741,16 +1637,12 @@ registerIpcHandle("dialog:openImage", async () => {
       `${Date.now()}-${Math.random().toString(36).slice(2, 9)}${ext}`,
     );
     fs.copyFileSync(filePath, storedPath);
-    // Persist the managed copy path, never the user's original location.
-    // The renderer converts this path to a file URL when it needs to display it.
     return storedPath;
   } catch {
     return null;
   }
 });
 
-// The logo image is a single managed copy: picking a new one adds a file and
-// the settings point at it. Old copies are left in place (they are small).
 registerIpcHandle("logo:pick", async (): Promise<string | null> => {
   const result = await dialog.showOpenDialog(operatorWindow!, {
     title: "Elegir logo",
@@ -1787,10 +1679,6 @@ registerIpcHandle("background:delete", (_e, filePath: string) => {
   }
 });
 
-/**
- * Store a JPEG thumbnail beside a managed media file as `${file}.thumbnail.jpg`.
- * Only files under `folder` whose name matches `kind` are accepted.
- */
 function saveThumbnailSidecar(
   folder: string,
   kind: RegExp,

@@ -1,8 +1,4 @@
 #!/usr/bin/env node
-/**
- * Smoke-test the packaged app (win-unpacked under Wine, or linux-unpacked natively).
- * Exits 0 if screenshots complete without throw.
- */
 import { spawn } from "child_process";
 import fs from "fs";
 import path from "path";

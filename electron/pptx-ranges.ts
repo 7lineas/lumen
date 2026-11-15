@@ -3,13 +3,8 @@ export interface SlideRange {
   last: number;
 }
 
-/** Below this many slides per worker, starting another process costs more than it saves. */
 const MIN_SLIDES_PER_WORKER = 4;
 
-/**
- * Split slides 1..expected into contiguous ranges, one per worker. The last
- * range runs to `maxSlides` so slides past an underestimated count still render.
- */
 export function planSlideRanges(
   expected: number,
   maxSlides: number,

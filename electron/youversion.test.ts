@@ -32,7 +32,6 @@ let clock: number;
 let sleeps: number[];
 let calls: Array<{ url: string; key?: string }>;
 let replies: Reply[];
-/** When set, answers by URL (the three list requests run interleaved). */
 let router: ((url: string) => Reply) | null;
 
 const fetchImpl: FetchLike = async (url, init) => {
@@ -319,7 +318,6 @@ describe("listVersions", () => {
     const yv = client();
     const result = await yv.listVersions();
     expect(result.configured).toBe(true);
-    // Only defaults present in the catalog appear in the personal list.
     expect(result.versions.map((v) => [v.id, !!v.locked])).toEqual([
       ["yv-128", true],
       ["yv-147", false],
@@ -455,7 +453,6 @@ describe("search, add and remove online versions", () => {
     const again = await yv.searchVersions("zzz");
     expect(again.hits[0].added).toBe(true);
 
-    // Defaults cannot be removed; custom ones can.
     await yv.removeVersion("yv-128");
     expect((await yv.listVersions()).versions.map((v) => v.id)).toContain(
       "yv-128",

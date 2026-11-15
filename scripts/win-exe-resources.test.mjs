@@ -13,7 +13,6 @@ const {
 } = require("./win-exe-resources.cjs");
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const ico = fs.readFileSync(path.join(root, "build", "icon.ico"));
-// Small real PE (electron-builder's elevate.exe, MIT) used as a stand-in for Lumen.exe.
 const sample = fs.readFileSync(
   path.join(root, "scripts", "fixtures", "sample-pe.bin"),
 );
@@ -57,7 +56,6 @@ describe("applyWindowsResources", () => {
       FileVersion: "1.2.3",
       OriginalFilename: "Lumen.exe",
     });
-    // Idempotent: a second pass leaves one group and the same strings.
     const again = inspectExe(
       applyWindowsResources(out, {
         icoBuffer: ico,

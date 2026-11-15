@@ -2,16 +2,13 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { MediaFit } from "@shared/types";
 
 interface Props {
-  /** Accessible name of the group (what the setting applies to). */
   label: string;
   value: MediaFit;
   onChange: (value: MediaFit) => void;
   testId?: string;
-  /** Gap between the two options (ToggleGroup spacing units). Defaults to 0 (joined). */
   spacing?: number;
 }
 
-/** Two-option segmented control: "Cubrir" (cover) / "Ajustar" (contain). */
 export function FitToggle({
   label,
   value,
@@ -28,7 +25,6 @@ export function FitToggle({
       aria-label={label}
       data-testid={testId}
       value={[value]}
-      // A single-choice control: ignore the "nothing pressed" event emitted when the active option is clicked again.
       onValueChange={(next) => {
         const picked = next[0];
         if (picked === "cover" || picked === "contain") onChange(picked);

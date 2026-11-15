@@ -1,5 +1,3 @@
-/** Stroke icons drawn on a 20×20 grid; the stroke style comes from `.lx-icon`. */
-
 interface IconProps {
   className?: string;
 }

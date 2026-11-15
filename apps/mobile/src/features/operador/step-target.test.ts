@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import type { BibleData } from "@shared/types";
 import { nextStageTarget } from "./step-target";
 
-// Genesis 1 has three verses and Genesis 2 has two; chapter 3 has no text.
 const bible = {
   verses: {
     GEN: {

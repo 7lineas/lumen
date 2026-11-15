@@ -1,7 +1,3 @@
-/**
- * Turns the stored background value into a CSS url() target.
- * Values are managed absolute file paths copied into the app's user-data directory.
- */
 export function backgroundImageUrl(
   value: string | null | undefined,
 ): string | undefined {
@@ -12,7 +8,6 @@ export function backgroundImageUrl(
   return `lumen-media://local/media/${encodeURIComponent(value)}`;
 }
 
-/** Thumbnail sidecar generated for background videos. */
 export function backgroundThumbnailUrl(
   value: string | null | undefined,
 ): string | undefined {
@@ -20,7 +15,6 @@ export function backgroundThumbnailUrl(
   return backgroundImageUrl(`${value}.thumbnail.jpg`);
 }
 
-/** Small JPEG copy of a slide image, shown in the Media grid instead of the full-size PNG. */
 export function slideThumbnailUrl(
   value: string | null | undefined,
 ): string | undefined {

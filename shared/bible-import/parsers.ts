@@ -31,7 +31,6 @@ const MAX_CHAPTER = 150;
 const MAX_VERSE = 200;
 const MAX_WARNING_DETAILS = 5;
 
-/** Collects verses with validation, de-duplication and aggregated warnings. */
 class Collector {
   readonly verses: VerseMap = {};
   private readonly unknownBooks = new Map<string, number>();
@@ -123,7 +122,6 @@ const LANGUAGE_CODES: Record<string, string> = {
   latin: "la",
 };
 
-/** ISO 639-1 where we can tell; otherwise the lower-cased start of the value. */
 export function normalizeLanguage(raw: string): string {
   const value = raw.trim().toLowerCase();
   return LANGUAGE_CODES[value] ?? value.slice(0, 2);
@@ -135,17 +133,9 @@ function toInt(value: unknown): number {
     : Number.parseInt(String(value ?? "").trim(), 10);
 }
 
-// ---------------------------------------------------------------- JSON
-
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === "object" && !Array.isArray(value);
 
-/**
- * Some downloaded Bibles put the books straight at the root
- * (`{ "Génesis": { "1": { "1": "…" } }, "lang": "SPAN" }`) instead of under `verses`.
- * Returns those book objects (ignoring loose values such as "lang" and the "meta" block),
- * or null when no root key looks like a book.
- */
 function rootBooks(
   root: Record<string, unknown>,
 ): Record<string, unknown> | null {
@@ -156,7 +146,6 @@ function rootBooks(
   return Object.fromEntries(entries);
 }
 
-/** Metadata of the "books → chapters → items" layout (`local_title`, `copyright.text`, …). */
 function bookListHint(root: Record<string, unknown>): ImportMetaHint {
   const hint: ImportMetaHint = {};
   const text = (value: unknown) =>
@@ -178,16 +167,6 @@ function bookListHint(root: Record<string, unknown>): ImportMetaHint {
   return hint;
 }
 
-/**
- * Downloaded Bibles laid out as `books → chapters → items`:
- * `{ "books": [{ "usfm": "GEN", "chapters": [{ "usfm": "GEN.1", "items": [
- *   { "type": "verse", "verse_numbers": [1], "lines": ["En el principio…"] }
- * ] }] }] }`.
- * Only `verse` items are kept; headings, labels and notes are skipped.
- * A verse split across paragraphs comes as several items with the same number:
- * their pieces are joined. An item for a range (`[20, 21]`) goes to its first number,
- * like `\v 20-21` in USFM.
- */
 function addBookList(books: unknown[], collector: Collector): void {
   for (const book of books) {
     if (!isPlainObject(book) || !Array.isArray(book.chapters)) continue;
@@ -301,8 +280,6 @@ function parseJson(text: string): ParsedBible {
   };
 }
 
-// ---------------------------------------------------------------- Zefania
-
 function parseZefania(xml: string): ParsedBible {
   const collector = new Collector();
   const hint: ImportMetaHint = {};
@@ -372,8 +349,6 @@ function parseZefania(xml: string): ParsedBible {
     warnings: collector.warnings(),
   };
 }
-
-// ---------------------------------------------------------------- OSIS
 
 function parseOsis(xml: string): ParsedBible {
   const collector = new Collector();
@@ -448,11 +423,9 @@ function parseOsis(xml: string): ParsedBible {
     close(tag) {
       if (tag === "header") header = false;
       else if (header && tag === headerTag) {
-        // Several <title>/<rights>: keep the first one.
         headerValues[tag] ??= headerText.trim();
         headerTag = null;
       } else if (tag === "verse") {
-        // Milestone verses end at eID; wrapped verses end here.
         if (current && skip === 0) flush();
       } else if (current && skipTags.has(tag) && skip > 0) skip -= 1;
     },
@@ -474,8 +447,6 @@ function parseOsis(xml: string): ParsedBible {
     warnings: collector.warnings(),
   };
 }
-
-// ---------------------------------------------------------------- USFM
 
 const USFM_SKIP_MARKERS = new Set([
   "h",
@@ -528,7 +499,6 @@ const USFM_SKIP_MARKERS = new Set([
 function parseUsfm(text: string): ParsedBible {
   const collector = new Collector();
   const hint: ImportMetaHint = {};
-  // Footnotes, cross references and figures are not verse text.
   const cleaned = text
     .replace(/\\(f|fe|ef|x|ex)\s[\s\S]*?\\\1\*/g, "")
     .replace(/\\fig\s[\s\S]*?\\fig\*/g, "")
@@ -589,8 +559,6 @@ function parseUsfm(text: string): ParsedBible {
   };
 }
 
-// ---------------------------------------------------------------- CSV / TSV
-
 function parseDelimited(text: string, delimiter: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
@@ -650,7 +618,6 @@ function parseCsv(text: string, fileName: string): ParsedBible {
   if (rows.length === 0)
     throw new ImportError("El archivo CSV/TSV está vacío.");
 
-  // Optional header row: book,chapter,verse,text (or Spanish names), or ref,text.
   const roles = rows[0].map(headerRole);
   const hasHeader = roles.includes("text");
   const columns = { book: 0, chapter: 1, verse: 2, text: 3, ref: -1 };
@@ -711,8 +678,6 @@ function parseCsv(text: string, fileName: string): ParsedBible {
   };
 }
 
-// ---------------------------------------------------------------- entry points
-
 export function detectFormat(fileName: string, text: string): ImportFormat {
   const head = text.slice(0, 4000);
   const lower = fileName.toLowerCase();
@@ -769,7 +734,6 @@ export function formatLabel(format: ImportFormat): string {
   }[format];
 }
 
-/** Merges several parsed files (e.g. one USFM file per book). */
 export function mergeParsed(list: ParsedBible[]): ParsedBible {
   if (list.length === 1) return list[0];
   const verses: VerseMap = {};

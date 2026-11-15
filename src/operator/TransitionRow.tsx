@@ -5,7 +5,6 @@ import { Slider } from "@/components/ui/slider";
 
 export type DemoContent = "hebrew" | "letra" | "gradient";
 
-/** A small sample that fades in and out with the chosen duration. */
 function TransitionDemo({
   ms,
   runKey,
@@ -53,7 +52,6 @@ function TransitionDemo({
   );
 }
 
-/** The slider runs slow (left) to fast (right), so its value is flipped against the stored ms. */
 const MAX_MS = 2000;
 
 export function TransitionRow({
@@ -62,7 +60,6 @@ export function TransitionRow({
   content,
   onChange,
 }: {
-  /** Title shown above the slider; omit it when the surrounding UI already labels the row. */
   label?: string;
   value: number;
   content: DemoContent;

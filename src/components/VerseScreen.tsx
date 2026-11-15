@@ -12,11 +12,8 @@ export function splitReference(label: string): {
 }
 
 interface Props {
-  /** A "verse" payload: Bible verses, song parts and textos. */
   payload: ProjectorPayload;
-  /** Largest size (px at projector resolution); the text shrinks from here to fit. */
   fontSize: number;
-  /** Anything else that changes text metrics (typeface, weight…): a change refits. */
   fitKey?: string;
   className: string;
   style?: CSSProperties;
@@ -24,11 +21,6 @@ interface Props {
   versionColor: string;
 }
 
-/**
- * The text of a verse/song/texto screen, fitted to its box. The projector
- * renders it at full size and the operator monitors render the very same
- * markup at projector resolution, scaled down, so both wrap and size alike.
- */
 export function VerseScreen({
   payload,
   fontSize,
@@ -42,8 +34,6 @@ export function VerseScreen({
   const textRef = useRef<HTMLDivElement>(null);
   const [fitSize, setFitSize] = useState(fontSize);
 
-  // Layout effect: the new text is fitted before it is painted, so it never
-  // shows for a frame at the previous text's size.
   useLayoutEffect(() => {
     const el = textRef.current;
     const inner = innerRef.current;
@@ -51,11 +41,6 @@ export function VerseScreen({
     let raf = 0;
     let alive = true;
     const fit = () => {
-      // Always restart from the full size so growing the window grows text back.
-      // The body is a flex-1 box with overflow hidden, so fitting to its own
-      // box keeps header/footer clear at any window ratio. The header and
-      // footer are em-sized from the inner box, so each candidate size is set
-      // on the inner box before measuring: they grow and shrink with the text.
       const size = fitFontSize(fontSize, (s) => {
         inner.style.fontSize = `${s}px`;
         return (
@@ -70,12 +55,8 @@ export function VerseScreen({
       raf = requestAnimationFrame(fit);
     };
     fit();
-    // The body's box also changes with padding, the header/footer, or the window:
-    // observe it instead of only listening for window resizes.
     const observer = new ResizeObserver(refit);
     observer.observe(el);
-    // Webfonts arriving late change metrics: refit when they finish loading.
-    // `ready` also covers a face that started loading during the first fit.
     const fonts = document.fonts;
     fonts?.addEventListener("loadingdone", refit);
     void fonts?.ready.then(() => {
@@ -96,8 +77,6 @@ export function VerseScreen({
       className={className}
       style={{ ...style, fontSize: `${fitSize}px` }}
     >
-      {/* Floating labels (reference top-left, version® bottom-right) share one
-          size: 3/4 of the fitted verse text, so they scale with the inner box. */}
       {ref && (
         <header
           className="projector-ref"
@@ -109,7 +88,6 @@ export function VerseScreen({
       <div
         ref={textRef}
         className={`projector-body ${payload.blocks.length > 1 ? "dual" : ""}`}
-        // A song's or texto's own weight wins over the body's default.
         style={{ fontWeight: payload.fontWeight }}
       >
         {payload.blocks.map((block, i) => (

@@ -1,7 +1,6 @@
 import JSZip from "jszip";
 import type { StoredSlideDeck } from "../shared/types";
 
-/** Number of slides in a .pptx/.ppsx buffer (0 when it has none). Throws if it is not a zip. */
 export async function countPptxSlides(
   data: Buffer | Uint8Array,
 ): Promise<number> {
@@ -28,7 +27,6 @@ export function isAudioPath(filePath: string): boolean {
   return /\.(mp3|wav|m4a|aac|ogg|oga|opus|flac)$/i.test(filePath);
 }
 
-/** Natural order so Slide2 precedes Slide10 (PowerPoint exports this way). */
 export function naturalCompare(a: string, b: string): number {
   const ax: Array<string | number> = [];
   const bx: Array<string | number> = [];
@@ -58,13 +56,6 @@ export function sortImagePathsNumerically(paths: string[]): string[] {
   return [...paths].sort((a, b) => naturalCompare(a, b));
 }
 
-/**
- * Validate/normalize media items coming from the renderer or from older
- * versions. Slide decks hold images only: legacy fields (`slides` text,
- * `source`) are ignored, null/empty image entries are dropped, and decks left
- * without any image (old text-only decks) are discarded. Video and audio
- * items hold one managed file and no images.
- */
 export function sanitizeSlideDecks(decks: unknown): StoredSlideDeck[] {
   if (!Array.isArray(decks)) return [];
   return decks.flatMap((deck): StoredSlideDeck[] => {

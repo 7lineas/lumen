@@ -36,12 +36,6 @@ import { AudioIcon, MediaIcon, SearchIcon, SlidesIcon } from "./icons";
 import { ItemMenu } from "./ItemMenu";
 import { createSlideThumbnail } from "./slide-thumbnail";
 
-/**
- * A slide in the Media grid. Tiles show a small JPEG copy: decoding every
- * full-size slide just to draw a tile this small is what made big decks slow
- * to open. Until that copy exists the full slide is shown, and it is made
- * from the slide for the next time.
- */
 function SlideTileImage({ path }: { path: string }) {
   const [src, setSrc] = useState(() => slideThumbnailUrl(path));
   return (
@@ -79,14 +73,10 @@ export interface SlideStage {
 }
 
 interface Props {
-  /** Slides of the selected deck and the one in preview. Null for video and audio. */
   staged: SlideStage | null;
   selected: MediaItem | null;
-  /** Image on the projector right now, when it is a slide. */
   liveImage?: string | null;
-  /** Video on the projector right now. */
   liveVideo?: string | null;
-  /** Audio item loaded in the player, and whether it is sounding. */
   audioId?: string | null;
   audioPlaying?: boolean;
   slideFit: MediaFit;
@@ -95,18 +85,13 @@ interface Props {
   onToggleProjectOnClick: (value: boolean) => void;
   onSelect: (item: MediaItem | null) => void;
   onSelectSlide: (index: number) => void;
-  /** Double-click: stage the slide and project it. */
   onTakeSlide: (index: number) => void;
-  /** Project the selected video, or play the selected audio. */
   onTake: () => void;
   onRemoved: (item: MediaItem) => void;
-  /** Called with the item after its title changes, so the open selection follows the new name. */
   onRenamed: (item: MediaItem) => void;
-  /** Called with a deck after its images changed (merged into, or slides taken out), so the open selection follows. */
   onImagesChanged: (item: MediaItem) => void;
 }
 
-/** A presentation being converted to images (kept in memory only; never persisted as a deck). */
 interface Job {
   pending: PendingSlideImport;
   status: "running" | "failed";
@@ -134,7 +119,6 @@ const normalize = (s: string) =>
 const newDeckId = () =>
   `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
-/** Every item id starts with the time it was created, in milliseconds. */
 const createdAt = (item: MediaItem) => Number(item.id.split("-")[0]) || 0;
 
 export function MediaWorkspace({
@@ -165,7 +149,6 @@ export function MediaWorkspace({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [renameHeight, setRenameHeight] = useState<number | null>(null);
   const [renameDraft, setRenameDraft] = useState("");
-  // Mirrors renamingId so a blur after Enter or Escape cannot save twice.
   const renameRef = useRef<string | null>(null);
   const mounted = useRef(true);
   const onSelectRef = useRef(onSelect);
@@ -204,7 +187,6 @@ export function MediaWorkspace({
   useEffect(() => {
     if (loaded) void window.proyector?.setSlideDecks(items);
   }, [items, loaded]);
-  // Slide decks added or changed by another operator (browser or desktop) appear here as they happen.
   useEffect(() => {
     const api = window.proyector;
     return api?.onOperatorSync?.(({ scope }) => {
@@ -232,11 +214,6 @@ export function MediaWorkspace({
     return () => unsubscribe?.();
   }, []);
 
-  // Screenshot conversion: .pptx is rendered in the main process (pptx-glimpse
-  // with the system fonts, off the UI thread); .pdf is rasterized here with
-  // pdf.js. Files never leave the machine. Only the resulting PNGs are kept:
-  // a failed conversion stores nothing (error + retry, no text-only deck).
-  // The work is never cancelled by React effects; `mounted` only guards state.
   const runConversion = useCallback(async (pending: PendingSlideImport) => {
     const api = window.proyector;
     if (!api) return;
@@ -255,7 +232,6 @@ export function MediaWorkspace({
       if (pending.source.kind === "pdf") {
         const base64 = await api.readSlideSource(pending.source.file);
         if (!base64) throw new Error("No se pudo leer el PDF guardado.");
-        // Loaded on demand: pdf.js is ~1 MB and only needed when a PDF is imported.
         const { rasterizePdfToPngs } = await import("./pdfConvert");
         const { pngBase64 } = await rasterizePdfToPngs(base64, {
           targetWidth: 1920,
@@ -287,7 +263,6 @@ export function MediaWorkspace({
         setJobs((current) => current.filter((job) => job.pending.id !== id));
         onSelectRef.current(deck);
       } else {
-        // The user left the tab meanwhile: still persist the finished deck.
         const saved = await api.getSlideDecks();
         await api.setSlideDecks([deck, ...(Array.isArray(saved) ? saved : [])]);
       }
@@ -362,7 +337,6 @@ export function MediaWorkspace({
     renameRef.current = item.id;
     setRenamingId(item.id);
     setRenameDraft(item.title);
-    // Keep the row exactly as tall as it was, so editing does not shift the list.
     setRenameHeight(row.getBoundingClientRect().height);
   };
   const finishRename = (id: string, save: boolean) => {
@@ -380,8 +354,6 @@ export function MediaWorkspace({
     onRenamed(renamed);
   };
 
-  // Drag a slide item onto another slide item: the dragged item's images move to the
-  // end of the target, and the dragged item is removed from the list.
   const dragIdRef = useRef<string | null>(null);
   const [dropId, setDropId] = useState<string | null>(null);
   const endItemDrag = () => {
@@ -421,8 +393,6 @@ export function MediaWorkspace({
     else onImagesChanged(merged);
   };
 
-  // A slide dragged out of the open deck and dropped on the sidebar becomes a new item.
-  // A deck keeps at least one slide, so its only slide cannot leave.
   const slideDragRef = useRef<{ deckId: string; index: number } | null>(null);
   const [slideDragging, setSlideDragging] = useState(false);
   const endSlideDrag = () => {
@@ -763,8 +733,6 @@ export function MediaWorkspace({
                   const isLive = liveImage != null && image === liveImage;
                   return (
                     <button
-                      // Keyed by the image too: SlideTileImage reads its path once, so a
-                      // different deck at the same index must mount a fresh tile.
                       key={`${index}:${image}`}
                       type="button"
                       className={`lx-card${index === staged.index ? " sel" : ""}${isLive ? " live" : ""}`}
@@ -800,7 +768,6 @@ export function MediaWorkspace({
 
             {kind === "video" && selected.file && (
               <div className="lx-player">
-                {/* A private look at the file: silent here, the sound plays on the projector. */}
                 <video
                   key={selected.file}
                   className="lx-player-video"

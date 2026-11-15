@@ -6,7 +6,6 @@ import { useLumenSession } from "@/providers/session-provider";
 import { useBibleStage, type StagedVerse } from "./use-bible-stage";
 import { useLiveProjector } from "./use-live-projector";
 
-/** What the projector shows: a short title, plus scripture text when there is some. */
 function describeLive(
   payload: ProjectorPayload | null,
   connected: boolean,

@@ -1,5 +1,3 @@
-// Regenerates build/icon.ico (PNG-compressed, multi-size) from build/icon.png.
-// Usage: node scripts/build-icon.mjs
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -20,15 +18,15 @@ export async function buildIco(sourcePng, sizes = ICO_SIZES) {
     ),
   );
   const header = Buffer.alloc(6);
-  header.writeUInt16LE(1, 2); // type: icon
+  header.writeUInt16LE(1, 2);
   header.writeUInt16LE(sizes.length, 4);
   let offset = 6 + 16 * sizes.length;
   const entries = sizes.map((size, i) => {
     const entry = Buffer.alloc(16);
     entry.writeUInt8(size === 256 ? 0 : size, 0);
     entry.writeUInt8(size === 256 ? 0 : size, 1);
-    entry.writeUInt16LE(1, 4); // planes
-    entry.writeUInt16LE(32, 6); // bit count
+    entry.writeUInt16LE(1, 4);
+    entry.writeUInt16LE(32, 6);
     entry.writeUInt32LE(images[i].length, 8);
     entry.writeUInt32LE(offset, 12);
     offset += images[i].length;

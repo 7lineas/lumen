@@ -21,11 +21,6 @@ const EMPTY: ProjectorPayload = {
   backgroundColor: DEFAULT_SETTINGS.backgroundColor,
 };
 
-/**
- * Resolves once a slide's image is decoded (at once for anything else), so the
- * swap never fades in a blank or half-drawn slide. Gives up after a while
- * rather than hold the screen on a file that never loads.
- */
 function imageReady(p: ProjectorPayload): Promise<void> {
   const url =
     p.mode === "slides" && p.slideImagePath
@@ -41,23 +36,15 @@ function imageReady(p: ProjectorPayload): Promise<void> {
 }
 
 export function ProjectorView() {
-  // `payload` is what is currently displayed (lags behind incoming updates
-  // during the fade-out phase so the old content can fade instead of cutting).
   const [payload, setPayload] = useState<ProjectorPayload>(EMPTY);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [visible, setVisible] = useState(false);
-  // True as soon as a slides payload arrives (and false as soon as anything
-  // else does), without waiting for the content fade: the background must
-  // change to solid color / back to media in parallel with the slide fade.
   const [slidesActive, setSlidesActive] = useState(false);
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
   const displayedRef = useRef<ProjectorPayload>(EMPTY);
   const visibleRef = useRef(false);
   const timerRef = useRef<number | null>(null);
-  // Duration of the fade in progress. The fade-out of the old content must
-  // last as long as the timer that swaps in the new one (whose fadeMs wins),
-  // or the new text lands on top of a half-faded old one.
   const [fadeMsNow, setFadeMsNow] = useState<number | null>(null);
 
   useEffect(() => {
@@ -74,14 +61,10 @@ export function ProjectorView() {
       setVisible(v);
     };
     const fadeIn = (p: ProjectorPayload) => {
-      // Double rAF so the browser paints the hidden state before the
-      // `.show` class lands — otherwise the transition never runs.
       requestAnimationFrame(() => {
         requestAnimationFrame(() => show(p.mode !== "blank"));
       });
     };
-    // Each update takes a token. A swap still waiting on its image is dropped
-    // when a newer update arrives, so the last update always wins.
     let swapToken = 0;
     const off = api.onProjectorUpdate((p) => {
       const token = ++swapToken;
@@ -101,15 +84,12 @@ export function ProjectorView() {
         show(p.mode !== "blank");
         return;
       }
-      // Style-only update (font, brightness, theme…): apply instantly so
-      // live tweaks don't flicker.
       if (payloadContentKey(p) === payloadContentKey(displayedRef.current)) {
         displayedRef.current = p;
         setPayload(p);
         if (p.mode !== "blank" && !visibleRef.current) show(true);
         return;
       }
-      // Nothing on screen: swap in once the image is decoded, then fade in.
       if (!visibleRef.current || displayedRef.current.mode === "blank") {
         show(false);
         void imageReady(p).then(() => {
@@ -120,8 +100,6 @@ export function ProjectorView() {
         });
         return;
       }
-      // Content change: fade the old content out, swap, fade the new in.
-      // The new image decodes during the fade-out, so it is ready at the swap.
       show(false);
       const ready = imageReady(p);
       timerRef.current = window.setTimeout(() => {
@@ -143,7 +121,6 @@ export function ProjectorView() {
   }, []);
 
   const fontSize = payload.fontSize || settings.fontSize;
-  // Songs and texts can bring their own typeface; everything else uses Ajustes.
   const fontFamily = payload.fontFamily ?? settings.fontFamily;
 
   const themeClass =
@@ -156,11 +133,6 @@ export function ProjectorView() {
   const fadeStyle: React.CSSProperties = {
     transitionDuration: `${Math.max(0, fadeMs)}ms`,
   };
-  // Background media is an application setting, so it must stay identical to
-  // the operator's preview/live monitors even when the last payload was sent
-  // before the user changed the selected image or video.
-  // While slides are shown the background is always the solid color (the
-  // media fades out over backgroundFadeMs and fades back in when they hide).
   const backgroundPath = slidesActive
     ? undefined
     : settings.backgroundImagePath;
@@ -188,13 +160,10 @@ export function ProjectorView() {
   const backgroundStyle: React.CSSProperties = {
     backgroundColor: payload.backgroundColor || settings.backgroundColor,
     transition: `background-color ${backgroundFadeMs}ms ease`,
-    // brightness(1) changes nothing but still costs a compositing layer.
     filter: brightness === 1 ? undefined : `brightness(${brightness})`,
   };
 
   if (payload.mode === "blank") {
-    // "Limpiar" clears text only: keep the background color and media
-    // visible behind an empty screen.
     return (
       <div className={themeClass} style={style}>
         <div className="projector-background-layer" style={backgroundStyle} />
@@ -226,7 +195,6 @@ export function ProjectorView() {
 
   if (payload.mode === "video" && payload.video) {
     return (
-      // Full-bleed like a slide, with the sound: this is the only window that is not muted.
       <div className={themeClass} style={{ ...style, padding: 0 }}>
         <div className="projector-background-layer" style={backgroundStyle} />
         {backgroundMedia}
@@ -246,7 +214,6 @@ export function ProjectorView() {
   }
 
   if (payload.mode === "logo") {
-    // The logo is shown like a fondo: same layer, brightness and fade, covering the screen.
     return (
       <div className={themeClass} style={style}>
         <div className="projector-background-layer" style={backgroundStyle} />
@@ -261,7 +228,6 @@ export function ProjectorView() {
     );
   }
 
-  // Settings saved before the accent-color split still carry the legacy keys.
   const legacyColors = settings as Partial<AppSettings> & {
     referenceColor?: string;
     versionColor?: string;
@@ -285,8 +251,6 @@ export function ProjectorView() {
 
   if (slideImage && slideImageUrl) {
     return (
-      // A diapositiva is full-bleed: no content padding / max width, so
-      // "Cubrir" and "Ajustar" are relative to the whole screen (same as the monitors).
       <div className={themeClass} style={{ ...style, padding: 0 }}>
         <div className="projector-background-layer" style={backgroundStyle} />
         {backgroundMedia}

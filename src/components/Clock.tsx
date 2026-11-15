@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { formatClock, secondsSince, secondsUntil } from "@shared/clock";
 
-/** Current time, refreshed every `intervalMs`. Only the component that asks re-renders. */
 function useNow(intervalMs: number): number {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -11,7 +10,6 @@ function useNow(intervalMs: number): number {
   return now;
 }
 
-/** Time left until `endsAt` (epoch ms), shown as m:ss. */
 export function CountdownClock({
   endsAt,
   className,
@@ -25,7 +23,6 @@ export function CountdownClock({
   );
 }
 
-/** Time since `since` (epoch ms), shown as m:ss. */
 export function ElapsedClock({
   since,
   className,

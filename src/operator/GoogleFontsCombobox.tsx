@@ -27,18 +27,14 @@ import {
 import { useFontPreview } from "@/hooks/useFontPreview";
 
 interface Props {
-  /** Typeface currently saved, so its row shows a check mark. */
   value: FontFamilyId;
   installed: InstalledFont[];
-  /** Called with the picked font once it is installed (if needed). */
   onSelect: (id: FontFamilyId) => void;
-  /** Called after a font is removed, so a setting that used it can fall back. */
   onRemoved: (id: string) => void;
 }
 
 const SEARCH_DELAY_MS = 250;
 
-/** Family name drawn in its own typeface, so a font can be seen before it is installed. */
 function FontPreviewName({ family }: { family: string }) {
   const stack = useFontPreview(family);
   return (
@@ -46,7 +42,6 @@ function FontPreviewName({ family }: { family: string }) {
   );
 }
 
-/** Search icon next to the typeface selector. Opens a search list of installed and Google fonts. */
 export function GoogleFontsCombobox({
   value,
   installed,
@@ -58,12 +53,9 @@ export function GoogleFontsCombobox({
   const [results, setResults] = useState<GoogleFontSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
-  // Family being installed, or id being removed. One job at a time keeps the list simple.
   const [busy, setBusy] = useState<string | null>(null);
   const latestSearch = useRef(0);
 
-  // Empty query lists the most popular families. Late answers from an
-  // older query are ignored.
   useEffect(() => {
     const api = window.proyector;
     if (!open || !api) return;
@@ -98,7 +90,6 @@ export function GoogleFontsCombobox({
     font.family.toLowerCase().includes(needle),
   );
   const installedFamilies = new Set(installed.map((font) => font.family));
-  // Installed fonts come from the local list, so they still show when offline.
   const catalogMatches = results.filter(
     (font) => !installedFamilies.has(font.family),
   );

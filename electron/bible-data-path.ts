@@ -1,10 +1,6 @@
 import fs from "fs";
 import path from "path";
 
-/**
- * Resolves the directory containing manifest.json and *.json Bible files.
- * Works in dev (electron .), screenshot mode, and packaged builds (extraResources).
- */
 export function resolveBibleDataDir(candidates: string[]): string {
   const tried: string[] = [];
   for (const dir of candidates) {

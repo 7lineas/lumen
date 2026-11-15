@@ -16,8 +16,6 @@ export function useBibleLoader(
   const [ready, setReady] = useState(false);
   const [versions, setVersions] = useState<BibleVersionMeta[]>([]);
   const [error, setError] = useState<string | null>(null);
-  // Library refresh each Bible was loaded at: the effect also re-runs when the
-  // online version list changes, and must not re-read a 10 MB Bible for that.
   const loadedAt = useRef(new Map<string, number>());
 
   useEffect(() => {
@@ -37,7 +35,6 @@ export function useBibleLoader(
         const unique = [...new Set(versionIds.filter(Boolean))];
         for (const id of unique) {
           if (isOnlineVersionId(id)) {
-            // Online Bibles start empty; chapters are merged in on demand.
             const meta = onlineVersions.find((v) => v.id === id);
             if (meta && !getBible(id)) loadBible(emptyOnlineBible(meta));
             continue;
@@ -45,8 +42,6 @@ export function useBibleLoader(
           if (getBible(id) && loadedAt.current.get(id) === refreshKey) continue;
           const raw = await api.loadBible(id);
           if (cancelled) return;
-          // Desktop IPC sends the JSON text (much cheaper to transfer); the
-          // LAN browser RPC sends the parsed object.
           loadBible(
             (typeof raw === "string" ? JSON.parse(raw) : raw) as BibleData,
           );
@@ -63,7 +58,6 @@ export function useBibleLoader(
     return () => {
       cancelled = true;
     };
-    // refreshKey reloads the list after a download or removal.
     // oxlint-disable-next-line react/exhaustive-deps
   }, [refreshKey, versionIds.join(","), onlineVersions]);
 

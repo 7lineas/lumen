@@ -1,26 +1,4 @@
 #!/usr/bin/env node
-/**
- * Hash the Windows build, write landing/releases.json, and upload to Cloudflare R2.
- *
- * Credentials come only from the environment. Nothing in this file is a secret.
- *
- *   R2_ACCOUNT_ID          Cloudflare account id
- *   R2_ACCESS_KEY_ID       Token access key, limited to the bucket
- *   R2_SECRET_ACCESS_KEY   Token secret
- *   R2_BUCKET              Default: desktop-releases
- *   R2_ENDPOINT            Default: https://<R2_ACCOUNT_ID>.r2.cloudflarestorage.com
- *   R2_REGION              Default: auto
- *   DOWNLOAD_BASE_URL      Optional. Default: https://downloads.7lineas.com
- *
- *   node scripts/publish-release.mjs --dir release
- *   node scripts/publish-release.mjs --dir release --dry-run --out /tmp/releases.json
- *   node scripts/publish-release.mjs --dir release --force   # re-upload even if R2 already has the same bytes
- *   node scripts/publish-release.mjs --verify                # only check the public result (no upload)
- *
- * Uploads stream the file with Content-Length (never the whole file in memory),
- * retry with backoff and print error.cause. Objects already in R2 with the same
- * size and MD5 are skipped, and latest.yml is always uploaded last.
- */
 import { createHash, createHmac } from "node:crypto";
 import { createReadStream } from "node:fs";
 import http from "node:http";
@@ -334,7 +312,6 @@ function signedHeaders({
   };
 }
 
-/** HEAD an R2 object. Returns { size, etag } (etag without quotes) or null when it does not exist. */
 export async function headObject({
   url,
   region,
@@ -370,11 +347,6 @@ export async function headObject({
   };
 }
 
-/**
- * PUT an object by streaming the file with an explicit Content-Length (small
- * bodies are sent as a buffer). Retries with exponential backoff and prints
- * the real error.cause instead of just "fetch failed".
- */
 export async function putObjectWithRetry({
   url,
   headers,
@@ -432,11 +404,6 @@ export async function putObjectWithRetry({
   );
 }
 
-/**
- * Check the public result from outside: releases.json and latest.yml name the
- * expected version, and every artifact answers 200 with the expected size.
- * Returns the list of problems (empty when everything is fine).
- */
 export async function verifyPublicRelease({
   manifest,
   baseUrl,
@@ -562,9 +529,6 @@ export async function uploadToR2({
     },
   ];
 
-  // electron-updater reads https://downloads.7lineas.com/latest.yml, which points
-  // at the builder artifact name (Lumen-<version>-win-x64.exe). Upload that name
-  // plus its blockmap so the in-app Actualizar button can download and install.
   if (dir) {
     const meta = await findUpdaterMetadata(dir, setupPath);
     if (!meta.latestPath) {
@@ -598,9 +562,6 @@ export async function uploadToR2({
     });
   }
 
-  // A half-finished run must never advertise a version whose files are missing:
-  // artifacts first, then releases.json, and latest.yml (what installed apps
-  // read to update) strictly last.
   const rank = (item) =>
     item.key === "latest.yml" ? 2 : item.key === "releases.json" ? 1 : 0;
   uploads.sort((x, y) => rank(x) - rank(y));
@@ -730,7 +691,6 @@ async function verifyOrThrow(manifest) {
   );
 }
 
-/** Verify the already-published release described by landing/releases.json (no upload). */
 export async function verifyOnly() {
   const manifest = JSON.parse(
     await readFile(path.join(repoRoot, "landing", "releases.json"), "utf8"),

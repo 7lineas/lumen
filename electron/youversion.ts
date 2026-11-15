@@ -19,11 +19,6 @@ import {
 import { parseChapterContent } from "../shared/youversion-parse";
 import type { BibleVersionMeta } from "../shared/types";
 
-/**
- * Injected at build time by vite (`define`) from YVP_APP_KEY in .env.local or
- * the environment; never committed. It lives only in the main process: the
- * renderer and the projector talk to this module through IPC.
- */
 declare const __YVP_APP_KEY__: string | undefined;
 
 export function resolveAppKey(env: NodeJS.ProcessEnv = process.env): string {
@@ -35,9 +30,7 @@ export function resolveAppKey(env: NodeJS.ProcessEnv = process.env): string {
 export const YVP_BASE_URL = "https://api.youversion.com/v1";
 export const CHAPTER_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 export const VERSIONS_TTL_MS = 7 * 24 * 60 * 60 * 1000;
-/** While some version is still locked the list is re-read soon: the user may have accepted a license since. */
 export const LOCKED_VERSIONS_TTL_MS = 30 * 60 * 1000;
-/** Retry-After above this is not waited for: the call fails fast and the UI says when to retry. */
 const MAX_INLINE_WAIT_SEC = 10;
 
 export type FetchLike = (
@@ -113,9 +106,7 @@ export class YouVersionClient {
   private readonly timeoutMs: number;
   private readonly maxAttempts: number;
   private readonly baseBackoffMs: number;
-  /** Epoch ms until which the API told us to stop calling it (429 with a long Retry-After). */
   private blockedUntil = 0;
-  /** One request at a time: the limit is per key and shared by prefetches. */
   private queue: Promise<unknown> = Promise.resolve();
   private readonly inflight = new Map<string, Promise<ChapterResult>>();
 
@@ -141,7 +132,6 @@ export class YouVersionClient {
     return path.join(this.options.cacheDir, "selected-versions.json");
   }
 
-  /** User-added ids only (defaults are never stored). */
   private readCustomIds(): number[] {
     const cached = readJson<{ ids?: unknown }>(this.selectedFile());
     if (!Array.isArray(cached?.ids)) return [];
@@ -178,7 +168,6 @@ export class YouVersionClient {
     );
   }
 
-  /** GET with retries, exponential backoff and Retry-After. Returns the response text. */
   private request(pathAndQuery: string): Promise<string> {
     const run = () => this.requestNow(pathAndQuery);
     const next = this.queue.then(run, run);
@@ -279,10 +268,6 @@ export class YouVersionClient {
     return items;
   }
 
-  /**
-   * Full Spanish catalog with licensing state, cached on disk.
-   * The operator only *sees* the selected subset (defaults + user-added).
-   */
   private async loadCatalog(
     force = false,
   ): Promise<{ versions: BibleVersionMeta[]; stale: boolean; error?: string }> {
@@ -320,7 +305,6 @@ export class YouVersionClient {
     }
   }
 
-  /** Selected online list (defaults + versions the user added). */
   async listVersions(force = false): Promise<OnlineVersionsResult> {
     if (!this.configured)
       return { configured: false, versions: [], stale: false };
@@ -333,10 +317,6 @@ export class YouVersionClient {
     };
   }
 
-  /**
-   * Search the cached Spanish catalog by name, abbreviation or language.
-   * Does not hit the network per keystroke; refreshes the catalog only when stale/missing.
-   */
   async searchVersions(query: string): Promise<OnlineSearchResult> {
     const normalized = String(query ?? "").trim();
     if (!this.configured)
@@ -355,7 +335,6 @@ export class YouVersionClient {
     };
   }
 
-  /** Persist a catalog version into the user's online list. */
   async addVersion(lumenId: string): Promise<OnlineVersionsResult> {
     if (!this.configured)
       return { configured: false, versions: [], stale: false };
@@ -380,7 +359,6 @@ export class YouVersionClient {
     };
   }
 
-  /** Remove a user-added version (defaults cannot be removed). */
   async removeVersion(lumenId: string): Promise<OnlineVersionsResult> {
     if (!this.configured)
       return { configured: false, versions: [], stale: false };
@@ -397,7 +375,6 @@ export class YouVersionClient {
     };
   }
 
-  /** One chapter: fresh disk cache, else network (stale cache if the network fails). */
   getChapter(
     lumenVersionId: string,
     book: string,
@@ -413,7 +390,6 @@ export class YouVersionClient {
     return task;
   }
 
-  /** Verses plus the publisher's attribution, which must be shown with the text. */
   private async loadChapter(
     lumenVersionId: string,
     book: string,
@@ -427,7 +403,6 @@ export class YouVersionClient {
       );
       return { ...verses, copyright };
     } catch (error) {
-      // The chapter is already on disk; without attribution it must not be shown.
       return this.failure(error);
     }
   }
@@ -448,11 +423,6 @@ export class YouVersionClient {
     };
   }
 
-  /**
-   * Attribution of one version (`copyright`, else `promotional_content`, else a
-   * generic line naming the version when the publisher gave none, as for
-   * public-domain RVES). Cached 7 days; a stale copy is used when offline.
-   */
   async attribution(numeric: number): Promise<string> {
     const file = path.join(
       this.options.cacheDir,

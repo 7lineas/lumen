@@ -16,7 +16,6 @@ export interface RenderPptxOptions {
   width?: number;
   maxSlides?: number;
   onProgress?: (done: number, total: number) => void;
-  /** Hard timeout so a corrupt file can never hang the UI forever. */
   timeoutMs?: number;
 }
 
@@ -25,11 +24,6 @@ export interface RenderPptxResult {
   warnings: string[];
 }
 
-/**
- * Worker count: rasterizing is CPU-bound and single-threaded per process, so
- * a deck is split across processes. Two cores are left for the UI, the
- * projector and video playback.
- */
 function workerBudget(): number {
   const cores =
     typeof os.availableParallelism === "function"
@@ -38,18 +32,11 @@ function workerBudget(): number {
   return Math.max(1, Math.min(4, cores - 2));
 }
 
-/** Per-user fonts (Windows 10+ installs fonts there by default). */
 function userFontDirs(): string[] {
   if (process.platform !== "win32" || !process.env.LOCALAPPDATA) return [];
   return [path.join(process.env.LOCALAPPDATA, "Microsoft", "Windows", "Fonts")];
 }
 
-/**
- * Render a .pptx to one PNG per slide in utilityProcesses (system fonts, no
- * UI blocking). Large decks are split into contiguous slide ranges rendered
- * in parallel; the last range stays open-ended in case the slide count was
- * an underestimate.
- */
 export function renderPptxInWorker(
   options: RenderPptxOptions,
 ): Promise<RenderPptxResult> {
@@ -77,7 +64,6 @@ export function renderPptxInWorker(
     };
     const fail = (error: Error) =>
       finish(() => {
-        // A failed import keeps nothing, including the other ranges' PNGs.
         for (const result of results)
           for (const file of result?.files ?? [])
             fs.rmSync(file, { force: true });

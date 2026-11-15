@@ -1,13 +1,11 @@
 import type { BibleData, BibleVersionMeta } from "./types";
 
-/** Lumen id of a YouVersion Platform Bible: `yv-147`. */
 export const YV_ID_PREFIX = "yv-";
 
 export function yvVersionId(numericId: number): string {
   return `${YV_ID_PREFIX}${numericId}`;
 }
 
-/** Numeric YouVersion id behind a Lumen id, or null for local Bibles. */
 export function parseYvVersionId(id: string): number | null {
   const match = /^yv-(\d{1,9})$/.exec(id);
   return match ? Number(match[1]) : null;
@@ -17,7 +15,6 @@ export function isOnlineVersionId(id: string | null | undefined): boolean {
   return !!id && parseYvVersionId(id) !== null;
 }
 
-/** Shape of the fields we read from `GET /v1/bibles`. */
 export interface YvBible {
   id: number;
   abbreviation?: string;
@@ -36,32 +33,15 @@ export interface YvLicense {
   bible_ids?: number[];
 }
 
-/**
- * Default online list for Colombia (and ordering of that list):
- * NVI 2025, NBLA, LBLA, RVES. Other versions the user adds come after these.
- * NVI 2015 (Platform 2664) is still in the catalog search, just not a default.
- *
- * Note: bible.com version 197 ("Palabra de Dios para Todos" / PDT, Liga Bíblica
- * Internacional) is NOT on YouVersion Platform (`GET /bibles/197` → 404). Do not
- * confuse it with Platform id 3365 ("Palabla de Dios para ti").
- */
 export const DEFAULT_ONLINE_VERSION_IDS = [128, 103, 89, 147] as const;
 
-/** @deprecated alias kept for callers that still import the old name. */
 export const COLOMBIA_PRIORITY = DEFAULT_ONLINE_VERSION_IDS;
 
-/**
- * Prefer the publisher-facing short label when the API abbreviation is opaque.
- * Never map 3365 to "PDT": that abbreviation belongs to "Palabra de Dios para Todos"
- * (bible.com 197), which is not on Platform; 3365 is "Palabla de Dios para ti".
- */
 const ABBR_OVERRIDES: Record<number, string> = { 3365: "PdDpt" };
 
 function clean(value: unknown): string {
   if (typeof value !== "string") return "";
   const trimmed = value.trim();
-  // The API sometimes returns the text wrapped in literal quotes.
-  // Some publishers send multi-line notices; the footer shows them on one line.
   return trimmed
     .replace(/^"(.*)"$/s, "$1")
     .replace(/\s*\n+\s*/g, " · ")
@@ -72,7 +52,6 @@ export function attributionFor(bible: YvBible): string {
   return clean(bible.copyright) || clean(bible.promotional_content);
 }
 
-/** Used only when the publisher gave neither `copyright` nor `promotional_content`. */
 export function fallbackAttribution(bible: YvBible): string {
   const title = clean(bible.title) || clean(bible.localized_title);
   const abbr = clean(bible.abbreviation);
@@ -83,10 +62,6 @@ function yearOf(title: string): string {
   return /\b(19|20)\d{2}\b/.exec(title)?.[0] ?? "";
 }
 
-/**
- * Builds the "En línea" selector entries from the full Spanish catalog
- * (`all_available=true`), marking the ones the app's key is not licensed for.
- */
 export function buildOnlineVersions(
   catalog: YvBible[],
   licensedIds: Set<number>,
@@ -116,7 +91,6 @@ export function buildOnlineVersions(
         `Biblia ${bible.id}`;
       let abbr =
         ABBR_OVERRIDES[bible.id] ?? (clean(bible.abbreviation) || title);
-      // Two editions share "NVI-S": tell them apart by year.
       if ((abbrCount.get(clean(bible.abbreviation)) ?? 0) > 1) {
         abbr = `${abbr.replace(/-S$/, "")} ${yearOf(title)}`.trim();
       }
@@ -138,12 +112,10 @@ export function buildOnlineVersions(
     });
 }
 
-/** Empty online Bible: chapters are merged in as they are fetched. */
 export function emptyOnlineBible(meta: BibleVersionMeta): BibleData {
   return { meta, verses: {}, searchIndex: [] };
 }
 
-/** Adds one fetched chapter to an online Bible (replacing a previous copy of it). */
 export function mergeChapter(
   bible: BibleData,
   book: string,
@@ -175,7 +147,6 @@ export function hasChapter(
   return !!bible?.verses[book]?.[String(chapter)];
 }
 
-/** Numeric YouVersion id of a default online Bible, or null. */
 export function parseDefaultOnlineNumericId(id: string): number | null {
   const numeric = parseYvVersionId(id);
   if (numeric === null) return null;
@@ -188,7 +159,6 @@ export function isDefaultOnlineVersionId(id: string): boolean {
   return parseDefaultOnlineNumericId(id) !== null;
 }
 
-/** Defaults first (Colombia order), then user-added ids in the order they were saved. */
 export function mergeSelectedOnlineIds(customIds: readonly number[]): number[] {
   const seen = new Set<number>();
   const out: number[] = [];
@@ -205,7 +175,6 @@ export function mergeSelectedOnlineIds(customIds: readonly number[]): number[] {
   return out;
 }
 
-/** Keep only user-added ids (never persist the defaults). */
 export function sanitizeCustomOnlineIds(ids: readonly number[]): number[] {
   const defaults = new Set<number>(DEFAULT_ONLINE_VERSION_IDS);
   const seen = new Set<number>();
@@ -219,7 +188,6 @@ export function sanitizeCustomOnlineIds(ids: readonly number[]): number[] {
   return out;
 }
 
-/** Fold accents and case so "niño" matches "Nino" and "NVI" matches "nvi". */
 export function normalizeSearchText(value: string): string {
   return String(value ?? "")
     .normalize("NFD")
@@ -236,14 +204,9 @@ export interface OnlineSearchHit {
   license?: string;
   locked?: boolean;
   lockedReason?: string;
-  /** Already in the user's selected online list. */
   added: boolean;
 }
 
-/**
- * Local search over an already-built catalog (name, abbr, language, id).
- * Empty query → no hits. Results keep catalog order (Colombia first).
- */
 export function searchOnlineCatalog(
   catalog: readonly BibleVersionMeta[],
   query: string,
@@ -282,7 +245,6 @@ export function searchOnlineCatalog(
   return hits;
 }
 
-/** Pick selected versions from a full catalog, preserving selection order. */
 export function pickSelectedOnlineVersions(
   catalog: readonly BibleVersionMeta[],
   selectedNumericIds: readonly number[],
@@ -301,19 +263,17 @@ export interface OnlineSearchResult {
   configured: boolean;
   query: string;
   hits: OnlineSearchHit[];
-  /** True when the catalog came from disk because the network failed. */
   stale: boolean;
   error?: string;
 }
 
-/** A chapter result as sent over IPC. */
 export type ChapterResult =
   | {
       ok: true;
       verses: Record<string, string>;
       fromCache: boolean;
       stale: boolean;
-      /** Publisher attribution to show with the text. */ copyright: string;
+      copyright: string;
     }
   | {
       ok: false;
@@ -331,7 +291,6 @@ export type ChapterResult =
 export interface OnlineVersionsResult {
   configured: boolean;
   versions: BibleVersionMeta[];
-  /** True when the list came from the disk cache because the network failed. */
   stale: boolean;
   error?: string;
 }

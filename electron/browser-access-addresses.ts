@@ -1,7 +1,6 @@
 import type os from "node:os";
 
 export interface BrowserAccessAddresses {
-  /** Private addresses on the same Wi-Fi or cable network as the host. */
   lan: string[];
 }
 

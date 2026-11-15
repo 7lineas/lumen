@@ -1,4 +1,3 @@
-/** Protestant canon — 66 books, USFM codes */
 export interface BookMeta {
   code: string;
   name: string;

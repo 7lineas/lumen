@@ -12,7 +12,6 @@ const MOD = /Mac|iPhone|iPad/.test(navigator.userAgent) ? "⌘" : "Ctrl";
 interface Row {
   keys: string[];
   label: string;
-  /** Between keys of one shortcut: "+" for chords, a space for the arrow pair. */
   joiner?: string;
 }
 

@@ -12,12 +12,6 @@ function parseSession(value: unknown): LumenSession | null {
   return null;
 }
 
-/**
- * One session per address Lumen was paired on (local network or tunnel), in
- * the order they should be tried. The first entry is the active one. Tokens
- * live only in the Keychain / Keystore, never in AsyncStorage, which is plain
- * text on disk.
- */
 export async function loadLumenSessions(): Promise<LumenSession[]> {
   const raw = await SecureStore.getItemAsync(SESSIONS_KEY);
   if (raw) {
@@ -28,13 +22,10 @@ export async function loadLumenSessions(): Promise<LumenSession[]> {
           .map(parseSession)
           .filter((s): s is LumenSession => s !== null);
       }
-    } catch {
-      // Unreadable entry: treat as unpaired so the volunteer pairs again.
-    }
+    } catch {}
     return [];
   }
 
-  // Earlier builds stored a single session under another key. Carry it over.
   const legacy = await SecureStore.getItemAsync(LEGACY_SESSION_KEY);
   if (!legacy) return [];
   try {

@@ -136,9 +136,7 @@ export function listSelectableVersions(
       if (raw.meta?.id !== id) continue;
       if (raw.meta?.draft === true) continue;
       versions.push(raw.meta);
-    } catch {
-      // A broken download stays out of the version list.
-    }
+    } catch {}
   }
   return versions;
 }
@@ -156,7 +154,6 @@ export function resolveModulePath(
   throw new Error("Esa versión no está instalada");
 }
 
-/** Remote catalog kept in memory so opening Biblias does not wait on the network each time. */
 const CATALOG_TTL_MS = 60 * 60 * 1000;
 let remoteCatalog: { catalog: BibleCatalog; at: number } | null = null;
 let remoteRefresh: Promise<void> | null = null;
@@ -176,11 +173,6 @@ function refreshRemoteCatalog(
   return remoteRefresh;
 }
 
-/**
- * Answers from the last remote catalog right away and refreshes it in the
- * background once it is older than the TTL. Without a cached copy it waits
- * for one fetch, then falls back to the bundled list.
- */
 export async function resolveCatalogCached(
   bundled: BibleCatalog,
   fetchImpl: FetchLike,
@@ -191,7 +183,6 @@ export async function resolveCatalogCached(
     return { catalog: remoteCatalog.catalog, source: "remote" };
   }
   await refreshRemoteCatalog(bundled, fetchImpl);
-  // TS cannot see the assignment made inside the refresh, so read it again.
   const fetched = remoteCatalog as { catalog: BibleCatalog; at: number } | null;
   return fetched
     ? { catalog: fetched.catalog, source: "remote" }

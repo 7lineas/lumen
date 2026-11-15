@@ -1,7 +1,6 @@
 import { backgroundImageUrl } from "@shared/background-image";
 import { toBase64 } from "./background-thumbnail";
 
-/** Covers a Media grid tile at 2x pixel density (tiles are at least 176px wide). */
 const SLIDE_THUMBNAIL_WIDTH = 640;
 const DECODE_TIMEOUT_MS = 12_000;
 
@@ -11,7 +10,6 @@ const pendingThumbnails = new Map<string, Promise<boolean>>();
 function loadSlideImage(source: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();
-    // Same as video thumbnails: drawing the image to a canvas needs CORS to keep it untainted.
     image.crossOrigin = "anonymous";
     const timeout = window.setTimeout(
       () => reject(new Error("Slide thumbnail decode timed out")),
@@ -53,16 +51,10 @@ async function decodeAndSaveThumbnail(filePath: string): Promise<boolean> {
       await toBase64(blob),
     );
   } catch {
-    // The grid keeps showing the full slide when no thumbnail can be made.
     return false;
   }
 }
 
-/**
- * Make the small copy the Media grid shows for a slide image. Serialized and
- * de-duplicated like the video thumbnails: a deck of 100 slides is decoded one
- * at a time, not all at once.
- */
 export function createSlideThumbnail(filePath: string): Promise<boolean> {
   const existing = pendingThumbnails.get(filePath);
   if (existing) return existing;

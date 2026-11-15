@@ -21,11 +21,9 @@ interface PickerProps {
   value: FontFamilyId;
   installed: InstalledFont[];
   onChange: (id: FontFamilyId) => void;
-  /** Called after a font is removed, so a setting that used it can fall back. */
   onRemoved: (id: string) => void;
 }
 
-/** Typeface selector (built-in and installed fonts) with the search icon that installs Google fonts. */
 export function TypefaceSelect({
   value,
   installed,
@@ -77,7 +75,6 @@ interface WeightProps {
   onChange: (weight: number) => void;
 }
 
-/** Weight of the text, limited to the weights the typeface offers. */
 export function FontWeightSelect({ value, weights, onChange }: WeightProps) {
   return (
     <Select
@@ -110,7 +107,6 @@ export function FontWeightSelect({ value, weights, onChange }: WeightProps) {
 }
 
 interface OwnProps {
-  /** Whether this song or text has its own typeface (the switch). */
   own: boolean;
   onOwnChange: (own: boolean) => void;
   fontFamily: FontFamilyId;
@@ -122,7 +118,6 @@ interface OwnProps {
   testId: string;
 }
 
-/** Switch plus typeface and weight pickers for one song or text. Off: Ajustes > Tipo de letra applies. */
 export function OwnTypeface({
   own,
   onOwnChange,

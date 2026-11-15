@@ -112,10 +112,8 @@ function newId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-/** Library and slide buttons where Enter projects the preview instead of pressing the button again. */
 const TAKE_ON_ENTER = ".lx-card, .lx-item-main, .lx-chaps button, .lx-result";
 
-/** Columns of the slide grid on screen, so ↑ and ↓ move by one row. */
 function gridColumns(): number {
   const grid = document.querySelector(".lx-slides");
   if (!grid) return 1;
@@ -126,12 +124,10 @@ function gridColumns(): number {
   );
 }
 
-/** Minutes offered for the countdown screen. */
 const COUNTDOWN_OPTIONS = [1, 3, 5, 10, 15, 20].map((minutes) => ({
   value: String(minutes),
   label: `${minutes} min`,
 }));
-/** Caption above the countdown on the projector. */
 const COUNTDOWN_CAPTION = "Comenzamos en";
 const OVERLAY_TITLES = {
   ajustes: "Ajustes",
@@ -139,7 +135,6 @@ const OVERLAY_TITLES = {
   biblias: "Biblias",
 } as const;
 
-/** Settings persisted before the accent/song-fade split. */
 type StoredSettings = Partial<AppSettings> & {
   referenceColor?: string;
   versionColor?: string;
@@ -147,7 +142,6 @@ type StoredSettings = Partial<AppSettings> & {
 
 function mergeSettings(s: StoredSettings): AppSettings {
   const fadeMs = s.fadeMs ?? DEFAULT_SETTINGS.fadeMs;
-  // Legacy key from before the copyright footer was removed: never persisted again.
   const rest = { ...s };
   delete (rest as Record<string, unknown>).showCopyright;
   return {
@@ -163,11 +157,6 @@ function mergeSettings(s: StoredSettings): AppSettings {
   };
 }
 
-/**
- * The background (color/media) is permanent: it is projected from the moment
- * the app opens. Clearing ("Limpiar") only removes the text, so a blank
- * payload is just the background with empty content.
- */
 function blankPayload(s: AppSettings, fadeMs?: number): ProjectorPayload {
   return {
     mode: "blank",
@@ -232,10 +221,7 @@ export function OperatorApp() {
   const [viewBook, setViewBook] = useState("JHN");
   const [viewChapter, setViewChapter] = useState(3);
   const [live, setLive] = useState<ProjectorPayload | null>(null);
-  // Mirror of `live` for callbacks that must compare with the previous payload
-  // (they are memoised with empty deps, so state would be stale there).
   const liveRef = useRef<ProjectorPayload | null>(null);
-  // When the content on the live screen last changed; drives the live timer.
   const [liveSince, setLiveSince] = useState<number | null>(null);
   const [liveRange, setLiveRange] = useState<VerseRange | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
@@ -245,13 +231,11 @@ export function OperatorApp() {
   const [songStaged, setSongStaged] = useState<SongStage | null>(null);
   const [songSelectedId, setSongSelectedId] = useState<string | null>(null);
   const [songLive, setSongLive] = useState<SongStage | null>(null);
-  // Textos keep their own staged selection; what is projected is tracked in songLive, the shared lyric-style stage.
   const [textStaged, setTextStaged] = useState<SongStage | null>(null);
   const [textSelectedId, setTextSelectedId] = useState<string | null>(null);
   const [slideStaged, setSlideStaged] = useState<SlideStage | null>(null);
   const [mediaSelected, setMediaSelected] = useState<MediaItem | null>(null);
   const [slideLive, setSlideLive] = useState<SlideStage | null>(null);
-  // Video on the projector: its name, its length once the live monitor reads it, and the volume to start with.
   const [videoTitle, setVideoTitle] = useState("");
   const [videoDuration, setVideoDuration] = useState<number | null>(null);
   const [videoVolume, setVideoVolume] = useState(1);
@@ -263,12 +247,7 @@ export function OperatorApp() {
   const [overlay, setOverlay] = useState<
     "ajustes" | "acerca" | "biblias" | null
   >(null);
-  // Phone only: which of the two panels the bottom tabs show.
   const [phoneView, setPhoneView] = useState<"modes" | "live">("modes");
-  // Keep rendering the last non-null overlay while the sheet plays its
-  // close animation. Clearing children/className synchronously on ESC makes
-  // the panel go empty (and jump 460px -> 720px when leaving "ajustes")
-  // mid-exit, which is the broken wide state with a bare left border.
   const [lastOverlay, setLastOverlay] = useState<typeof overlay>(null);
   useEffect(() => {
     if (overlay !== null) setLastOverlay(overlay);
@@ -288,10 +267,6 @@ export function OperatorApp() {
   const lastContent = useRef<ProjectorPayload | null>(null);
   const booted = useRef(false);
 
-  // Track the real projector window size so the live/preview monitors
-  // render at the same ratio as the congregation screen, live.
-  // Source of truth is the projector window content bounds (main pushes
-  // updates on resize); the target display is only a fallback.
   useEffect(() => {
     let cancelled = false;
     const applyBounds = (b: { width: number; height: number } | null) => {
@@ -304,7 +279,6 @@ export function OperatorApp() {
     };
     const api = window.proyector;
     if (!api) return;
-    // Live window bounds first; fall back to the target display.
     void api
       .getProjectorBounds?.()
       .then(applyBounds)
@@ -341,8 +315,6 @@ export function OperatorApp() {
       })
       .catch(() => undefined);
     const off = api.onProjectorBounds?.(applyBounds);
-    // Belt and braces: re-read the window size periodically so the panels
-    // follow resizes even if a resize event is ever missed.
     const poll = window.setInterval(() => {
       if (cancelled || typeof api.getProjectorBounds !== "function") return;
       void api
@@ -371,9 +343,6 @@ export function OperatorApp() {
     return `${w / g}:${h / g} · ${w}×${h}`;
   }, [projectorBounds]);
 
-  // Online Bibles (YouVersion). If the selected one cannot be read right now
-  // (offline, rate limited, license not accepted) the operator keeps working
-  // with RV1909, which ships with the app; this is derived, not persisted.
   const onlineBibles = useOnlineBibles();
   const primaryOnline = isOnlineVersionId(settings.primaryVersionId);
   const primaryMeta = onlineBibles.online.versions.find(
@@ -426,9 +395,6 @@ export function OperatorApp() {
     [versions, onlineBibles.online.versions],
   );
 
-  // Prefetch the visible chapter first, then the staged/live ones and the
-  // neighbours, one at a time (the API limit is per key). Skipped while the
-  // fallback is active so an offline church does not retry in a loop.
   useEffect(() => {
     if (onlineUnavailable) return;
     const ids = [
@@ -503,17 +469,12 @@ export function OperatorApp() {
   ]);
 
   const previewContent = useMemo(() => {
-    // fetchRangeTexts already returns null while the selected Bible is not in
-    // the cache. Do not gate this on the loader's transient `ready` flag:
-    // switching between the song and Bible workspaces can otherwise leave the
-    // preview empty for the rest of that render cycle.
     if (!staged) return null;
     return fetchRangeTexts(
       primaryId,
       settings.dualView ? settings.secondaryVersionId : null,
       staged,
     );
-    // chapterTick: online chapters are merged into the cached Bible in place.
     // oxlint-disable-next-line react/exhaustive-deps
   }, [
     staged,
@@ -555,8 +516,6 @@ export function OperatorApp() {
       referenceColor: settings.accentColor,
       versionColor: settings.accentColor,
       backgroundImagePath: settings.backgroundImagePath,
-      // Keep the fade the content was projected with: bible and songs have
-      // separate transition settings.
       fadeMs: base.fadeMs ?? settings.fadeMs,
       backgroundFadeMs: settings.backgroundFadeMs,
     }),
@@ -569,9 +528,6 @@ export function OperatorApp() {
     void api.getSettings().then((s) => {
       const merged = mergeSettings(s);
       setSettings(merged);
-      // A browser or phone joins a projector that is already running: it
-      // follows what is live (replayed by the host on connect) and must not
-      // clear the screen for everyone just by opening.
       if (window.__LUMEN_BROWSER__) {
         if (!liveRef.current) {
           const initial = blankPayload(merged);
@@ -580,8 +536,6 @@ export function OperatorApp() {
         }
         return;
       }
-      // Project the permanent background right away so the congregation
-      // screen never sits black: color/media from the start, text empty.
       const initial = blankPayload(merged);
       liveRef.current = initial;
       setLive(initial);
@@ -599,9 +553,6 @@ export function OperatorApp() {
     setViewChapter(range.start.chapter);
   }, []);
 
-  // The song workspace is mounted in place of the Bible reader. Keep the
-  // selected Bible range available when returning to Bible mode, including
-  // the case where the mode switch happens while a live verse is showing.
   useEffect(() => {
     if (mode !== "biblia" || staged || !liveRange) return;
     stageRange(liveRange);
@@ -632,26 +583,20 @@ export function OperatorApp() {
 
   const [hasLiveContent, setHasLiveContent] = useState(false);
 
-  /** Updates this operator's view of what is live. Does not touch the projector. */
   const applyLive = useCallback((payload: ProjectorPayload) => {
     const previous = liveRef.current;
     liveRef.current = payload;
     setLive(payload);
-    // Only a real change of content restarts the live timer; style-only
-    // updates (font, brightness, background) keep it running.
     if (payload.mode === "blank") setLiveSince(null);
     else if (payloadContentKey(previous) !== payloadContentKey(payload))
       setLiveSince(Date.now());
     if (payload.mode === "verse") {
       lastVerse.current = payload;
     }
-    // Verses, songs and slides are restorable: "Limpiar" only removes the text
-    // above the permanent background. Logo and countdown are not restored.
     if (payload.mode === "verse" || payload.mode === "slides") {
       lastContent.current = payload;
       setHasLiveContent(true);
     } else if (payload.mode === "video") {
-      // A video is not brought back by "Restaurar": it would resume out of step.
       lastContent.current = null;
       setHasLiveContent(false);
     }
@@ -665,8 +610,6 @@ export function OperatorApp() {
     [applyLive],
   );
 
-  // Other operators (this desktop app's browsers, or a phone) may change what
-  // is on the projector or the shared lists. Follow them without a reload.
   useEffect(() => {
     const api = window.proyector;
     if (!api) return;
@@ -697,8 +640,6 @@ export function OperatorApp() {
     if (next) setHistory(next);
   }, [previewPayload, staged, send, primaryId]);
 
-  // A song's own velocity wins over Ajustes > Canciones; textos pass no fadeMs and keep the setting.
-  // The typeface comes from the staged song or text; without its own, Ajustes > Tipo de letra applies.
   const songPayload = useCallback(
     (
       _title: string,
@@ -707,7 +648,6 @@ export function OperatorApp() {
       typeface?: Pick<SongStage, "fontFamily" | "fontWeight">,
     ): ProjectorPayload => ({
       mode: "verse",
-      // Song titles are never projected; the operator sees them in the library.
       referenceLabel: "",
       blocks: [{ text: settings.songUppercase ? text.toUpperCase() : text }],
       churchName: settings.churchName,
@@ -731,12 +671,8 @@ export function OperatorApp() {
     (imagePath: string | null): ProjectorPayload => ({
       ...songPayload("", ""),
       mode: "slides",
-      // A diapositiva is just its image: no text blocks.
       blocks: [],
       slideImagePath: imagePath,
-      // Slides fade in/out/between with the same backgroundFadeMs as the
-      // background media (no separate setting), and the background switches to
-      // the solid color while they are shown (see ProjectorView / StageMonitor).
       fadeMs: settings.backgroundFadeMs,
     }),
     [songPayload, settings.backgroundFadeMs],
@@ -822,7 +758,6 @@ export function OperatorApp() {
     });
   }, []);
 
-  // Textos are projected like songs, but the uppercase setting is for songs only.
   const textPayload = useCallback(
     (
       text: string,
@@ -847,7 +782,6 @@ export function OperatorApp() {
       const text = next.slides[clamped];
       if (text == null) return;
       setSongLive(next);
-      // Stepping a live texto keeps it a texto: no song uppercase.
       await send(
         next.isText
           ? textPayload(text, next)
@@ -942,8 +876,6 @@ export function OperatorApp() {
         : null,
     );
   }, []);
-  // Removing what is on screen (or sounding) stops it: the projector fades it
-  // out (backgroundFadeMs) and the normal background returns.
   const mediaRemoved = useCallback(
     (item: MediaItem) => {
       setAudioTrack((track) => (track?.id === item.id ? null : track));
@@ -959,7 +891,6 @@ export function OperatorApp() {
     },
     [slideLive, send, settings],
   );
-  // Renaming the open item updates the header, the preview and the audio dock too.
   const mediaRenamed = useCallback((item: MediaItem) => {
     setMediaSelected((current) => (current?.id === item.id ? item : current));
     setSlideStaged((current) =>
@@ -969,7 +900,6 @@ export function OperatorApp() {
       track?.id === item.id ? { ...track, title: item.title } : track,
     );
   }, []);
-  // A deck whose images changed (merged into, or slides taken out) updates the grid and the preview.
   const mediaImagesChanged = useCallback((item: MediaItem) => {
     setMediaSelected((current) => (current?.id === item.id ? item : current));
     setSlideStaged((current) =>
@@ -991,8 +921,6 @@ export function OperatorApp() {
         const next = { ...current, index: clamped };
         if (projectOnClick) {
           const image = next.images[clamped] ?? null;
-          // Defer the projection out of the state updater to avoid
-          // double-sends under StrictMode double-invocation.
           queueMicrotask(() => {
             setSlideLive(next);
             void send(slidePayload(image));
@@ -1064,7 +992,6 @@ export function OperatorApp() {
   const selectedKind = mediaSelected ? mediaKind(mediaSelected) : null;
   const videoPreviewPayload = useMemo<ProjectorPayload | null>(() => {
     if (selectedKind !== "video" || !mediaSelected?.file) return null;
-    // The preview shows the first frame; nothing plays until it is projected.
     return {
       ...slidePayload(null),
       mode: "video",
@@ -1098,7 +1025,6 @@ export function OperatorApp() {
     [send, slidePayload, videoVolume],
   );
 
-  // Transport changes resend the payload that is on screen with a new clock.
   const updateVideo = useCallback(
     (change: (video: VideoPlayback, now: number) => VideoPlayback) => {
       const current = liveRef.current;
@@ -1116,7 +1042,6 @@ export function OperatorApp() {
         !(videoDuration != null && at >= videoDuration - 0.25)
       )
         return { ...video, playing: false, position: at };
-      // Play from where it was paused, or from the start once it has ended.
       const from = videoDuration != null && at >= videoDuration - 0.25 ? 0 : at;
       return {
         ...video,
@@ -1151,7 +1076,6 @@ export function OperatorApp() {
       setAudioTrack({ id: item.id, title: item.title, file: item.file });
   }, []);
 
-  // "Proyectar" in Media: a slide goes to the screen, a video starts playing there, audio starts sounding here.
   const takeMedia = useCallback(() => {
     if (!mediaSelected) return;
     if (selectedKind === "video") void projectVideo(mediaSelected);
@@ -1165,19 +1089,14 @@ export function OperatorApp() {
     projectSlideStaged,
   ]);
 
-  // Songs and textos are both lyric-style: they share the text fade and the blank screen.
   const lyricsWorkspace = mode === "canciones" || mode === "textos";
 
-  // The song staged on screen uses its own velocity when it has one.
   const lyricsFadeMs =
     mode === "canciones"
       ? (songStaged?.fadeMs ?? settings.songFadeMs)
       : settings.songFadeMs;
 
   const showBlank = useCallback(async () => {
-    // "Limpiar" clears only the text (verse/song/slide). Background color and
-    // media stay so the projector keeps showing them behind empty content.
-    // The blank transition uses the current workspace's fade setting.
     await send(
       blankPayload(
         settings,
@@ -1198,7 +1117,6 @@ export function OperatorApp() {
     await showBlank();
   }, [live, send, chrome, showBlank]);
 
-  // Fade used by the logo and countdown screens: the workspace on screen decides.
   const workspaceFadeMs =
     mode === "media"
       ? settings.backgroundFadeMs
@@ -1206,8 +1124,6 @@ export function OperatorApp() {
         ? lyricsFadeMs
         : settings.fadeMs;
 
-  // Logo replaces the text; pressing it again brings back what was on screen.
-  // With no logo image yet, the file picker opens straight away.
   const toggleLogo = useCallback(async () => {
     if (live?.mode === "logo") {
       if (lastContent.current) await send(chrome(lastContent.current));
@@ -1225,8 +1141,6 @@ export function OperatorApp() {
         return;
       }
       if (!logoImagePath) return;
-      // Saved directly (not via applyChrome, which is declared below): nothing
-      // else needs a resync because the logo replaces whatever is on screen.
       const next = { ...settings, logoImagePath };
       setSettings(next);
       await window.proyector?.setSettings(next);
@@ -1258,8 +1172,6 @@ export function OperatorApp() {
       await window.proyector?.setSettings(next);
       if (!live) return;
       if (live.mode === "blank") {
-        // Keep a cleared screen in sync with background/theme tweaks so
-        // changing the fondo or media while "Limpiar" is active still shows.
         await send({
           ...live,
           churchName: next.churchName,
@@ -1272,8 +1184,6 @@ export function OperatorApp() {
           logoImagePath: next.logoImagePath,
           referenceColor: next.accentColor,
           versionColor: next.accentColor,
-          // Style-only resync of the cleared screen: keep the fade it was
-          // cleared with so the next content swap still uses its own timing.
           fadeMs: live.fadeMs ?? next.fadeMs,
           backgroundFadeMs: next.backgroundFadeMs,
         });
@@ -1318,7 +1228,6 @@ export function OperatorApp() {
       let verse = ref.verse + delta;
       const book = ref.book;
       const maxInChapter = getChapterVerseCount(bible, book, chapter);
-      // A row jump (↑ ↓) stays inside the chapter; single steps cross into the next one.
       if (Math.abs(delta) > 1) {
         verse = Math.min(Math.max(verse, 1), maxInChapter || 1);
         if (verse === ref.verse) return;
@@ -1438,7 +1347,6 @@ export function OperatorApp() {
     });
   }, [toggleBlank, navigateVerse]);
 
-  // Arrows move the preview and Enter projects it, in every workspace.
   const stepPreview = useCallback(
     (delta: number) => {
       if (mode === "canciones") navigateSongPreview(delta);
@@ -1476,7 +1384,6 @@ export function OperatorApp() {
         return;
       }
       if (e.metaKey || e.ctrlKey || e.altKey) return;
-      // Open dialogs, sheets, menus and selects own the keyboard.
       if (
         document.querySelector(
           '[role="dialog"], [role="listbox"], [role="menu"]',
@@ -1513,7 +1420,6 @@ export function OperatorApp() {
           stepPreview(-gridColumns());
           break;
         case "Enter":
-          // Other focused buttons (Limpiar, Guardar…) keep their own Enter.
           if (
             target instanceof HTMLElement &&
             target.closest("button, a") &&
@@ -1568,7 +1474,6 @@ export function OperatorApp() {
     void projectReference(prev.reference, prev.id);
   };
 
-  // What each monitor is showing, next to its title.
   const songPartLabel = (stage: SongStage) =>
     `${stage.title} · ${stage.labels[stage.index] || `Parte ${stage.index + 1}`}`;
   const previewLabel =
@@ -1625,7 +1530,6 @@ export function OperatorApp() {
             ? "El audio suena en esta computadora"
             : "Elige una diapositiva o un video"
           : "Elige un versículo";
-  // Previous / next under the live monitor follow what is on screen, not the workspace that is open.
   const stepLive = (delta: number) => {
     if (live?.mode === "slides") void navigateSlideLive(delta);
     else if (live?.mode === "verse" && !live.referenceLabel)
@@ -1826,7 +1730,6 @@ export function OperatorApp() {
         </div>
       </header>
 
-      {/* Library on the left, its content in the centre, preview and live on the right. */}
       <div className="lx-body">
         {mode === "canciones" ? (
           <SongsWorkspace
@@ -1912,8 +1815,6 @@ export function OperatorApp() {
             notice={onlineNotice}
             onRetryOnline={() => {
               onlineBibles.resetFailures();
-              // Only re-ask for the list when it is what failed: it shares the
-              // single request queue with the chapter that is being retried.
               if (
                 onlineBibles.online.error ||
                 onlineBibles.online.stale ||
@@ -2165,8 +2066,6 @@ export function OperatorApp() {
                         if (!path) return;
                         if (isBackgroundVideo(path))
                           await createBackgroundVideoThumbnail(path);
-                        // New uploads join the library but never auto-project: the
-                        // operator picks explicitly from the gallery.
                         if ((settings.backgroundImages ?? []).includes(path))
                           return;
                         await applyChrome({

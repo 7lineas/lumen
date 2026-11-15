@@ -27,20 +27,15 @@ export interface SongDraft {
   title: string;
   author: string;
   lyrics: string;
-  /** Undefined when the song follows Ajustes > Canciones. */
   fadeMs?: number;
-  /** Undefined when the song follows Ajustes > Tipo de letra. */
   fontFamily?: FontFamilyId;
   fontWeight?: number;
 }
 
 interface Props {
   open: boolean;
-  /** Song being edited; null creates a new one. */
   song: StoredSong | null;
-  /** Ajustes > Canciones transition, used when the song has no velocity of its own. */
   defaultFadeMs: number;
-  /** Ajustes > Tipo de letra, used when the song turns on its own typeface. */
   defaultFontFamily: FontFamilyId;
   onOpenChange: (open: boolean) => void;
   onSave: (draft: SongDraft) => void;

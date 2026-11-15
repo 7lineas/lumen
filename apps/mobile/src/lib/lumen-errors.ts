@@ -10,7 +10,6 @@ const MESSAGES: Record<string, string> = {
   unsupported_operation: "Esta versión de Lumen no admite esa operación.",
 };
 
-/** Spanish message for the user. Anything that is not a Lumen answer is a network problem. */
 export function describeLumenError(error: unknown): string {
   if (error instanceof LumenApiError) {
     return (

@@ -2,8 +2,6 @@ import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
 import PdfWorker from "pdfjs-dist/legacy/build/pdf.worker.min.mjs?url";
 import type { PngEncodeResponse } from "./pngEncodeWorker";
 
-// Legacy build on purpose: the modern pdf.js build needs newer JS built-ins
-// (e.g. Uint8Array.prototype.toHex) than the Chromium bundled with Electron 34 has.
 pdfjsLib.GlobalWorkerOptions.workerSrc = PdfWorker;
 
 const MAX_PAGES = 300;
@@ -25,18 +23,14 @@ function bytesToBase64(bytes: ArrayBuffer): string {
   return btoa(binary);
 }
 
-/** The encoder pool itself failed (not the PDF): retried on the main thread. */
 class EncoderPoolError extends Error {}
 
-/** Turns a rendered page canvas into base64 PNG. */
 interface PngEncoder {
   encode(canvas: HTMLCanvasElement): Promise<string>;
-  /** Resolves once fewer pages are waiting, so memory stays bounded. */
   ready(): Promise<void>;
   close(): void;
 }
 
-/** One page at a time with canvas.toBlob (Chromium runs these one by one). */
 function mainThreadEncoder(): PngEncoder {
   return {
     async encode(canvas) {
@@ -52,11 +46,6 @@ function mainThreadEncoder(): PngEncoder {
   };
 }
 
-/**
- * Encode pages in parallel workers: same Chromium PNG encoder, same bytes,
- * while the next page is already being drawn. Two cores stay free for the UI
- * and the projector.
- */
 function workerPoolEncoder(): PngEncoder | null {
   if (
     typeof Worker === "undefined" ||
@@ -135,10 +124,6 @@ function workerPoolEncoder(): PngEncoder | null {
   };
 }
 
-/**
- * Rasterize every PDF page to PNG (screenshots of the real slide design).
- * Pure Chromium path: pdf.js + canvas, no native deps.
- */
 export async function rasterizePdfToPngs(
   base64: string,
   opts: RasterizeOptions = {},
@@ -147,7 +132,6 @@ export async function rasterizePdfToPngs(
   const pool = workerPoolEncoder();
   if (pool) {
     try {
-      // pdf.js takes ownership of the bytes it is given, so it gets a copy.
       return await rasterize(data.slice(), pool, opts);
     } catch (error) {
       if (!(error instanceof EncoderPoolError)) throw error;
@@ -196,8 +180,6 @@ async function rasterize(
           opts.onProgress?.(++done, total);
           return png;
         });
-        // Observed here so an early failure isn't reported as unhandled;
-        // Promise.all below still rejects with it.
         encoded.catch(() => undefined);
         encodes.push(encoded);
       } finally {
@@ -207,7 +189,6 @@ async function rasterize(
     return { pngBase64: await Promise.all(encodes) };
   } finally {
     encoder.close();
-    // The loading task owns the worker resources (the document proxy has no destroy()).
     await loadingTask.destroy();
   }
 }

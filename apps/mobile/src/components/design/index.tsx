@@ -9,7 +9,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { colors } from "@/theme/tokens";
 
-/** Page base: theme background and safe area. */
 export function Screen({ children }: PropsWithChildren) {
   return (
     <SafeAreaView
@@ -21,7 +20,6 @@ export function Screen({ children }: PropsWithChildren) {
   );
 }
 
-/** Surface for a group of related controls. */
 export function Card({ children }: PropsWithChildren) {
   return (
     <View className="gap-4 rounded-lg border border-border bg-card p-4">
@@ -87,7 +85,6 @@ export function Field({ label, ...input }: TextInputProps & { label: string }) {
   );
 }
 
-/** Inline error line, shown under the control that failed. */
 export function ErrorText({ children }: PropsWithChildren) {
   return (
     <Text

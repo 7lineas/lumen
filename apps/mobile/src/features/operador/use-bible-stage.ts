@@ -13,16 +13,11 @@ import { nextStageTarget } from "./step-target";
 
 export type StagedVerse = {
   range: VerseRange;
-  /** The version the texts were read in, which is not always the primary one. */
   versionId: string;
   referenceLabel: string;
   blocks: Array<{ label?: string; text: string }>;
 };
 
-/**
- * The operator's preview. Nothing reaches the projector until `projectStaged`,
- * matching the desktop app: browsing never changes what the congregation sees.
- */
 export function useBibleStage(client: LumenClient | null) {
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [versions, setVersions] = useState<BibleVersionMeta[]>([]);
@@ -41,7 +36,6 @@ export function useBibleStage(client: LumenClient | null) {
     ])
       .then(([current, list]) => {
         if (!active) return;
-        // Locked versions need a licence the host has not accepted yet.
         const installed = list.filter((version) => !version.locked);
         setSettings(current);
         setVersions(installed);
@@ -68,7 +62,6 @@ export function useBibleStage(client: LumenClient | null) {
     [client],
   );
 
-  /** Texts for `range` in `id`, plus the second version when dual view is on. */
   const textsFor = useCallback(
     async (id: string, range: VerseRange): Promise<StagedVerse | null> => {
       if (!settings) return null;
@@ -124,7 +117,6 @@ export function useBibleStage(client: LumenClient | null) {
   const selectVersion = useCallback(
     (id: string) => {
       setVersionId(id);
-      // Keep the same passage, now read in the chosen version.
       if (staged) void stageRange(staged.range, id);
     },
     [staged, stageRange],
@@ -152,7 +144,6 @@ export function useBibleStage(client: LumenClient | null) {
     () =>
       run(async () => {
         if (!client || !staged) return;
-        // Re-read styling so the projector matches the desktop's current Ajustes.
         const current = await client.rpc<AppSettings>("settings:get");
         await client.rpc("projector:show", [
           buildVersePayload(current, staged),

@@ -1,8 +1,3 @@
-/**
- * Builds a public download URL from the single DOWNLOAD_BASE_URL.
- * The filename must be one safe path segment so a remote manifest cannot
- * redirect the link off the bucket.
- */
 export function safeObjectKey(filename) {
   const name = String(filename ?? "").trim();
   if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(name)) return "";

@@ -1,6 +1,5 @@
 import { BOOKS } from "../books";
 
-/** `USFM|OSIS|English names…` for the 66 books, in canonical order. */
 const TABLE = [
   "GEN|Gen|Genesis",
   "EXO|Exod|Exodus",
@@ -70,7 +69,6 @@ const TABLE = [
   "REV|Rev|Revelation",
 ];
 
-/** Extra Spanish spellings seen in Spanish modules. */
 const SPANISH_EXTRA: Record<string, string[]> = {
   SNG: ["Cantar de los Cantares", "Cantares", "Cantar"],
   ACT: ["Hechos de los Apóstoles", "Hechos"],
@@ -79,7 +77,6 @@ const SPANISH_EXTRA: Record<string, string[]> = {
   ECC: ["Eclesiastés", "Qohélet"],
   JOL: ["Joel"],
   OBA: ["Abdías"],
-  // Gospels as printed in many Spanish Bibles: "S. Mateo", "S.Juan", "San Lucas"…
   MAT: [
     "S. Mateo",
     "San Mateo",
@@ -116,7 +113,6 @@ export function normalizeBookToken(token: string): string {
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .trim();
-  // "I John" / "II Juan" / "III Jn" -> 1/2/3
   t = t.replace(/^(iii|ii|i)\.?\s+(?=[a-z])/, (_m, roman: string) =>
     String(roman.length),
   );
@@ -142,7 +138,6 @@ for (const book of BOOKS) {
 for (const [code, names] of Object.entries(SPANISH_EXTRA))
   for (const name of names) add(name, code);
 
-/** Lumen book code for a name, USFM/OSIS code or Spanish/English abbreviation; null if unknown. */
 export function resolveBook(token: string | null | undefined): string | null {
   if (!token) return null;
   const trimmed = token.trim();
@@ -153,7 +148,6 @@ export function resolveBook(token: string | null | undefined): string | null {
   return BY_KEY.get(normalizeBookToken(trimmed)) ?? null;
 }
 
-/** Same, but only accepts names (not bare numbers like "1" that mean a position). */
 export function resolveBookName(
   token: string | null | undefined,
 ): string | null {

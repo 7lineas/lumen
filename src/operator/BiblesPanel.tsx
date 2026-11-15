@@ -27,7 +27,6 @@ interface Props {
   ) => Promise<{ hits: OnlineSearchHit[]; error?: string; stale?: boolean }>;
   onAddOnline?: (id: string) => Promise<void>;
   onRemoveOnline?: (id: string) => Promise<void>;
-  /** Bibles the user imported from files. */
   customVersions?: BibleVersionMeta[];
 }
 
@@ -37,7 +36,6 @@ function formatByteSize(bytes: number | null): string {
   return `${mb.toLocaleString("es-ES", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} MB`;
 }
 
-/** Read once when the app starts, so opening Biblias already has the catalog. */
 let libraryCache: BibleLibraryView | null = null;
 void window.proyector
   ?.getBibleCatalog()

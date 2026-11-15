@@ -1,9 +1,5 @@
 export type LumenEvent = { event: string; payload: unknown };
 
-/**
- * Splits complete `data:` frames (terminated by a blank line) from a partial
- * buffer. Comment frames such as `: connected` carry no data and are skipped.
- */
 export function parseSseFrames(buffer: string): {
   events: LumenEvent[];
   rest: string;
@@ -22,9 +18,7 @@ export function parseSseFrames(buffer: string): {
       if (typeof parsed.event === "string") {
         events.push({ event: parsed.event, payload: parsed.payload });
       }
-    } catch {
-      // A malformed frame is dropped; the next projector update repairs state.
-    }
+    } catch {}
   }
   return { events, rest };
 }

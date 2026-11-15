@@ -1,7 +1,4 @@
 #!/usr/bin/env node
-/**
- * Converts eBible VPL zips in tmp-bible/ to compact JSON in data/bibles/
- */
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -14,8 +11,6 @@ const root = path.join(__dirname, "..");
 const tmpDir = path.join(root, "tmp-bible");
 const outDir = path.join(root, "data", "bibles");
 
-// Only the bundled Spanish edition is part of the desktop build. Additional
-// editions can be refreshed explicitly later from the release bucket.
 const SOURCES = [
   {
     zip: "spaRV1909_vpl.zip",
@@ -98,7 +93,6 @@ const PROTESTANT_BOOKS = [
 
 const BOOK_SET = new Set(PROTESTANT_BOOKS);
 
-/** eBible VPL sometimes uses legacy 3-letter codes */
 const VPL_TO_USFM = {
   JOH: "JHN",
   MAR: "MRK",

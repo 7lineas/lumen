@@ -47,7 +47,7 @@ describe("patchOpentypeShaping", () => {
     }
     const opentype = { Font, parse: () => new Font() } as never;
     patchOpentypeShaping(opentype);
-    patchOpentypeShaping(opentype); // idempotent
+    patchOpentypeShaping(opentype);
     expect(new Font().stringToGlyphs("fi")).toEqual([
       { char: "f" },
       { char: "i" },
@@ -58,7 +58,7 @@ describe("patchOpentypeShaping", () => {
 describe("readFamilyNames", () => {
   it("reads family names from installed fonts without parsing them", () => {
     const files = collectFontFiles();
-    if (files.length === 0) return; // no system fonts on this machine
+    if (files.length === 0) return;
     const named = files.filter((file) => readFamilyNames(file).length > 0);
     expect(named.length).toBeGreaterThan(files.length * 0.9);
   });

@@ -17,17 +17,12 @@ import {
   reduceOnInstallFailure,
 } from "../shared/app-update";
 
-/** Lo mínimo que el controlador necesita de electron-updater (o de un sustituto en pruebas). */
 export interface UpdateBackend {
-  /** Versión más reciente publicada, o null si no hay datos. */
   check(): Promise<{ version: string } | null>;
-  /** Descarga la actualización (modo `auto`) o abre la página de descarga (modo `manual`). */
   download(onProgress: (percent: number) => void): Promise<void>;
-  /** Cierra la app e instala (solo modo `auto`). */
   install(): void;
 }
 
-/** Si tras pedir la instalación la app sigue viva, se da por fallida. */
 export const INSTALL_WATCHDOG_MS = 20_000;
 
 export interface UpdateControllerDeps {
@@ -48,9 +43,7 @@ export interface UpdateController {
   start(): void;
   stop(): void;
   check(): Promise<void>;
-  /** El operador confirmó: descargar y, si no hay proyección, instalar al terminar. */
   startUpdate(): Promise<AppUpdateState>;
-  /** El operador confirmó reiniciar con la actualización ya descargada. */
   install(): AppUpdateState;
 }
 
@@ -98,7 +91,6 @@ export function createUpdateController(
   async function check(): Promise<void> {
     if (state.mode === "disabled") return;
     if (checking) return checking;
-    // Sin descargas ni instalación en curso, y sin red no se intenta nada.
     if (state.status === "downloading" || installing) return;
     if (!deps.isOnline()) {
       log("[updater] sin red: se omite la comprobación");
@@ -144,7 +136,6 @@ export function createUpdateController(
     if (downloading) return downloading;
     const version = state.availableVersion;
     if (state.mode === "manual") {
-      // Portable u otras plataformas: solo se abre la página de descarga.
       try {
         await deps.backend.download(() => undefined);
       } catch (error) {
@@ -165,12 +156,9 @@ export function createUpdateController(
         await deps.backend.download((percent) => {
           if (state.status !== "downloading") return;
           const next = reduceOnDownloadProgress(state, percent);
-          // Un evento por porcentaje entero: sin inundar el IPC.
           if (next.downloadPercent !== state.downloadPercent) set(next);
         });
         set(reduceOnDownloadComplete(state, version));
-        // El operador ya confirmó el reinicio, pero si desde entonces se puso
-        // a proyectar, se espera a una segunda confirmación explícita.
         if (!deps.isProjectionActive()) return install();
       } catch (error) {
         const raw = error instanceof Error ? error.message : String(error);
@@ -202,7 +190,6 @@ export function createUpdateController(
     };
     try {
       deps.backend.install();
-      // quitAndInstall cierra la app enseguida; si sigue viva, algo falló en silencio.
       setTimer(() => {
         if (installing)
           fail(new Error("La app no se cerró tras pedir la instalación"));

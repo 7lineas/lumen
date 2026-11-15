@@ -3,9 +3,6 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
-// The landing is the TanStack Start app in apps/landing, prerendered to
-// static files. This copies its output to landing-dist, the folder used by
-// the local preview scripts.
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const appDir = path.join(root, "apps", "landing");
 const outDir = path.join(root, "landing-dist");

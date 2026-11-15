@@ -9,18 +9,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 interface Props {
-  /** Item title, used for the accessible name of the trigger. */
   label: string;
   testId: string;
   editLabel: string;
-  /** Receives the list row that holds the trigger. */
   onEdit: (row: HTMLElement) => void;
-  /** Omit when the item has nothing to download. */
   onDownload?: () => void;
   onDelete: () => void;
 }
 
-/** Row menu with edit, download (when there is one) and remove, opened from a ⋮ button. */
 export function ItemMenu({
   label,
   testId,

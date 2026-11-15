@@ -84,7 +84,6 @@ export function fetchRangeTexts(
   };
 }
 
-// Keyed by the array itself: online Bibles replace `searchIndex` when a chapter is merged.
 const normalizedCache = new WeakMap<BibleData["searchIndex"], string[]>();
 
 function normalizedIndex(index: BibleData["searchIndex"]): string[] {

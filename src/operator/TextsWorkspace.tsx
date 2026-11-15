@@ -24,15 +24,11 @@ import type { SongSelection, SongStage } from "./SongsWorkspace";
 export type Text = StoredText;
 
 interface Props {
-  /** Staged text, in the same shape as a staged song (its slides have no labels). */
   staged: SongStage | null;
   selectedId: string | null;
-  /** Text on the projector right now, when it is a text block. */
   liveText?: string | null;
-  /** Position of that block in the staged text, when it was projected from it. */
   liveIndex?: number | null;
   projectOnClick: boolean;
-  /** Ajustes > Tipo de letra, shown in the text dialog as the default typeface. */
   defaultFontFamily: FontFamilyId;
   onToggleProjectOnClick: (value: boolean) => void;
   onSelectText: (
@@ -40,7 +36,6 @@ interface Props {
     selection: SongSelection | null,
   ) => void;
   onSelectPart: (index: number) => void;
-  /** Double-click: stage the block and project it. */
   onTakePart: (index: number) => void;
 }
 
@@ -48,7 +43,6 @@ function id() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-/** The staged selection for a text: its slides, clamped to a valid index. */
 function stageOf(text: Text, index = 0): SongSelection {
   const slides = textSlides(text.body);
   return {
@@ -79,9 +73,7 @@ export function TextsWorkspace({
   const [texts, setTexts] = useState<Text[]>([]);
   const [textsLoaded, setTextsLoaded] = useState(false);
   const [query, setQuery] = useState("");
-  // null = closed, "new" = creating, otherwise the id of the text being edited.
   const [editing, setEditing] = useState<string | null>(null);
-  // The text whose delete confirmation is open from its row.
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -107,7 +99,6 @@ export function TextsWorkspace({
     if (textsLoaded) void window.proyector?.setTexts(texts);
   }, [texts, textsLoaded]);
 
-  // Texts saved from another operator (browser or desktop) appear here as they happen.
   useEffect(() => {
     const api = window.proyector;
     return api?.onOperatorSync?.(({ scope }) => {
@@ -134,7 +125,6 @@ export function TextsWorkspace({
     editing && editing !== "new"
       ? (texts.find((text) => text.id === editing) ?? null)
       : null;
-  // Until the library has loaded, the staged text is what the operator sees.
   const shown: string[] = selectedText
     ? textSlides(selectedText.body)
     : (staged?.slides ?? []);
@@ -184,7 +174,6 @@ export function TextsWorkspace({
     );
     setEditing(null);
     setQuery("");
-    // A new text opens straight away; an edited one keeps the block that was staged.
     if (!stored) onSelectText(next.id, stageOf(next));
     else if (next.id === selectedId)
       onSelectText(next.id, stageOf(next, staged?.index ?? 0));

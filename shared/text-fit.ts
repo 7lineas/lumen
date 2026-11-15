@@ -1,9 +1,3 @@
-/**
- * Largest size on the `start, start-2, …` grid that `fits`, stopping at the
- * first step at or below `floor` (taken without measuring). Same result as
- * walking down 2px at a time, with O(log n) measurements; assumes a smaller
- * size never overflows when a larger one fits.
- */
 export function fitFontSize(
   start: number,
   fits: (size: number) => boolean,

@@ -8,13 +8,11 @@ import {
   type InstalledFont,
 } from "../shared/fonts";
 
-/** Public catalog of every family on Google Fonts (no API key needed). */
 export const GOOGLE_FONTS_METADATA_URL =
   "https://fonts.google.com/metadata/fonts";
 const GOOGLE_FONTS_CSS_URL = "https://fonts.googleapis.com/css2";
 const FONT_FILE_HOST = "https://fonts.gstatic.com/";
 const CATALOG_TTL_MS = 7 * 24 * 60 * 60 * 1000;
-// Google answers with WOFF2 only for browsers it recognises; other agents get TTF.
 const BROWSER_USER_AGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
 const CATALOG_OFFLINE_MESSAGE =
@@ -37,7 +35,6 @@ export interface GoogleFontEntry {
   category: string;
   popularity: number;
   subsets: string[];
-  /** Normal-style weights to download, e.g. ["400", "700"]. */
   weights: string[];
 }
 
@@ -57,7 +54,6 @@ interface RemoteFace {
   url: string;
 }
 
-/** Weights to download: 400 and 700 when Google has them, otherwise whatever upright weight exists. */
 export function pickWeights(family: MetadataFamily): string[] {
   const fonts = family.fonts ?? {};
   const wght = family.axes?.find((axis) => axis.tag === "wght");
@@ -100,7 +96,6 @@ function normalizeText(text: string): string {
     .toLowerCase();
 }
 
-/** Families whose name contains the query; names that start with it come first, then the most popular. */
 export function searchGoogleFonts(
   fonts: GoogleFontEntry[],
   query: string,
@@ -126,7 +121,6 @@ export function searchGoogleFonts(
     }));
 }
 
-/** Lowercase ASCII name used in ids and folder names: "Open Sans" → "open-sans". */
 export function fontSlug(family: string): string {
   return family
     .normalize("NFD")
@@ -147,7 +141,6 @@ export function googleFontsCssUrl(family: string, weights: string[]): string {
   return `${GOOGLE_FONTS_CSS_URL}?family=${name}:wght@${weights.join(";")}&display=swap`;
 }
 
-/** Reads the @font-face blocks of a Google Fonts CSS response. Only files on Google's font host are kept. */
 export function parseFontFaces(css: string): RemoteFace[] {
   const faces: RemoteFace[] = [];
   for (const [, body] of css.matchAll(/@font-face\s*\{([^}]*)\}/g)) {
@@ -196,10 +189,6 @@ export function clearGoogleFontCatalogMemo(): void {
   catalogMemo = null;
 }
 
-/**
- * The family list is cached on disk for a week, so search keeps working
- * offline after the first load. A stale cache is used when Google can't be reached.
- */
 export async function loadGoogleFontCatalog(options: {
   cacheFile: string;
   fetchImpl: FontFetch;
@@ -243,7 +232,6 @@ export async function loadGoogleFontCatalog(options: {
   }
 }
 
-/** Downloads the family's WOFF2 files into `fontsDir/<id>/`. Nothing is left behind if a download fails. */
 export async function installGoogleFont(options: {
   family: string;
   catalog: GoogleFontEntry[];
@@ -292,7 +280,6 @@ export async function installGoogleFont(options: {
   }
 }
 
-/** Remote faces of the family's first weight, so the picker can draw its name before anything is saved. Nothing is downloaded here. */
 export async function previewGoogleFont(options: {
   family: string;
   catalog: GoogleFontEntry[];

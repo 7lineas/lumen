@@ -76,7 +76,6 @@ describe("formatRange", () => {
 });
 
 describe("stepVerse", () => {
-  /** Verse counts for GEN: chapter 1 has 3 verses, chapter 2 has 2, chapter 3 has 4. */
   const counts: Record<number, number> = { 1: 3, 2: 2, 3: 4 };
   const countIn = (chapter: number) => counts[chapter] ?? 0;
 
@@ -118,8 +117,6 @@ describe("stepVerse", () => {
   });
 
   it("uses the real count of the chapter it lands in, not the starting one", () => {
-    // Chapter 3 has 4 verses, chapter 2 has only 2: walking back from 3:1
-    // must land on 2:2, not on a verse counted from chapter 3.
     expect(
       stepVerse({ book: "GEN", chapter: 3, verse: 1 }, -1, 4, countIn),
     ).toEqual({ book: "GEN", chapter: 2, verse: 2 });
